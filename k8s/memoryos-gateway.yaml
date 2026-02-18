@@ -1,0 +1,127 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: memoryos-config
+  namespace: memoryos
+data:
+  config.toml: |
+    [server]
+    host = "0.0.0.0"
+    port = 8080
+    worker_threads = 4
+    timeout_seconds = 60
+
+    [llm]
+    default_provider = "gemini"
+    default_model = "gemini-3-pro-preview"
+
+    [llm.providers.gemini]
+    type = "gemini"
+    api_key = "cpx_K2PYXQHpmu9hMdfFlNwrZ6dvWEFhbRae"
+    base_url = "http://101.132.72.12:3000/gemini"
+
+    [storage.redis]
+    url = "redis://redis.memoryos.svc.cluster.local:6379"
+
+    [storage.vector]
+    url = "http://qdrant.memoryos.svc.cluster.local:6334"
+
+    [router]
+    enable = false
+    hot_threshold = 0.7
+    max_local_tokens = 2000
+    local_backends = []
+    sensitive_keywords = []
+
+    [embedding]
+    api_key = ""
+    base_url = "https://api.openai.com/v1"
+    model = "text-embedding-3-small"
+
+    [auth]
+    enabled = true
+    use_redis_store = true
+    admin_key = "memoryos-admin-key-12345"
+    api_keys = ["memoryos-secret-key-12345"]
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memoryos-gateway
+  namespace: memoryos
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: memoryos-gateway
+  template:
+    metadata:
+      labels:
+        app: memoryos-gateway
+    spec:
+      containers:
+      - name: gateway
+        image: memoryos-gateway:latest
+        imagePullPolicy: Never  # 使用本地镜像
+        ports:
+        - containerPort: 8080
+        env:
+        - name: RUST_LOG
+          value: "info"
+        volumeMounts:
+        - name: config
+          mountPath: /app/config.toml
+          subPath: config.toml
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/status
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: memoryos-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: memoryos-gateway
+  namespace: memoryos
+spec:
+  selector:
+    app: memoryos-gateway
+  ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30080  # 外部访问端口
+  type: NodePort
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: memoryos-gateway-lb
+  namespace: memoryos
+spec:
+  selector:
+    app: memoryos-gateway
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: LoadBalancer

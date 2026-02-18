@@ -1,0 +1,19 @@
+[server]
+host = "127.0.0.1"
+port = 8080
+worker_threads = 2
+timeout_seconds = 30
+
+[llm]
+provider = "ollama"
+api_key = "not-needed"  # Ollama doesn't need API key but config validation requires it
+base_url = "http://localhost:11434/v1"
+model = "gpt-oss:20b"
+
+[redis]
+url = "redis://localhost:6379"
+ttl_seconds = 3600
+max_messages = 20
+
+[qdrant]
+url = "http://localhost:6333"

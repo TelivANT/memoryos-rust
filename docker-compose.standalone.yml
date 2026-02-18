@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  memoryos:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - MEMORYOS__REDIS__URL=redis://redis:6379
+      - MEMORYOS__QDRANT__URL=http://qdrant:6334
+      - MEMORYOS__LLM__API_KEY=${MEMORYOS_LLM_API_KEY:-not-needed}
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+    depends_on:
+      - redis
+      - qdrant
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  redis_data:
+  qdrant_data:

@@ -1,0 +1,4 @@
+{"id":"case_001","input":"My name is Alice. I like hiking and coffee.","expect":{"traits":[],"preferences":["hiking and coffee"],"background":"name is Alice","knowledge_saved":true}}
+{"id":"case_002","input":"I work as a backend engineer in fintech.","expect":{"traits":[],"preferences":[],"background":"works as a backend engineer in fintech","knowledge_saved":true}}
+{"id":"case_003","input":"Hi?","expect":{"traits":[],"preferences":[],"background":null,"knowledge_saved":false}}
+{"id":"case_004","input":"I live in Shanghai. I prefer tea.","expect":{"traits":[],"preferences":["tea"],"background":"lives in Shanghai","knowledge_saved":true}}

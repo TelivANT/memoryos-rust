@@ -1,0 +1,212 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: memoryos-demo
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: memoryos-demo-config
+  namespace: memoryos-demo
+data:
+  config.toml: |
+    [server]
+    host = "0.0.0.0"
+    port = 8080
+    worker_threads = 2
+    timeout_seconds = 30
+
+    [llm]
+    provider = "openai"
+    api_key = "placeholder"
+    base_url = "https://api.openai.com/v1"
+    model = "gpt-4o-mini"
+
+    [redis]
+    url = "redis://redis:6379"
+    ttl_seconds = 3600
+    max_messages = 20
+
+    [qdrant]
+    url = "http://qdrant:6334"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: memoryos-demo-secrets
+  namespace: memoryos-demo
+type: Opaque
+stringData:
+  llm-api-key: "REPLACE_ME"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memoryos-gateway
+  namespace: memoryos-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: memoryos-gateway
+  template:
+    metadata:
+      labels:
+        app: memoryos-gateway
+    spec:
+      containers:
+      - name: gateway
+        image: memoryos:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: MEMORYOS__LLM__API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: memoryos-demo-secrets
+              key: llm-api-key
+        - name: MEMORYOS__REDIS__URL
+          value: "redis://redis:6379"
+        - name: MEMORYOS__QDRANT__URL
+          value: "http://qdrant:6334"
+        volumeMounts:
+        - name: config
+          mountPath: /app/config.toml
+          subPath: config.toml
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: memoryos-demo-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: memoryos-gateway
+  namespace: memoryos-demo
+spec:
+  selector:
+    app: memoryos-gateway
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: memoryos-demo
+spec:
+  serviceName: redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: memoryos-demo
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: qdrant
+  namespace: memoryos-demo
+spec:
+  serviceName: qdrant
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qdrant
+  template:
+    metadata:
+      labels:
+        app: qdrant
+    spec:
+      containers:
+      - name: qdrant
+        image: qdrant/qdrant:latest
+        ports:
+        - containerPort: 6333
+          name: http
+        - containerPort: 6334
+          name: grpc
+        volumeMounts:
+        - name: qdrant-data
+          mountPath: /qdrant/storage
+  volumeClaimTemplates:
+  - metadata:
+      name: qdrant-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 5Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qdrant
+  namespace: memoryos-demo
+spec:
+  selector:
+    app: qdrant
+  ports:
+  - name: http
+    port: 6333
+    targetPort: 6333
+  - name: grpc
+    port: 6334
+    targetPort: 6334

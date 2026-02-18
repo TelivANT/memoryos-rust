@@ -1,0 +1,62 @@
+# Production Configuration for MemoryOS
+
+[server]
+host = "0.0.0.0"
+port = 8080
+log_level = "info"  # Use "warn" in production for less noise
+
+[llm]
+# OpenAI
+openai_model = "gpt-4o-mini"
+openai_base_url = "https://api.openai.com/v1"
+
+# Gemini
+gemini_model = "gemini-1.5-flash"
+gemini_base_url = "https://generativelanguage.googleapis.com/v1beta"
+
+# Claude
+claude_model = "claude-3-5-sonnet-20241022"
+claude_base_url = "https://api.anthropic.com/v1"
+
+# Ollama (local)
+ollama_model = "llama3.2"
+ollama_base_url = "http://localhost:11434"
+
+[redis]
+url = "redis://redis:6379"
+# Connection pool settings
+max_connections = 10
+connection_timeout_ms = 5000
+
+[qdrant]
+url = "http://qdrant:6333"
+collection_name = "memoryos"
+# Vector settings
+vector_size = 1536
+distance = "Cosine"
+
+[performance]
+# Worker threads (default: number of CPU cores)
+worker_threads = 4
+
+# Request timeout
+request_timeout_ms = 30000
+
+# Connection keep-alive
+keep_alive_seconds = 60
+
+[security]
+# Rate limiting
+rate_limit_requests = 100
+rate_limit_window_seconds = 60
+
+# CORS (if needed)
+# cors_origins = ["https://example.com"]
+
+[monitoring]
+# Metrics
+enable_metrics = true
+metrics_path = "/metrics"
+
+# Health checks
+health_check_interval_seconds = 30

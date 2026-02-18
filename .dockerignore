@@ -1,0 +1,37 @@
+# Build artifacts (but keep release binary)
+target/*
+!target/release/
+target/release/*
+!target/release/memoryos-gateway
+**/*.rs.bk
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Test files
+tests/
+**/*_test.rs
+
+# Config
+config.toml
+!config.example.toml
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db

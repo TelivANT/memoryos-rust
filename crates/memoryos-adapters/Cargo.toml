@@ -1,0 +1,21 @@
+[package]
+name = "memoryos-adapters"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+reqwest.workspace = true
+async-trait.workspace = true
+redis.workspace = true
+qdrant-client.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+memoryos-core = { path = "../memoryos-core" }
+memoryos-ports = { path = "../memoryos-ports" }
+# Unified Storage Layer
+opendal = { version = "0.45", features = ["services-s3", "services-fs"] }

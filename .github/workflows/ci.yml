@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - 'Cargo.toml'
+      - 'crates/**'
+      - 'docs/**'
+      - 'scripts/lint_docs.sh'
+      - '.github/workflows/ci.yml'
+  pull_request:
+
+jobs:
+  rust-and-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cargo check
+        run: cargo check --workspace
+        working-directory: MemoryOS-Rust
+      - name: Lint docs
+        run: ./scripts/lint_docs.sh
+        working-directory: MemoryOS-Rust

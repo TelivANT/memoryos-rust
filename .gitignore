@@ -1,0 +1,48 @@
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary reports (should not be committed)
+DOCS_CLEANUP_REPORT.md
+DOCS_COMPLETENESS_CHECK.md
+DOCS_FINAL_REPORT.md
+DOCS_STRUCTURE_REVISED.md
+DOCS_PATHS.md
+
+# Environment
+.env
+.env.local
+*.local
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
+
+# Test data
+test_data/
+*_test_data/
+
+# Build artifacts
+dist/
+build/
+
+# Archive (optional - 可以提交归档)
+# archive/
