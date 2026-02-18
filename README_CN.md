@@ -20,7 +20,8 @@ MemoryOS-Rust 是高性能 AI Agent 记忆管理系统，采用 Rust + Tokio 实
 ## ✨ 核心特性
 
 - 🚀 **高性能**: Rust + Tokio，支持高并发，单机万级 QPS。
-- 🧠 **3-Tier Memory**: STM (Redis) → MTM (Qdrant) → LTM (SQLite).
+- 🧠 **3-Tier Memory**: STM (Redis) → MTM (Qdrant) → LTM (Qdrant).
+- ⚡ **FAQ 直接命中**: 高频问答自动提升为即时响应（< 50ms）。
 - 🔌 **全能网关**: 兼容 OpenAI 协议，适配 Gemini, Claude, Ollama, DeepSeek, Azure.
 - 🕸️ **Graph Memory**: **Qdrant-Native GraphRAG**，支持 Mermaid 可视化。
 - 📚 **知识沉淀**: 自动将 FAQ 导出为 Wiki (S3/Confluence)，支持 **Agent Playbook**。

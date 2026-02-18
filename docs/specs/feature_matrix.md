@@ -4,18 +4,20 @@
 
 | Feature | Python (Legacy) | Rust (Target) | Status | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| **STM (Short-Term)** | List/Deque (In-memory) | `VecDeque` (In-memory) | ✅ Must-Have | Keep FIFO logic. |
-| **MTM (Mid-Term)** | JSON + FAISS/Chroma | **SQLite + Vector Extension** | 🔄 Proposed Change | **Major Upgrade**. Moving away from heavy JSON files to embedded SQL for performance. |
-| **LTM (Long-Term)** | JSON (Profile/Facts) | SQLite (Relational Tables) | 🔄 Proposed Change | Structured storage allows better querying than parsing JSON text. |
+| **STM (Short-Term)** | List/Deque (In-memory) | `VecDeque` (In-memory) | ✅ Implemented | Keep FIFO logic. |
+| **MTM (Mid-Term)** | JSON + FAISS/Chroma | **Qdrant (Vector DB)** | ✅ Implemented | Production-grade vector storage with persistence. |
+| **LTM (Long-Term)** | JSON (Profile/Facts) | **Qdrant (Structured Payload)** | ✅ Implemented | Structured storage with metadata and filtering. |
 | **Versioning** | (None) | **Time-Travel Safe** | 🛡️ Accuracy | **TTL & Deprecation**. Old knowledge (e.g., old VPN pass) is archived, not mixed with new facts. |
 | **ACL/RBAC** | (None) | **Group-based Access** | 🛡️ Security | **Granular Privacy**. HR knowledge is only accessible to HR group, even in Global Scope. |
-| **Heat Algorithm** | $f(freq, dur, recency)$ | Standardized Formula | ✅ Must-Have | Logic remains the same, implementation optimized. |
+| **Heat Algorithm** | $f(freq, dur, recency)$ | Standardized Formula | ✅ Implemented | Logic remains the same, implementation optimized. |
 | **Multi-Lang** | (None) | **Auto-Translation** | 🌍 Localization | **Bridge the Gap**. If User Lang != FAQ Lang, auto-translate the Direct Hit response. |
 | **Lifecycle** | (None) | **Decay & Pruning** | 🧠 Intelligence | **Anti-Bloat**. Auto-merge similar old memories; Auto-delete low-value ephemeral data. "Forgetting is part of remembering." |
 | **Privacy** | (None) | **Encryption at Rest** | 🔐 Security | **God Mode Prevention**. Private memories are AES-encrypted in DB. Even DB Admins see garbage without the key. |
 | **Sovereignty** | (None) | **GDPR Purge** | ⚖️ Legal | **Right to be Forgotten**. One-command to strictly wipe a user's private data while anonymizing their public contributions. |
 | **Graph Memory** | (Not Implemented) | (Optional Future) | ⏳ Nice-to-Have | Knowledge Graph support for LTM? |
-| **Wiki Export** | (None) | **Auto-Export to S3/Confluence** | 🌟 Killer Feature | **Knowledge Precipitation**. FAQs aged >30 days auto-export to Markdown → S3/Wiki. Converts implicit knowledge to explicit assets. |
+| **FAQ Heat Tracking** | (None) | **Access Count + Heat Score** | 🚧 Planned | Track access frequency and calculate heat score for FAQ promotion. |
+| **FAQ Auto-Promotion** | (None) | **Auto-upgrade to FAQ** | 🚧 Planned | Automatically promote high-frequency Q&A (access ≥10, heat ≥50) to FAQ tier. |
+| **Wiki Export** | (None) | **Auto-Export to S3/Confluence** | 🚧 Planned | **Knowledge Precipitation**. FAQs aged >30 days auto-export to Markdown → S3/Wiki. Converts implicit knowledge to explicit assets. |
 
 ## 2. LLM & AI Capabilities (模型能力)
 
@@ -60,11 +62,11 @@ We will implement a **Normalization Layer** that converts the standard OpenAI Re
 
 | Feature | Python (Legacy) | Rust (Target) | Status | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| **File Format** | Large `.json` files | **JSON (Compat) + SQLite** | ✅ Must-Have | **Dual Mode**. Default to SQLite for performance, but strictly compatible with legacy JSON if configured. |
+| **File Format** | Large `.json` files | **Qdrant (Vector DB)** | ✅ Implemented | Production-grade persistence with structured payloads. |
 | **ChromaDB** | Supported | **Optional Adapter** | ⚠️ Low Priority | Support via Feature Flag. |
-| **Multi-Tenancy**| (File-based) | **Native Multi-User** | ✅ Must-Have | **Identity Awareness**. Serve multiple users via API Keys. Isolate memory per `user_id`. |
+| **Multi-Tenancy**| (File-based) | **Native Multi-User** | ✅ Implemented | **Identity Awareness**. Serve multiple users via API Keys. Isolate memory per `user_id`. |
 | **Org Memory** | (None) | **Global Scope** | 🌟 Killer Feature | **Collective Intelligence**. Solved problems are promoted to `Global` scope, accessible by all employees. |
-| **Evolution** | (None) | **Auto-Promotion** | 🚀 Automation | **Crowdsourcing**. If an answer gets N likes, it automatically upgrades to FAQ/Global Memory. |
+| **Evolution** | (None) | **Auto-Promotion** | 🚧 Planned | **Crowdsourcing**. If an answer gets N likes, it automatically upgrades to FAQ/Global Memory. |
 | **Gamification**| (None) | **HR Audit Log** | 🛡️ Management | **Incentive System**. Track who contributes good data (Reward) and who pollutes data (Penalty). |
 | **Feedback Loop** | (None) | **Like/Dislike API** | ✅ Must-Have | **Quality Control**. Untrusted memories are deprecated; High-quality ones are promoted. |
 | **Wiki Integration** | (None) | **S3/Confluence/Wiki.js** | 🌟 Killer Feature | **Cross-System Knowledge Sharing**. Export mature FAQs to external Wiki systems. Supports **Wiki.js**, Outline, Confluence. |
@@ -93,8 +95,8 @@ To support **20,000+ concurrent users** and multi-turn conversations, the archit
 
 | Component | Default Mode (Local/Dev) | Production Mode (Cluster) | Implementation Strategy |
 | :--- | :--- | :--- | :--- |
-| **Vector DB** | **SQLite + sqlite-vss** | **Qdrant** (Cluster) | Abstract `VectorStore` trait. Qdrant is the recommended prod backend for millions of vectors. |
-| **Short-Term Memory** | In-Memory (`DashMap`) | **Redis** (Cluster) | Abstract `ShortTermStorage` trait. Redis ensures persistence across restarts and fast I/O. |
+| **Vector DB** | **Qdrant** (Single Node) | **Qdrant** (Cluster) | Abstract `VectorStore` trait. Qdrant is the production backend for millions of vectors. |
+| **Short-Term Memory** | **Redis** (Single Node) | **Redis** (Cluster) | Abstract `ShortTermStorage` trait. Redis ensures persistence across restarts and fast I/O. |
 | **Task Queue** | `tokio::mpsc` | **Redis Stream** / **NATS** | Abstract `EventBus` trait. Async tasks (e.g., memory summarization) are pushed to queue and consumed by workers. |
 | **API Gateway** | Axum (Single Instance) | Axum (Multi-Instance) | Stateless design. Can be load-balanced by Nginx/K8s Ingress. |
 

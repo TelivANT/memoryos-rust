@@ -21,7 +21,7 @@
 ### Phase 3: Storage Layer (v0.1.8)
 - [x] Redis Adapter (STM, Dist-Lock)
 - [x] Qdrant Adapter (MTM, Vector Search)
-- [x] SQLite Metadata Store
+- [x] Qdrant Metadata Store
 - [x] **Concurrency Control** (Fencing Token)
 
 ### Phase 4: Intelligence & Routing (v0.1.9)

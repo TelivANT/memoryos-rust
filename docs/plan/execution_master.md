@@ -25,20 +25,18 @@
 | **2.6** | **Ollama Adapter** | Pass specific params (`num_ctx`). Handle local connection errors. | **Real Test**: Configure `base_url="http://localhost:11434/v1"`, `model="gpt-oss:20b"`. Connect User Client to MemoryOS, verify MemoryOS successfully calls local Ollama. |
 
 ## Phase 3: Storage Layer (海马体)
-**Goal**: Connect Redis, Qdrant, and SQLite.
+**Goal**: Connect Redis and Qdrant.
 
 | Task ID | Task Name | Specs / Details | Acceptance Criteria |
 | :--- | :--- | :--- | :--- |
 | **3.1** | **Redis Adapter** | Impl `ShortTermStorage`. `rpush`, `ltrim`. Handle connection loss (Circuit Breaker placeholder). | Chat context persists across Gateway restarts. |
 | **3.2** | **Concurrency Control** | Impl Redis Dist-Lock with fencing token + lease renewal and Message Deduplication by `event_id` (`SISMEMBER`). | Worker A and B update same profile -> Only one succeeds (Sequential). Duplicate event is skipped exactly once. |
 | **3.3** | **Qdrant Adapter** | Impl `VectorStore`. gRPC client. Support `filter` (RBAC). | Insert vector -> Search vector -> Return correct payload. |
-| **3.4** | **SQLite Adapter** | Impl `MetadataStore`. Store User Profile / Cold Archives. | CRUD on `users` table works. |
 
 ### Phase 3 Reality Check (2026-02-17)
 - **3.1 Redis Adapter**: Implemented and running in gateway with degraded fallback paths.
 - **3.2 Concurrency Control**: Implemented baseline (`event_id` dedup + fencing lock + lease renewal + CAS + fenced long-term write path). Further hardening still needed for broader downstream targets and policy tuning.
 - **3.3 Qdrant Adapter**: Implemented on modern client API; supports fenced long-term write checks via `lock_version`.
-- **3.4 SQLite Adapter**: Not implemented yet.
 
 ## Phase 4: Intelligence & Routing (大脑)
 **Goal**: Make the Gateway smart.

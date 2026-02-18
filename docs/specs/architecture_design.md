@@ -88,7 +88,7 @@ To support **100,000+ concurrent users** and **100+ Pods**, MemoryOS-Rust adopts
     1.  **Memory Consolidation**: Consume conversation logs.
     2.  **STM Update**: Append new turn to Redis List; trim if > Capacity.
     3.  **MTM Update**: If STM is full -> Call LLM to summarize -> Generate Embedding -> Upsert to Qdrant.
-    4.  **LTM Extraction**: If MTM segment is "Hot" -> Call LLM to extract Profile/Facts -> Update SQLite/Qdrant.
+    4.  **LTM Extraction**: If MTM segment is "Hot" -> Call LLM to extract Profile/Facts -> Update Qdrant.
     5.  **Cross-User Analytics (Admin Task)**: Periodically scan Qdrant vectors to identify common problem clusters across users.
     6.  **Lifecycle Manager (The Reaper)**: 
         *   **Hot -> Cold Migration (Safe)**:

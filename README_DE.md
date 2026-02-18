@@ -20,7 +20,7 @@ MemoryOS-Rust ist ein Hochleistungs-KI-Agent-Speicherverwaltungssystem, das mit 
 ## ✨ Hauptmerkmale
 
 - 🚀 **Hohe Leistung**: Rust + Tokio, unterstützt hohe Parallelität mit über 10K QPS pro Instanz.
-- 🧠 **3-stufiger Speicher**: STM (Redis) → MTM (Qdrant) → LTM (SQLite).
+- 🧠 **3-stufiger Speicher**: STM (Redis) → MTM (Qdrant) → LTM (Qdrant).
 - 🔌 **Universelles Gateway**: OpenAI-Protokoll-kompatibel, unterstützt Gemini, Claude, Ollama, DeepSeek, Azure.
 - 🕸️ **Graph-Speicher**: **Qdrant-Native GraphRAG** mit Mermaid-Visualisierung.
 - 📚 **Wissensexport**: Automatischer Export von FAQs ins Wiki (S3/Confluence), unterstützt **Agent Playbook**.

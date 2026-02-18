@@ -20,7 +20,7 @@ MemoryOS-Rust es un sistema de gestión de memoria de agente IA de alto rendimie
 ## ✨ Características Principales
 
 - 🚀 **Alto Rendimiento**: Rust + Tokio, soporta alta concurrencia con más de 10K QPS por instancia.
-- 🧠 **Memoria de 3 Niveles**: STM (Redis) → MTM (Qdrant) → LTM (SQLite).
+- 🧠 **Memoria de 3 Niveles**: STM (Redis) → MTM (Qdrant) → LTM (Qdrant).
 - 🔌 **Gateway Universal**: Compatible con protocolo OpenAI, soporta Gemini, Claude, Ollama, DeepSeek, Azure.
 - 🕸️ **Memoria de Grafos**: **Qdrant-Native GraphRAG** con visualización Mermaid.
 - 📚 **Exportación de Conocimiento**: Exportación automática de FAQs a Wiki (S3/Confluence), soporta **Agent Playbook**.

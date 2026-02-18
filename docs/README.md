@@ -24,6 +24,7 @@
 9. **[DEPLOYMENT.md](./DEPLOYMENT.md)** - 部署指南
 10. **[K3S_DEPLOYMENT.md](./K3S_DEPLOYMENT.md)** - K3s 自动化部署 🚀 **新建**
 11. **[AUTH.md](./AUTH.md)** - API Key 认证系统
+12. **[FAQ_SYSTEM.md](./FAQ_SYSTEM.md)** - FAQ 自动上升机制 ⚡ **新建**
 
 ---
 

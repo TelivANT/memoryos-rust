@@ -13,7 +13,7 @@ MemoryOS-Rust has reached **production-ready** status with all core features imp
 ### Completed Features (v0.2.0)
 
 #### Core Architecture ✅
-- **3-Tier Memory System**: STM (Redis) → MTM (Qdrant) → LTM (SQLite)
+- **3-Tier Memory System**: STM (Redis) → MTM (Qdrant) → LTM (Qdrant)
 - **Hexagonal Architecture**: Clean separation of concerns with ports & adapters
 - **Hot Configuration Reload**: 5-second auto-refresh without restart
 - **Real-time Health Checks**: Dynamic runtime probing

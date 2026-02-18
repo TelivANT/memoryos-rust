@@ -2,7 +2,6 @@
 /target/
 **/*.rs.bk
 *.pdb
-Cargo.lock
 
 # IDE
 .vscode/
@@ -30,6 +29,11 @@ DOCS_PATHS.md
 .env
 .env.local
 *.local
+
+# Config files with secrets (use config.example.toml as template)
+config.toml
+config.secure.toml
+config.production.toml
 
 # Temporary files
 *.tmp

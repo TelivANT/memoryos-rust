@@ -20,7 +20,7 @@ MemoryOS-Rust هو نظام إدارة ذاكرة عالي الأداء لوكل
 ## ✨ الميزات الرئيسية
 
 - 🚀 **أداء عالي**: Rust + Tokio، يدعم التزامن العالي مع أكثر من 10K QPS لكل نسخة.
-- 🧠 **ذاكرة 3 مستويات**: STM (Redis) → MTM (Qdrant) → LTM (SQLite).
+- 🧠 **ذاكرة 3 مستويات**: STM (Redis) → MTM (Qdrant) → LTM (Qdrant).
 - 🔌 **بوابة عالمية**: متوافق مع بروتوكول OpenAI، يدعم Gemini و Claude و Ollama و DeepSeek و Azure.
 - 🕸️ **ذاكرة الرسم البياني**: **Qdrant-Native GraphRAG** مع تصور Mermaid.
 - 📚 **تصدير المعرفة**: تصدير تلقائي للأسئلة الشائعة إلى Wiki (S3/Confluence)، يدعم **Agent Playbook**.

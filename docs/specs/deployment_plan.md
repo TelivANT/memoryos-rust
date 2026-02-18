@@ -75,7 +75,7 @@ To support this scale, the following middleware is mandatory:
 *   **Fix**: Use `externalTrafficPolicy: Local` on the Service definition, or trust `X-Forwarded-For` from the Load Balancer.
 
 ### 5.3 Single Node (Docker Compose)
-*   **Issue**: File permission errors on mapped volumes (SQLite/Qdrant).
+*   **Issue**: File permission errors on mapped volumes (Qdrant data directory).
 *   **Fix**: The official `docker-compose.yml` must explicitly handle UID/GID mapping or use named volumes.
 
 ### 5.4 Runtime Tuning (CPU Isolation)

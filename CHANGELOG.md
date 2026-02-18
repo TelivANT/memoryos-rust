@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [0.2.0] - 2026-02-18
 
 ### 🚀 Major Features
-- **3-Tier Architecture**: Full implementation of STM (Redis) -> MTM (Qdrant) -> LTM (SQLite).
+- **3-Tier Architecture**: Full implementation of STM (Redis) -> MTM (Qdrant) -> LTM (Qdrant).
 - **Intelligent Router V2**: Tiered routing (Direct Hit -> Local Llama -> Cloud GPT) based on semantic confidence and complexity.
 - **Universal Gateway**: OpenAI-compatible API proxy supporting Google Gemini (Native), Anthropic Claude, and Ollama.
 - **Graph Memory**: Qdrant-native graph storage with Mermaid visualization support.

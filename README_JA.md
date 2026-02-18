@@ -20,7 +20,7 @@ MemoryOS-Rustは、Rust + Tokioで構築された高性能AIエージェント�
 ## ✨ 主な機能
 
 - 🚀 **高性能**: Rust + Tokio、高並行性をサポート、インスタンスあたり10K+ QPS。
-- 🧠 **3層メモリ**: STM (Redis) → MTM (Qdrant) → LTM (SQLite)。
+- 🧠 **3層メモリ**: STM (Redis) → MTM (Qdrant) → LTM (Qdrant)。
 - 🔌 **ユニバーサルゲートウェイ**: OpenAIプロトコル互換、Gemini、Claude、Ollama、DeepSeek、Azureをサポート。
 - 🕸️ **グラフメモリ**: **Qdrant-Native GraphRAG**、Mermaid可視化対応。
 - 📚 **ナレッジエクスポート**: FAQを自動的にWiki（S3/Confluence）にエクスポート、**Agent Playbook**をサポート。

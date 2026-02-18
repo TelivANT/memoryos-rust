@@ -35,7 +35,7 @@ The codebase strictly follows the **Ports and Adapters (Hexagonal)** architectur
 
 *   **Core (Domain)**: Pure Rust logic defining `Memory`, `Message`, `Segment`. No external dependencies like HTTP or specific DB drivers leak here.
 *   **Ports (Traits)**: Interface definitions (`LLMClient`, `Storage`, `Embedder`).
-*   **Adapters (Infrastructure)**: Concrete implementations (`OpenAIAdapter`, `SqliteAdapter`, `AxumHandler`).
+*   **Adapters (Infrastructure)**: Concrete implementations (`OpenAIAdapter`, `QdrantAdapter`, `AxumHandler`).
 
 ## 4. Key Improvements over Legacy Python Version
 
