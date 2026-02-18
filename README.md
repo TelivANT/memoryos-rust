@@ -1,35 +1,37 @@
 # MemoryOS-Rust
 
-高性能 AI Agent 记忆管理系统 - Rust 实现
+High-Performance AI Agent Memory Management System - Rust Implementation
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Rust](https://img.shields.io/badge/Rust-1.93+-orange.svg)](https://www.rust-lang.org/)
 [![Status](https://img.shields.io/badge/Status-Production_Ready-brightgreen.svg)](./CHANGELOG.md)
 [![Tests](https://img.shields.io/badge/Tests-15/15_Passing-brightgreen.svg)](./CHANGELOG.md)
 
----
-
-## 🎯 项目简介
-
-MemoryOS-Rust 是高性能 AI Agent 记忆管理系统，采用 Rust + Tokio 实现，支持 3-Tier 记忆架构（STM/MTM/LTM），兼容 OpenAI API，支持 100,000+ 并发用户。
+**Languages**: [English](README.md) | [简体中文](README_CN.md) | [日本語](README_JA.md) | [Français](README_FR.md) | [العربية](README_AR.md) | [Deutsch](README_DE.md) | [Español](README_ES.md) | [한국어](README_KO.md)
 
 ---
 
-## ✨ 核心特性
+## 🎯 Overview
 
-- 🚀 **高性能**: Rust + Tokio，支持高并发，单机万级 QPS。
+MemoryOS-Rust is a high-performance AI Agent memory management system built with Rust + Tokio, featuring a 3-Tier memory architecture (STM/MTM/LTM), OpenAI API compatibility, and support for 100,000+ concurrent users.
+
+---
+
+## ✨ Key Features
+
+- 🚀 **High Performance**: Rust + Tokio, supporting high concurrency with 10K+ QPS per instance.
 - 🧠 **3-Tier Memory**: STM (Redis) → MTM (Qdrant) → LTM (SQLite).
-- 🔌 **全能网关**: 兼容 OpenAI 协议，适配 Gemini, Claude, Ollama, DeepSeek, Azure.
-- 🕸️ **Graph Memory**: **Qdrant-Native GraphRAG**，支持 Mermaid 可视化。
-- 📚 **知识沉淀**: 自动将 FAQ 导出为 Wiki (S3/Confluence)，支持 **Agent Playbook**。
-- 🛡️ **企业级安全**: RBAC, PII 清洗, Prompt 注入防御, GDPR 遗忘权。
-- 🤖 **智能路由**: 本地 Llama (热点/隐私) vs 云端 GPT-4 (复杂/冷门) 自动分流。
+- 🔌 **Universal Gateway**: OpenAI protocol compatible, supports Gemini, Claude, Ollama, DeepSeek, Azure.
+- 🕸️ **Graph Memory**: **Qdrant-Native GraphRAG** with Mermaid visualization.
+- 📚 **Knowledge Export**: Auto-export FAQs to Wiki (S3/Confluence), supports **Agent Playbook**.
+- 🛡️ **Enterprise Security**: RBAC, PII sanitization, prompt injection defense, GDPR right to be forgotten.
+- 🤖 **Smart Routing**: Auto-route between local Llama (hot/private) and cloud GPT-4 (complex/cold).
 
 ---
 
-## 💻 系统要求
+## 💻 System Requirements
 
-| 规格 | 最小配置 (Dev) | 推荐配置 (Prod) |
+| Spec | Minimum (Dev) | Recommended (Prod) |
 | :--- | :--- | :--- |
 | **CPU** | 2 vCPU | 4+ vCPU |
 | **RAM** | 4GB | 16GB+ |
@@ -38,49 +40,49 @@ MemoryOS-Rust 是高性能 AI Agent 记忆管理系统，采用 Rust + Tokio 实
 
 ---
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 1. 启动依赖
+### 1. Start Dependencies
 
 ```bash
 docker-compose up -d
 ```
 
-### 2. 配置
+### 2. Configuration
 
-创建 `.env` 文件（可选）或设置环境变量：
+Create `.env` file (optional) or set environment variables:
 ```bash
 export GEMINI_API_KEY="your_key_here"
 export QDRANT_API_KEY="your_qdrant_key"
 ```
 
-复制配置文件：
+Copy config file:
 ```bash
 cp config.example.toml config.toml
-# 编辑 config.toml，开启需要的模块 (Router, Wiki 等)
+# Edit config.toml to enable desired modules (Router, Wiki, etc.)
 ```
 
-### 3. 运行
+### 3. Run
 
 ```bash
-# 默认全功能模式
+# Default full-featured mode
 cargo run --release --bin memoryos-gateway
 
-# (高级) 仅启用特定功能 (如果 Cargo.toml 支持)
+# (Advanced) Enable specific features only (if Cargo.toml supports)
 # cargo run --release --no-default-features --features "redis,qdrant"
 ```
 
-### 4. 测试
+### 4. Test
 
 ```bash
 curl http://localhost:8080/health/status
 ```
 
-**详细指南**: [docs/QUICKSTART.md](./docs/QUICKSTART.md)
+**Detailed Guide**: [docs/QUICKSTART.md](./docs/QUICKSTART.md)
 
 ---
 
-## 🏗️ 架构
+## 🏗️ Architecture
 
 ```mermaid
 graph TD
@@ -97,46 +99,47 @@ graph TD
     end
 ```
 
-**详细架构**: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+**Detailed Architecture**: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 
 ---
 
-## 📚 文档
+## 📚 Documentation
 
-### 用户文档
-- [快速开始](./docs/QUICKSTART.md) - 5 分钟上手
-- [用户手册](./docs/USER_MANUAL.md) - 完整使用指南 📖
-- [架构设计](./docs/ARCHITECTURE.md) - 系统架构 (含 Graph/Router)
-- [API 文档](./docs/API.md) - 接口说明
-- [开发指南](./docs/DEVELOPMENT.md) - 开发环境
-- [部署指南](./docs/DEPLOYMENT.md) - K8s/Docker
-- [K3s 自动部署](./docs/K3S_DEPLOYMENT.md) - 一键部署 K8s 集群 🚀
-- [认证系统](./docs/AUTH.md) - API Key 管理
+### User Documentation
+- [Quick Start](./docs/QUICKSTART.md) - Get started in 5 minutes
+- [User Manual](./docs/USER_MANUAL.md) - Complete usage guide 📖
+- [Architecture](./docs/ARCHITECTURE.md) - System design (Graph/Router)
+- [API Reference](./docs/API.md) - API documentation
+- [Development Guide](./docs/DEVELOPMENT.md) - Development setup
+- [Deployment Guide](./docs/DEPLOYMENT.md) - K8s/Docker deployment
+- [K3s Auto-Deploy](./docs/K3S_DEPLOYMENT.md) - One-click K8s cluster 🚀
+- [Authentication](./docs/AUTH.md) - API Key management
 
-### 深度阅读
-- [设计原理](./docs/DESIGN.md) - 设计原理与实现细节 ⭐
-- [对比分析](./docs/COMPARISON.md) - 与 Mem0 对比 ⭐
+### Deep Dive
+- [Design Principles](./docs/DESIGN.md) - Design philosophy & implementation ⭐
+- [Comparison](./docs/COMPARISON.md) - vs Mem0 analysis ⭐
 
-### 开发者文档
-- [产品路线图](./docs/ROADMAP.md) - v0.2.0 → v1.0.0 规划
-- [API Key 认证](./docs/AUTH.md) - 企业级认证系统（Qdrant 持久化）🔒
-- [工作日志](./WORK_LOG.md) - **谁在做什么，方便协作和交接** ⭐⭐⭐
-- [项目状态](./docs/state.json) - AI 上下文恢复（机器可读）
-- [变更日志](./CHANGELOG.md) - 版本历史
-- [文档导航](./docs/README.md) - 完整文档索引
+### Developer Documentation
+- [Roadmap](./docs/ROADMAP.md) - v0.2.0 → v1.0.0 planning
+- [API Key Auth](./docs/AUTH.md) - Enterprise auth system (Qdrant persistence) 🔒
+- [Work Log](./WORK_LOG.md) - **Who's doing what, for collaboration** ⭐⭐⭐
+- [Project State](./docs/state.json) - AI context recovery (machine-readable)
+- [Changelog](./CHANGELOG.md) - Version history
+- [Contributing](./CONTRIBUTING.md) - Contribution guidelines
+- [Documentation Index](./docs/README.md) - Complete docs navigation
 
-**⭐ 推荐阅读**: 设计原理和对比分析，了解系统设计思想
+**⭐ Recommended**: Design Principles and Comparison for system design insights
 
 ---
 
-## 📊 项目状态
+## 📊 Project Status
 
-**版本**: 0.2.0  
-**状态**: ✅ Production Ready  
-**完成度**: 100%  
+**Version**: 0.2.0  
+**Status**: ✅ Production Ready  
+**Completion**: 100%  
 
-| Phase | 模块 | 状态 |
-|-------|------|------|
+| Phase | Module | Status |
+|-------|--------|--------|
 | Phase 1 | Foundation (Config/Log) | ✅ |
 | Phase 2 | Gateway & Adapters | ✅ |
 | Phase 3 | Storage (Redis/Qdrant) | ✅ |
@@ -147,44 +150,53 @@ graph TD
 
 ---
 
-## 🛠️ 技术栈
+## 🛠️ Tech Stack
 
-- **语言**: Rust 1.93+
-- **异步运行时**: Tokio
-- **Web 框架**: Axum
-- **短期存储**: Redis
-- **向量存储**: Qdrant
+- **Language**: Rust 1.93+
+- **Async Runtime**: Tokio
+- **Web Framework**: Axum
+- **Short-term Storage**: Redis
+- **Vector Storage**: Qdrant
 - **LLM**: OpenAI, Gemini, Claude, Ollama, DeepSeek, OpenRouter, Azure
 
 ---
 
-## 🤝 贡献
+## 🤝 Contributing
 
-欢迎贡献！请遵循以下流程：
+Contributions are welcome! Please follow this workflow:
 
-### 开始工作前
-1. 📖 阅读 [开发指南](./docs/DEVELOPMENT.md)
-2. 📝 在 [WORK_LOG.md](./WORK_LOG.md) 中记录你的任务
-3. 🔄 拉取最新代码: `git pull`
+### Before Starting
+1. 📖 Read [Development Guide](./docs/DEVELOPMENT.md)
+2. 📝 Log your task in [WORK_LOG.md](./WORK_LOG.md)
+3. 🔄 Pull latest code: `git pull`
 
-### 工作中
-1. 📊 每天更新 [WORK_LOG.md](./WORK_LOG.md) 中的进度
-2. 🐛 遇到问题立即记录
-3. 🔴 如果阻塞，更新状态
+### During Work
+1. 📊 Update progress in [WORK_LOG.md](./WORK_LOG.md) daily
+2. 🐛 Log issues immediately
+3. 🔴 Update status if blocked
 
-### 完成后
-1. ✅ 更新 [WORK_LOG.md](./WORK_LOG.md) 状态为完成
-2. 📝 更新 [CHANGELOG.md](./CHANGELOG.md)
-3. 🚀 提交代码: `git commit && git push`
+### After Completion
+1. ✅ Mark task as complete in [WORK_LOG.md](./WORK_LOG.md)
+2. 📝 Update [CHANGELOG.md](./CHANGELOG.md)
+3. 🚀 Submit code: `git commit && git push`
 
-**协作机制**: 我们使用 `WORK_LOG.md` (人类) + `docs/state.json` (AI) 双轨记录，确保团队协作透明高效。
+**Collaboration**: We use `WORK_LOG.md` (human) + `docs/state.json` (AI) dual-track recording for transparent collaboration.
 
----
-
-## 📄 许可
-
-Apache 2.0 License - 详见 [LICENSE](./LICENSE)
+**Detailed Guide**: [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 ---
 
-**版本**: 0.2.0 | **更新**: 2026-02-18
+## 📄 License
+
+Apache 2.0 License - See [LICENSE](./LICENSE)
+
+---
+
+## 🌟 Related Projects
+
+- **Original Project**: [MemoryOS](https://github.com/BAI-LAB/MemoryOS) - Python implementation
+- **Paper**: [Memory OS of AI Agent](https://arxiv.org/abs/2506.06326)
+
+---
+
+**Version**: 0.2.0 | **Updated**: 2026-02-18
