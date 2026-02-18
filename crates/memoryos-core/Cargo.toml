@@ -19,3 +19,5 @@ uuid.workspace = true
 num_cpus = "1.16"
 regex = "1.10"
 once_cell = "1.19"
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
+qdrant-client = "1.7"
