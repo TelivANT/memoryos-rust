@@ -186,6 +186,28 @@ graph TD
 
 ---
 
+## 🔧 メンテナンス状況
+
+**現在の状況**: ✅ 本番環境対応 & 積極的にメンテナンス中
+
+このプロジェクトは**機能完全** (100%)で、メンテナンスモードです。以下に注力しています：
+- 🐛 バグ修正とセキュリティ更新
+- 📚 ドキュメント改善
+- 💡 コミュニティ主導の機能強化
+
+**詳細**: [MAINTENANCE.md](./MAINTENANCE.md) で詳細なメンテナンス計画を確認
+
+---
+
+## 📞 連絡先
+
+- **GitHub Issues**: [問題を報告](https://github.com/TelivANT/memoryos-rust/issues)
+- **GitHub Discussions**: [ディスカッションに参加](https://github.com/TelivANT/memoryos-rust/discussions)
+- **メール**: 246803628+TelivANT@users.noreply.github.com
+- **セキュリティ問題**: 件名に `[SECURITY]` を付けてメールしてください
+
+---
+
 ## 📄 ライセンス
 
 Apache 2.0 License - [LICENSE](./LICENSE)を参照

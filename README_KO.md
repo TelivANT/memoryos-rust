@@ -186,6 +186,28 @@ graph TD
 
 ---
 
+## 🔧 유지보수 상태
+
+**현재 상태**: ✅ 프로덕션 준비 완료 & 적극 유지보수 중
+
+이 프로젝트는 **기능 완성** (100%)되었으며 유지보수 모드입니다. 다음에 집중합니다:
+- 🐛 버그 수정 및 보안 업데이트
+- 📚 문서 개선
+- 💡 커뮤니티 주도 기능 향상
+
+**참조**: [MAINTENANCE.md](./MAINTENANCE.md)에서 상세한 유지보수 계획 확인
+
+---
+
+## 📞 연락처
+
+- **GitHub Issues**: [문제 보고](https://github.com/TelivANT/memoryos-rust/issues)
+- **GitHub Discussions**: [토론 참여](https://github.com/TelivANT/memoryos-rust/discussions)
+- **이메일**: 246803628+TelivANT@users.noreply.github.com
+- **보안 문제**: 제목에 `[SECURITY]`를 포함하여 이메일을 보내주세요
+
+---
+
 ## 📄 라이선스
 
 Apache 2.0 License - [LICENSE](./LICENSE) 참조

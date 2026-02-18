@@ -186,6 +186,28 @@ graph TD
 
 ---
 
+## 🔧 حالة الصيانة
+
+**الحالة الحالية**: ✅ جاهز للإنتاج ويتم صيانته بنشاط
+
+هذا المشروع **مكتمل** (100%) وفي وضع الصيانة. نركز على:
+- 🐛 إصلاحات الأخطاء وتحديثات الأمان
+- 📚 تحسينات التوثيق
+- 💡 التحسينات المدفوعة من المجتمع
+
+**انظر**: [MAINTENANCE.md](./MAINTENANCE.md) لخطة الصيانة التفصيلية
+
+---
+
+## 📞 الاتصال
+
+- **GitHub Issues**: [الإبلاغ عن المشاكل](https://github.com/TelivANT/memoryos-rust/issues)
+- **GitHub Discussions**: [الانضمام إلى المناقشات](https://github.com/TelivANT/memoryos-rust/discussions)
+- **البريد الإلكتروني**: 246803628+TelivANT@users.noreply.github.com
+- **مشاكل الأمان**: يرجى إرسال بريد إلكتروني مع الموضوع `[SECURITY]`
+
+---
+
 ## 📄 الترخيص
 
 ترخيص Apache 2.0 - انظر [LICENSE](./LICENSE)

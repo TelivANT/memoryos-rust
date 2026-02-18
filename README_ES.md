@@ -186,6 +186,28 @@ graph TD
 
 ---
 
+## 🔧 Estado de Mantenimiento
+
+**Estado Actual**: ✅ Listo para Producción y Mantenido Activamente
+
+Este proyecto está **completo** (100%) y en modo mantenimiento. Nos enfocamos en:
+- 🐛 Correcciones de errores y actualizaciones de seguridad
+- 📚 Mejoras de documentación
+- 💡 Mejoras impulsadas por la comunidad
+
+**Ver**: [MAINTENANCE.md](./MAINTENANCE.md) para el plan de mantenimiento detallado
+
+---
+
+## 📞 Contacto
+
+- **GitHub Issues**: [Reportar Problemas](https://github.com/TelivANT/memoryos-rust/issues)
+- **GitHub Discussions**: [Unirse a Discusiones](https://github.com/TelivANT/memoryos-rust/discussions)
+- **Email**: 246803628+TelivANT@users.noreply.github.com
+- **Problemas de Seguridad**: Por favor envíe un email con asunto `[SECURITY]`
+
+---
+
 ## 📄 Licencia
 
 Licencia Apache 2.0 - Ver [LICENSE](./LICENSE)
