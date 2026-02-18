@@ -26,6 +26,10 @@
 11. **[AUTH.md](./AUTH.md)** - API Key 认证系统
 12. **[FAQ_SYSTEM.md](./FAQ_SYSTEM.md)** - FAQ 自动上升机制 ⚡ **新建**
 
+### 性能优化
+13. **[OPTIMIZATION.md](./OPTIMIZATION.md)** - 算法优化分析 🚀 **新建**
+14. **[OPTIMIZATION_USAGE.md](./OPTIMIZATION_USAGE.md)** - 优化模块使用指南 ⚡ **新建**
+
 ---
 
 ## 📋 开发计划

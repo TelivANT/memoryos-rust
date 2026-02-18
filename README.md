@@ -116,8 +116,10 @@ graph TD
 - [K3s Auto-Deploy](./docs/K3S_DEPLOYMENT.md) - One-click K8s cluster 🚀
 - [Authentication](./docs/AUTH.md) - API Key management
 - [FAQ System](./docs/FAQ_SYSTEM.md) - Auto-promote high-frequency Q&A ⚡
-- [K3s Auto-Deploy](./docs/K3S_DEPLOYMENT.md) - One-click K8s cluster 🚀
-- [Authentication](./docs/AUTH.md) - API Key management
+
+### Performance Optimization
+- [Optimization Analysis](./docs/OPTIMIZATION.md) - Algorithm optimization strategies 🚀
+- [Usage Guide](./docs/OPTIMIZATION_USAGE.md) - How to use optimization modules ⚡
 
 ### Deep Dive
 - [Design Principles](./docs/DESIGN.md) - Design philosophy & implementation ⭐
