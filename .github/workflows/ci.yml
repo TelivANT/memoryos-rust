@@ -2,24 +2,243 @@ name: CI
 
 on:
   push:
+    branches: [main, develop]
     paths:
       - 'Cargo.toml'
       - 'crates/**'
+      - 'tests/**'
       - 'docs/**'
-      - 'scripts/lint_docs.sh'
+      - 'scripts/**'
       - '.github/workflows/ci.yml'
   pull_request:
+    branches: [main, develop]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
 
 jobs:
-  rust-and-docs:
+  # 代码格式检查
+  format:
+    name: Format Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Rust
+      
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Cargo check
-        run: cargo check --workspace
-        working-directory: MemoryOS-Rust
-      - name: Lint docs
-        run: ./scripts/lint_docs.sh
-        working-directory: MemoryOS-Rust
+        with:
+          components: rustfmt
+      
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+  # Clippy 代码质量检查
+  clippy:
+    name: Clippy Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Run Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  # 构建检查
+  build:
+    name: Build Check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        rust: [stable, 1.93.0]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Rust ${{ matrix.rust }}
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ matrix.rust }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Build workspace
+        run: cargo build --workspace --all-features --verbose
+      
+      - name: Build release
+        run: cargo build --workspace --release --verbose
+
+  # 单元测试和集成测试
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+          - 6334:6334
+        options: >-
+          --health-cmd "curl -f http://localhost:6333/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-test-cargo-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Wait for services
+        run: |
+          timeout 30 bash -c 'until curl -f http://localhost:6333/health; do sleep 1; done'
+          timeout 30 bash -c 'until redis-cli -h localhost ping; do sleep 1; done'
+      
+      - name: Run unit tests
+        run: cargo test --lib --all-features --verbose
+        env:
+          REDIS_URL: redis://localhost:6379
+          QDRANT_URL: http://localhost:6333
+      
+      - name: Run integration tests
+        run: cargo test --test '*' --all-features --verbose
+        env:
+          REDIS_URL: redis://localhost:6379
+          QDRANT_URL: http://localhost:6333
+      
+      - name: Run doc tests
+        run: cargo test --doc --all-features --verbose
+
+  # 文档检查
+  docs:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Check documentation
+        run: cargo doc --no-deps --all-features --verbose
+        env:
+          RUSTDOCFLAGS: -D warnings
+      
+      - name: Lint documentation (if script exists)
+        run: |
+          if [ -f "./scripts/lint_docs.sh" ]; then
+            chmod +x ./scripts/lint_docs.sh
+            ./scripts/lint_docs.sh
+          else
+            echo "lint_docs.sh not found, skipping"
+          fi
+
+  # 安全审计
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+      
+      - name: Run security audit
+        run: cargo audit
+
+  # 代码覆盖率 (可选)
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install tarpaulin
+        run: cargo install cargo-tarpaulin
+      
+      - name: Generate coverage
+        run: cargo tarpaulin --out Xml --all-features
+        env:
+          REDIS_URL: redis://localhost:6379
+          QDRANT_URL: http://localhost:6333
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./cobertura.xml
+          fail_ci_if_error: false
+
+  # 最终状态检查
+  ci-success:
+    name: CI Success
+    needs: [format, clippy, build, test, docs, security]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark CI as successful
+        run: echo "All CI checks passed!"
