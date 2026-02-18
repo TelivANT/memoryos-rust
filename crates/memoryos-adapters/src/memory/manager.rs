@@ -373,6 +373,10 @@ impl DefaultMemoryManager {
                 embedding,
                 heat: 1.0,
                 created_at: chrono::Utc::now(),
+                access_count: 0,
+                heat_score: 0.0,
+                last_accessed: None,
+                memory_type: memoryos_core::MemoryType::QA,
             };
             if let Err(err) = self.vector_store.store_segment(segment).await {
                 warn!(
@@ -759,6 +763,11 @@ impl DefaultMemoryManager {
             embedding,
             heat: 1.0,
             created_at: chrono::Utc::now(),
+            access_count: 0,
+            heat_score: 0.0,
+            last_accessed: None,
+            memory_type: memoryos_core::MemoryType::QA,
+        };
         };
 
         // 4. 存储到向量数据库

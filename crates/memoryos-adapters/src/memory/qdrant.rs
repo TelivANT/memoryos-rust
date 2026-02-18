@@ -117,6 +117,17 @@ impl VectorStorage for QdrantStorage {
             "created_at".to_string(),
             Value::from(segment.created_at.to_rfc3339()),
         );
+        payload.insert("access_count".to_string(), Value::from(segment.access_count as i64));
+        payload.insert("heat_score".to_string(), Value::from(segment.heat_score as f64));
+        if let Some(last_accessed) = segment.last_accessed {
+            payload.insert("last_accessed".to_string(), Value::from(last_accessed.to_rfc3339()));
+        }
+        let memory_type_str = match segment.memory_type {
+            memoryos_core::MemoryType::QA => "qa",
+            memoryos_core::MemoryType::FaqCandidate => "faq_candidate",
+            memoryos_core::MemoryType::Faq => "faq",
+        };
+        payload.insert("memory_type".to_string(), Value::from(memory_type_str));
 
         let point = PointStruct::new(segment.id.to_string(), segment.embedding.clone(), payload);
 
@@ -174,6 +185,29 @@ impl VectorStorage for QdrantStorage {
                     embedding: point.vectors.map(convert_vectors).unwrap_or_default(),
                     heat,
                     created_at,
+                    access_count: payload
+                        .get("access_count")
+                        .and_then(|v| v.as_integer())
+                        .unwrap_or(0) as u32,
+                    heat_score: payload
+                        .get("heat_score")
+                        .and_then(|v| v.as_double())
+                        .unwrap_or(0.0) as f32,
+                    last_accessed: payload
+                        .get("last_accessed")
+                        .and_then(|v| v.as_str())
+                        .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+                        .map(|dt| dt.with_timezone(&chrono::Utc)),
+                    memory_type: payload
+                        .get("memory_type")
+                        .and_then(|v| v.as_str())
+                        .and_then(|s| match s {
+                            "qa" => Some(memoryos_core::MemoryType::QA),
+                            "faq_candidate" => Some(memoryos_core::MemoryType::FaqCandidate),
+                            "faq" => Some(memoryos_core::MemoryType::Faq),
+                            _ => None,
+                        })
+                        .unwrap_or(memoryos_core::MemoryType::QA),
                 }
             })
             .collect::<Vec<_>>();
