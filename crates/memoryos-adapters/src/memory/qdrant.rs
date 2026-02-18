@@ -201,7 +201,7 @@ impl VectorStorage for QdrantStorage {
                     memory_type: payload
                         .get("memory_type")
                         .and_then(|v| v.as_str())
-                        .and_then(|s| match s {
+                        .and_then(|s| match s.as_ref() {
                             "qa" => Some(memoryos_core::MemoryType::QA),
                             "faq_candidate" => Some(memoryos_core::MemoryType::FaqCandidate),
                             "faq" => Some(memoryos_core::MemoryType::Faq),

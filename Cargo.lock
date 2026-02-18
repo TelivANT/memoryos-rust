@@ -1402,6 +1402,7 @@ dependencies = [
  "chrono",
  "config",
  "num_cpus",
+ "once_cell",
  "regex",
  "serde",
  "serde_json",

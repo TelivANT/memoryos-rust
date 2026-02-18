@@ -8,9 +8,9 @@ pub struct HeatBuffer {
     buffer: Arc<RwLock<HashMap<Uuid, HeatUpdate>>>,
 }
 
-struct HeatUpdate {
-    access_count: u32,
-    last_accessed: chrono::DateTime<chrono::Utc>,
+pub struct HeatUpdate {
+    pub access_count: u32,
+    pub last_accessed: chrono::DateTime<chrono::Utc>,
 }
 
 impl HeatBuffer {

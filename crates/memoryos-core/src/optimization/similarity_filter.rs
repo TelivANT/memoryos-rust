@@ -90,6 +90,6 @@ mod tests {
         ];
         
         let results = SimilarityFilter::filter_similar(&query, candidates, 0.7);
-        assert!(results.len() >= 1);
+        assert!(!results.is_empty());
     }
 }

@@ -106,7 +106,7 @@ impl WikiExporter {
     }
 
     /// 生成 Markdown
-    pub fn generate_markdown<'a>(&self, categories: HashMap<String, Vec<&'a MidTermSegment>>) -> String {
+    pub fn generate_markdown(&self, categories: HashMap<String, Vec<&MidTermSegment>>) -> String {
         let mut md = String::new();
         
         // 标题

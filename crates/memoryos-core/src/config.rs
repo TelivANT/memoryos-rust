@@ -5,11 +5,10 @@ use arc_swap::ArcSwap;
 use serde::Deserialize;
 use std::{
     collections::HashMap,
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::Arc,
     time::SystemTime,
 };
-use tracing::info;
 
 /// Application configuration
 #[derive(Debug, Clone, Deserialize)]
@@ -23,7 +22,7 @@ pub struct AppConfig {
     pub auth: AuthConfig,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Default)]
 pub struct AuthConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -36,17 +35,6 @@ pub struct AuthConfig {
     /// 使用 Qdrant 存储 API Keys（大规模场景，持久化）
     #[serde(default)]
     pub use_redis_store: bool, // 名字保留兼容性，实际用 Qdrant
-}
-
-impl Default for AuthConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            admin_key: None,
-            api_keys: vec![],
-            use_redis_store: false,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Deserialize)]

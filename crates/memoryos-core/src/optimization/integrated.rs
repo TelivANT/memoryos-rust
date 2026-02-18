@@ -6,7 +6,6 @@ use std::collections::HashMap;
 pub struct OptimizedFaqMatcher {
     bloom: BloomFilter,
     exact_cache: HashMap<u64, String>,
-    embedding_cache: EmbeddingCache,
 }
 
 impl OptimizedFaqMatcher {
@@ -14,7 +13,6 @@ impl OptimizedFaqMatcher {
         Self {
             bloom: BloomFilter::new(capacity, 0.01),
             exact_cache: HashMap::new(),
-            embedding_cache: EmbeddingCache::new(1000),
         }
     }
     
@@ -53,14 +51,12 @@ impl OptimizedFaqMatcher {
 /// Optimized memory retriever
 pub struct OptimizedRetriever {
     embedding_cache: EmbeddingCache,
-    similarity_filter: SimilarityFilter,
 }
 
 impl OptimizedRetriever {
     pub fn new() -> Self {
         Self {
             embedding_cache: EmbeddingCache::new(1000),
-            similarity_filter: SimilarityFilter,
         }
     }
     

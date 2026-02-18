@@ -768,7 +768,6 @@ impl DefaultMemoryManager {
             last_accessed: None,
             memory_type: memoryos_core::MemoryType::QA,
         };
-        };
 
         // 4. 存储到向量数据库
         self.vector_store.store_segment(segment).await?;

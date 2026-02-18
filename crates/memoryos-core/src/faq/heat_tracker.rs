@@ -2,8 +2,6 @@
 
 use crate::memory::{MemoryType, MidTermSegment};
 use chrono::Utc;
-use std::sync::Arc;
-use tokio::sync::RwLock;
 
 /// 热度计算配置
 #[derive(Debug, Clone)]
@@ -35,15 +33,12 @@ impl Default for HeatConfig {
 /// 热度追踪服务
 pub struct HeatTracker {
     config: HeatConfig,
-    // 可以添加缓存层
-    cache: Arc<RwLock<std::collections::HashMap<uuid::Uuid, f32>>>,
 }
 
 impl HeatTracker {
     pub fn new(config: HeatConfig) -> Self {
         Self {
             config,
-            cache: Arc::new(RwLock::new(std::collections::HashMap::new())),
         }
     }
 

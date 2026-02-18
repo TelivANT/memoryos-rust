@@ -1,5 +1,17 @@
+use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+
+// 编译时验证的正则表达式（避免运行时 panic）
+static NODE_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"([a-zA-Z0-9_]+)\[(.*?)\]")
+        .expect("BUG: Invalid node regex pattern")
+});
+
+static EDGE_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"([a-zA-Z0-9_]+)\s*-+>\|(.*?)\|\s*([a-zA-Z0-9_]+)")
+        .expect("BUG: Invalid edge regex pattern")
+});
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraphEntity {
@@ -15,19 +27,11 @@ pub struct GraphRelation {
     pub target_label: String, // e.g., "iPhone"
 }
 
-pub struct GraphManager {
-    node_regex: Regex,
-    edge_regex: Regex,
-}
+pub struct GraphManager;
 
 impl GraphManager {
     pub fn new() -> Self {
-        Self {
-            // Matches: A[Label]
-            node_regex: Regex::new(r"([a-zA-Z0-9_]+)\[(.*?)\]").unwrap(),
-            // Matches: A -->|Predicate| B
-            edge_regex: Regex::new(r"([a-zA-Z0-9_]+)\s*-+>\|(.*?)\|\s*([a-zA-Z0-9_]+)").unwrap(),
-        }
+        Self
     }
 
     /// Parse Mermaid text into structured Entities
@@ -35,7 +39,7 @@ impl GraphManager {
         let mut entities = std::collections::HashMap::new();
 
         // 1. Extract Nodes: A[Apple]
-        for caps in self.node_regex.captures_iter(mermaid_text) {
+        for caps in NODE_REGEX.captures_iter(mermaid_text) {
             let id = caps[1].to_string();
             let label = caps[2].to_string();
             entities.entry(id.clone()).or_insert(GraphEntity {
@@ -46,7 +50,7 @@ impl GraphManager {
         }
 
         // 2. Extract Edges: A -->|makes| B
-        for caps in self.edge_regex.captures_iter(mermaid_text) {
+        for caps in EDGE_REGEX.captures_iter(mermaid_text) {
             let source_id = caps[1].to_string();
             let predicate = caps[2].to_string();
             let target_id = caps[3].to_string();
@@ -91,5 +95,11 @@ impl GraphManager {
             }
         }
         mermaid
+    }
+}
+
+impl Default for GraphManager {
+    fn default() -> Self {
+        Self::new()
     }
 }
