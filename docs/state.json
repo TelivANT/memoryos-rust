@@ -1,16 +1,16 @@
 {
   "project_name": "MemoryOS-Rust",
   "version": "0.2.0",
-  "last_updated": "2026-02-18",
+  "last_updated": "2026-02-19",
   "status": {
-    "phase": "Phase 7: Optimization & Release",
+    "phase": "Phase 8: FAQ System Implementation",
     "progress_percentage": 100,
-    "current_task": "Released v0.2.0 - Production Ready",
+    "current_task": "FAQ 三大功能全部完成 (热度追踪/自动提升/Wiki导出)",
     "is_blocked": false
   },
   "context": {
-    "description": "Rust implementation of MemoryOS, focusing on high performance, memory safety, and strictly typed interfaces.",
-    "target_platform": "Local Deployable (Linux/macOS/Windows)",
+    "description": "Rust implementation of MemoryOS, focusing on high performance, memory safety, and strictly typed interfaces. Now with complete FAQ auto-promotion system.",
+    "target_platform": "Local Deployable (Linux/macOS/Windows) + K3s Cluster",
     "primary_language": "Rust (Edition 2021)",
     "format_constraints": {
       "file_naming": "snake_case (strictly functional naming, no version numbers like _v1, _new)",
@@ -27,15 +27,54 @@
       "Phase 5: Async Evolution (Worker, Event Bus, DLQ)",
       "Phase 6: Knowledge Management (Wiki Export, S3 Adapter)",
       "Phase 7: Graph Memory (Mermaid Parser, Qdrant-Native Graph)",
-      "Security: Prompt Injection Defense, PII Sanitization",
-      "Ops: Docker Compose, K8s Deployment Plan"
+      "Phase 8: FAQ System (Heat Tracking, Auto-Promotion, Wiki Export)",
+      "Security: Prompt Injection Defense, PII Sanitization, API Key Auth",
+      "Ops: Docker Compose, K8s Deployment Plan, K3s Auto-Deploy",
+      "Docs: User Manual, K3s Deployment Guide, FAQ System Guide"
     ],
     "in_progress": [],
     "todo": [
-      "Phase 8 (Future): Multi-Modal Support (Image/Audio)",
-      "Phase 9 (Future): SaaS Billing Integration"
+      "Phase 9 (Future): Multi-Modal Support (Image/Audio)",
+      "Phase 10 (Future): SaaS Billing Integration",
+      "FAQ Enhancement: S3/Confluence Export Implementation"
     ]
   },
+  "recent_changes": [
+    {
+      "date": "2026-02-19",
+      "author": "Kiro AI",
+      "changes": [
+        "实现 FAQ 热度追踪 (HeatTracker)",
+        "实现 FAQ 自动提升 (AutoPromoter)",
+        "实现 FAQ Wiki 导出 (WikiExporter)",
+        "扩展 MidTermSegment 支持新字段",
+        "Qdrant 适配器完整集成",
+        "添加 FAQ 管理 API (5 个端点)",
+        "13 个单元测试全部通过"
+      ],
+      "commits": [
+        "210fc5b - feat: 实现 FAQ 热度追踪功能",
+        "a2b3100 - feat: 实现 FAQ 自动提升功能",
+        "b94cda7 - feat: 实现 FAQ Wiki 导出功能"
+      ]
+    },
+    {
+      "date": "2026-02-18",
+      "author": "Kiro AI",
+      "changes": [
+        "添加 Apache 2.0 LICENSE",
+        "修复 .gitignore (Cargo.lock, 配置文件)",
+        "添加 CI/CD (GitHub Actions)",
+        "创建增强版 K3s 部署脚本",
+        "创建完整用户手册",
+        "移除所有 SQLite 引用",
+        "统一使用 Qdrant 存储"
+      ],
+      "commits": [
+        "62627a4 - chore: 项目初始化和安全加固"
+      ]
+    }
+  ],
   "issues_log": [
     {
       "id": "ISSUE-001",
@@ -43,6 +82,13 @@
       "status": "SOLVED",
       "description": "Legacy Python client uses OpenAI SDK which conflicts with raw Gemini Proxy paths.",
       "resolution": "Implemented GoogleNativeClient in Rust with x-goog-api-key support."
+    },
+    {
+      "id": "ISSUE-002",
+      "title": "SQLite References in Documentation",
+      "status": "SOLVED",
+      "description": "Documentation mentioned SQLite for LTM storage but it was never implemented.",
+      "resolution": "Removed all SQLite references, unified to use Qdrant for all storage tiers."
     }
   ],
   "documentation_map": {
@@ -67,7 +113,11 @@
     "disaster_recovery": "./docs/ops/disaster_recovery.md",
     "supply_chain": "./docs/ops/supply_chain_security.md",
     "config_reference": "./docs/ops/config_reference.md",
+    "user_manual": "./docs/USER_MANUAL.md",
+    "k3s_deployment": "./docs/K3S_DEPLOYMENT.md",
+    "faq_system": "./docs/FAQ_SYSTEM.md",
+    "project_review": "./docs/PROJECT_REVIEW.md",
     "source_code_root": "./crates"
   },
-  "handover_note": "System is Production Ready (v0.2.0). All P0/P1 risks mitigated. Architecture is finalized."
+  "handover_note": "FAQ System Complete (v0.2.0+). All three core features implemented: Heat Tracking, Auto-Promotion, Wiki Export. 13 unit tests passing. Production ready with K3s auto-deployment support."
 }

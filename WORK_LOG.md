@@ -2,7 +2,7 @@
 
 **项目**: MemoryOS-Rust  
 **当前版本**: v0.2.0  
-**更新**: 2026-02-18 14:00
+**更新**: 2026-02-19 00:06
 
 ---
 
@@ -38,11 +38,35 @@
 
 ## 🚀 当前活跃任务
 
+### [Kiro AI] - FAQ 系统三大功能实现
+- **开始时间**: 2026-02-18 23:53
+- **预计完成**: 2026-02-19 01:00
+- **当前进度**: 100%
+- **状态**: ✅ 完成
+- **任务描述**: 实现 FAQ 热度追踪、自动提升、Wiki 导出三大核心功能
+- **相关文件**: 
+  - `crates/memoryos-core/src/faq/heat_tracker.rs` (热度追踪)
+  - `crates/memoryos-core/src/faq/auto_promoter.rs` (自动提升)
+  - `crates/memoryos-core/src/faq/wiki_exporter.rs` (Wiki 导出)
+  - `crates/memoryos-core/src/memory/mod.rs` (扩展 MidTermSegment)
+  - `crates/memoryos-adapters/src/memory/qdrant.rs` (Qdrant 集成)
+  - `crates/memoryos-gateway/src/routes/faq.rs` (FAQ 管理 API)
+- **完成内容**:
+  - ✅ 热度追踪 (3 个测试)
+  - ✅ 自动提升 (3 个测试)
+  - ✅ Wiki 导出 (4 个测试)
+  - ✅ 13 个单元测试全部通过
+  - ✅ 已推送到 GitHub (3 次提交)
+- **备注**: 从设计到实现约 1 小时，代码质量高
+
+---
+
+## 📅 历史任务
+
 ### [Delevan] - API Key 认证系统
 - **开始时间**: 2026-02-18 16:00
-- **预计完成**: 2026-02-18 17:00
-- **当前进度**: 90%
-- **状态**: 🟢 进行中
+- **完成时间**: 2026-02-18 17:00
+- **状态**: ✅ 完成
 - **任务描述**: 实现企业级 API Key 认证系统，支持 10万+ 用户
 - **相关文件**: 
   - `crates/memoryos-core/src/config.rs` (添加 AuthConfig)
