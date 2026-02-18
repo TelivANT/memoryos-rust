@@ -10,8 +10,8 @@ default_model = "gemini-3-pro-preview"
 
 [llm.providers.gemini]
 type = "gemini"
-api_key = "cpx_K2PYXQHpmu9hMdfFlNwrZ6dvWEFhbRae"
-base_url = "http://101.132.72.12:3000/gemini"
+api_key = "<YOUR_GEMINI_API_KEY>"
+base_url = "<YOUR_GEMINI_BASE_URL>"  # e.g., http://your-server:3000/gemini
 
 [storage.redis]
 url = "redis://127.0.0.1:6379"

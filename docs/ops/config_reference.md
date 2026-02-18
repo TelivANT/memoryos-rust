@@ -45,14 +45,14 @@ Define your backends here. Keys (e.g., `gemini_pro`, `local`) are user-defined i
 # Example 1: Google Gemini (Native Protocol)
 [llm.providers.gemini_pro]
 type = "gemini"  # native gemini protocol
-base_url = "http://101.132.72.12:3000/gemini"
+base_url = "<YOUR_GEMINI_BASE_URL>"  # e.g., http://your-server:3000/gemini
 api_key_env = "GEMINI_API_KEY" # Reads from env var
 max_retries = 3
 
 # Example 2: Custom OpenAI Proxy (e.g. "Goblin")
 [llm.providers.goblin]
 type = "openai"  # standard openai protocol
-base_url = "http://101.132.72.12:8000/openai/v1"
+base_url = "<YOUR_OPENAI_PROXY_URL>"  # e.g., http://your-server:8000/openai/v1
 api_key_env = "CODEX_API_KEY"
 
 # Example 3: Local Ollama
