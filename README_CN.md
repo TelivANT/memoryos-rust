@@ -181,6 +181,30 @@ graph TD
 
 **协作机制**: 我们使用 `WORK_LOG.md` (人类) + `docs/state.json` (AI) 双轨记录，确保团队协作透明高效。
 
+**详细指南**: [CONTRIBUTING.md](./CONTRIBUTING.md)
+
+---
+
+## 🔧 维护状态
+
+**当前状态**: ✅ 生产就绪 & 积极维护中
+
+本项目已**功能完整** (100%)，处于维护模式。我们专注于：
+- 🐛 Bug 修复和安全更新
+- 📚 文档改进
+- 💡 社区驱动的功能增强
+
+**详见**: [MAINTENANCE.md](./MAINTENANCE.md) 了解详细维护计划
+
+---
+
+## 📞 联系方式
+
+- **GitHub Issues**: [提交问题](https://github.com/TelivANT/memoryos-rust/issues)
+- **GitHub Discussions**: [参与讨论](https://github.com/TelivANT/memoryos-rust/discussions)
+- **邮箱**: 246803628+TelivANT@users.noreply.github.com
+- **安全问题**: 请发送邮件，主题标注 `[SECURITY]`
+
 ---
 
 ## 📄 许可

@@ -186,6 +186,28 @@ Contributions are welcome! Please follow this workflow:
 
 ---
 
+## 🔧 Maintenance Status
+
+**Current Status**: ✅ Production Ready & Actively Maintained
+
+This project is **feature-complete** (100%) and in maintenance mode. We focus on:
+- 🐛 Bug fixes and security updates
+- 📚 Documentation improvements
+- 💡 Community-driven enhancements
+
+**See**: [MAINTENANCE.md](./MAINTENANCE.md) for detailed maintenance plan
+
+---
+
+## 📞 Contact
+
+- **GitHub Issues**: [Report Issues](https://github.com/TelivANT/memoryos-rust/issues)
+- **GitHub Discussions**: [Join Discussions](https://github.com/TelivANT/memoryos-rust/discussions)
+- **Email**: 246803628+TelivANT@users.noreply.github.com
+- **Security Issues**: Please email with subject `[SECURITY]`
+
+---
+
 ## 📄 License
 
 Apache 2.0 License - See [LICENSE](./LICENSE)
