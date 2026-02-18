@@ -31,7 +31,8 @@ impl LlmAdapter for MistralAdapter {
             "max_tokens": request.max_tokens,
         });
 
-        let response = self.client
+        let response = self
+            .client
             .post(&url)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
@@ -40,10 +41,9 @@ impl LlmAdapter for MistralAdapter {
             .await
             .map_err(|e| AppError::ExternalService(format!("Mistral request failed: {}", e)))?;
 
-        let chat_response: ChatResponse = response
-            .json()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Mistral response parse failed: {}", e)))?;
+        let chat_response: ChatResponse = response.json().await.map_err(|e| {
+            AppError::ExternalService(format!("Mistral response parse failed: {}", e))
+        })?;
 
         Ok(chat_response)
     }
@@ -54,14 +54,18 @@ impl LlmAdapter for MistralAdapter {
             id: response.id,
             object: "chat.completion.chunk".to_string(),
             model: response.model,
-            choices: response.choices.into_iter().map(|c| memoryos_ports::ChatStreamChoice {
-                index: c.index,
-                delta: memoryos_ports::ChatDelta {
-                    role: Some(c.message.role),
-                    content: Some(c.message.content),
-                },
-                finish_reason: Some(c.finish_reason),
-            }).collect(),
+            choices: response
+                .choices
+                .into_iter()
+                .map(|c| memoryos_ports::ChatStreamChoice {
+                    index: c.index,
+                    delta: memoryos_ports::ChatDelta {
+                        role: Some(c.message.role),
+                        content: Some(c.message.content),
+                    },
+                    finish_reason: Some(c.finish_reason),
+                })
+                .collect(),
         }])
     }
 

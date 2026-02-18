@@ -47,10 +47,9 @@ impl LlmAdapter for DeepSeekAdapter {
             )));
         }
 
-        response
-            .json::<ChatResponse>()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Failed to parse DeepSeek response: {}", e)))
+        response.json::<ChatResponse>().await.map_err(|e| {
+            AppError::ExternalService(format!("Failed to parse DeepSeek response: {}", e))
+        })
     }
 
     async fn chat_stream(&self, request: ChatRequest) -> Result<Vec<ChatStreamChunk>, AppError> {
@@ -68,7 +67,9 @@ impl LlmAdapter for DeepSeekAdapter {
             .json(&stream_request)
             .send()
             .await
-            .map_err(|e| AppError::ExternalService(format!("DeepSeek stream request failed: {}", e)))?;
+            .map_err(|e| {
+                AppError::ExternalService(format!("DeepSeek stream request failed: {}", e))
+            })?;
 
         if !response.status().is_success() {
             let status = response.status();

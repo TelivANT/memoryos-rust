@@ -5,9 +5,9 @@ use memoryos_core::{AppError, LongTermMemory, MidTermSegment};
 use memoryos_ports::VectorStorage;
 use qdrant_client::{
     qdrant::{
-        point_id::PointIdOptions, value::Kind, vector_output, Condition, CreateCollectionBuilder, Distance, Filter,
-        GetPointsBuilder, PointId, PointStruct, SearchPointsBuilder, UpsertPointsBuilder,
-        VectorParamsBuilder, VectorsOutput, Value,
+        point_id::PointIdOptions, value::Kind, vector_output, Condition, CreateCollectionBuilder,
+        Distance, Filter, GetPointsBuilder, PointId, PointStruct, SearchPointsBuilder,
+        UpsertPointsBuilder, Value, VectorParamsBuilder, VectorsOutput,
     },
     Qdrant,
 };
@@ -37,7 +37,7 @@ impl QdrantStorage {
         storage.ensure_collections().await?;
         Ok(storage)
     }
-    
+
     /// 获取 Qdrant 客户端（用于 History Storage）
     pub fn client(&self) -> &Arc<Qdrant> {
         &self.client
@@ -45,11 +45,9 @@ impl QdrantStorage {
 
     async fn ensure_collections(&self) -> Result<(), AppError> {
         // 检查现有 collections
-        let collections = self
-            .client
-            .list_collections()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Failed to list Qdrant collections: {}", e)))?;
+        let collections = self.client.list_collections().await.map_err(|e| {
+            AppError::ExternalService(format!("Failed to list Qdrant collections: {}", e))
+        })?;
 
         let existing: std::collections::HashSet<_> = collections
             .collections
@@ -139,10 +137,7 @@ impl VectorStorage for QdrantStorage {
         query_embedding: Vec<f32>,
         limit: usize,
     ) -> Result<Vec<MidTermSegment>, AppError> {
-        let filter = Filter::must([Condition::matches(
-            "user_id",
-            user_id.to_string(),
-        )]);
+        let filter = Filter::must([Condition::matches("user_id", user_id.to_string())]);
 
         let search_result = self
             .client
@@ -170,7 +165,10 @@ impl VectorStorage for QdrantStorage {
                     .unwrap_or_else(chrono::Utc::now);
 
                 MidTermSegment {
-                    id: point.id.and_then(point_id_to_uuid).unwrap_or_else(uuid::Uuid::now_v7),
+                    id: point
+                        .id
+                        .and_then(point_id_to_uuid)
+                        .unwrap_or_else(uuid::Uuid::now_v7),
                     user_id: user_id.to_string(),
                     summary,
                     embedding: point.vectors.map(convert_vectors).unwrap_or_default(),
@@ -200,11 +198,13 @@ impl VectorStorage for QdrantStorage {
                         &self.longterm_collection,
                         vec![long_term_point_id(&memory.user_id).into()],
                     )
-                        .with_payload(true)
-                        .with_vectors(false),
+                    .with_payload(true)
+                    .with_vectors(false),
                 )
                 .await
-                .map_err(|e| AppError::ExternalService(format!("Qdrant get for fencing failed: {}", e)))?;
+                .map_err(|e| {
+                    AppError::ExternalService(format!("Qdrant get for fencing failed: {}", e))
+                })?;
 
             if let Some(point) = existing.result.first() {
                 let current = payload_u64(&point.payload, "lock_version").unwrap_or(0);
@@ -241,8 +241,9 @@ impl VectorStorage for QdrantStorage {
         payload.insert(
             "raw_json".to_string(),
             Value::from(
-                serde_json::to_string(&memory)
-                    .map_err(|e| AppError::Internal(format!("Failed to serialize memory: {}", e)))?,
+                serde_json::to_string(&memory).map_err(|e| {
+                    AppError::Internal(format!("Failed to serialize memory: {}", e))
+                })?,
             ),
         );
 
@@ -267,13 +268,17 @@ impl VectorStorage for QdrantStorage {
                     &self.longterm_collection,
                     vec![long_term_point_id(user_id).into()],
                 )
-                    .with_payload(true)
-                    .with_vectors(false),
+                .with_payload(true)
+                .with_vectors(false),
             )
             .await
             .map_err(|e| AppError::ExternalService(format!("Qdrant get failed: {}", e)))?;
 
-        debug!("Retrieved {} points for user: {}", points.result.len(), user_id);
+        debug!(
+            "Retrieved {} points for user: {}",
+            points.result.len(),
+            user_id
+        );
 
         let memory = points.result.first().and_then(|point| {
             let payload = &point.payload;
@@ -319,9 +324,11 @@ fn payload_u64(payload: &HashMap<String, Value>, key: &str) -> Option<u64> {
 fn convert_vectors(vectors: VectorsOutput) -> Vec<f32> {
     match vectors.get_vector() {
         Some(vector_output::Vector::Dense(v)) => v.data,
-        Some(vector_output::Vector::MultiDense(v)) => {
-            v.vectors.first().map(|first| first.data.clone()).unwrap_or_default()
-        }
+        Some(vector_output::Vector::MultiDense(v)) => v
+            .vectors
+            .first()
+            .map(|first| first.data.clone())
+            .unwrap_or_default(),
         Some(vector_output::Vector::Sparse(_)) => vec![],
         None => vec![],
     }

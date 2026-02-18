@@ -107,10 +107,9 @@ impl LlmAdapter for ClaudeAdapter {
             )));
         }
 
-        let claude_resp: ClaudeResponse = response
-            .json()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Failed to parse Claude response: {}", e)))?;
+        let claude_resp: ClaudeResponse = response.json().await.map_err(|e| {
+            AppError::ExternalService(format!("Failed to parse Claude response: {}", e))
+        })?;
 
         let content = claude_resp
             .content

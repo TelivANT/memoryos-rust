@@ -10,10 +10,10 @@ async fn qdrant_history_add_and_get() {
 
     let url = std::env::var("QDRANT_URL").unwrap();
     let client = qdrant_client::Qdrant::from_url(&url).build().unwrap();
-    let storage = super::QdrantHistoryStorage::new(
-        std::sync::Arc::new(client),
-        "test_history".to_string(),
-    ).await.unwrap();
+    let storage =
+        super::QdrantHistoryStorage::new(std::sync::Arc::new(client), "test_history".to_string())
+            .await
+            .unwrap();
 
     let entry = MemoryHistoryEntry {
         id: uuid::Uuid::now_v7().to_string(),
@@ -27,7 +27,7 @@ async fn qdrant_history_add_and_get() {
 
     storage.add_entry(entry.clone()).await.unwrap();
     let entries = storage.get_history("test_memory").await.unwrap();
-    
+
     assert!(!entries.is_empty());
     assert_eq!(entries[0].memory_id, "test_memory");
 }
@@ -46,7 +46,7 @@ fn history_entry_serialization() {
 
     let json = serde_json::to_string(&entry).unwrap();
     let deserialized: MemoryHistoryEntry = serde_json::from_str(&json).unwrap();
-    
+
     assert_eq!(entry.id, deserialized.id);
     assert_eq!(entry.memory_id, deserialized.memory_id);
 }

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 pub mod graph;
-pub use graph::{GraphEntity, GraphRelation, GraphManager};
+pub use graph::{GraphEntity, GraphManager, GraphRelation};
 
 /// 对话消息
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -32,6 +32,16 @@ pub struct MidTermSegment {
     pub embedding: Vec<f32>,
     pub heat: f32,
     pub created_at: chrono::DateTime<chrono::Utc>,
+    
+    // FAQ 热度追踪字段
+    #[serde(default)]
+    pub access_count: u32,
+    #[serde(default)]
+    pub heat_score: f32,
+    #[serde(default)]
+    pub last_accessed: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default)]
+    pub memory_type: MemoryType,
 }
 
 /// Long-term memory (用户画像、知识、图谱)
@@ -72,6 +82,27 @@ pub struct GraphMemory {
     /// 解析后的关系列表 (for retrieval)
     // pub relations: Vec<GraphRelation>, // Relation is now embedded in Entity in graph.rs
     pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// 记忆类型
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum MemoryType {
+    /// 普通问答
+    #[serde(rename = "qa")]
+    QA,
+    /// FAQ 候选
+    #[serde(rename = "faq_candidate")]
+    FaqCandidate,
+    /// 正式 FAQ
+    #[serde(rename = "faq")]
+    Faq,
+}
+
+impl Default for MemoryType {
+    fn default() -> Self {
+        Self::QA
+    }
 }
 
 /// Memory retrieval result

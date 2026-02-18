@@ -26,7 +26,7 @@ impl OpenAiAdapter {
 impl LlmAdapter for OpenAiAdapter {
     async fn chat(&self, request: ChatRequest) -> Result<ChatResponse, AppError> {
         let url = format!("{}/chat/completions", self.base_url);
-        
+
         debug!("Calling OpenAI API: {}", url);
 
         let response = self
@@ -48,15 +48,14 @@ impl LlmAdapter for OpenAiAdapter {
             )));
         }
 
-        response
-            .json::<ChatResponse>()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Failed to parse OpenAI response: {}", e)))
+        response.json::<ChatResponse>().await.map_err(|e| {
+            AppError::ExternalService(format!("Failed to parse OpenAI response: {}", e))
+        })
     }
 
     async fn chat_stream(&self, request: ChatRequest) -> Result<Vec<ChatStreamChunk>, AppError> {
         let url = format!("{}/chat/completions", self.base_url);
-        
+
         debug!("Calling OpenAI API (stream)");
 
         let mut stream_request = request;
@@ -70,7 +69,9 @@ impl LlmAdapter for OpenAiAdapter {
             .json(&stream_request)
             .send()
             .await
-            .map_err(|e| AppError::ExternalService(format!("OpenAI stream request failed: {}", e)))?;
+            .map_err(|e| {
+                AppError::ExternalService(format!("OpenAI stream request failed: {}", e))
+            })?;
 
         if !response.status().is_success() {
             let status = response.status();

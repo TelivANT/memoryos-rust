@@ -60,7 +60,7 @@ struct GeminiCandidate {
     finish_reason: Option<String>,
 }
 
-    #[async_trait]
+#[async_trait]
 impl LlmAdapter for GeminiAdapter {
     async fn chat(&self, request: ChatRequest) -> Result<ChatResponse, AppError> {
         let model = request.model.clone();
@@ -94,10 +94,7 @@ impl LlmAdapter for GeminiAdapter {
             contents,
         };
 
-        let url = format!(
-            "{}/v1beta/models/{}:generateContent",
-            self.base_url, model
-        );
+        let url = format!("{}/v1beta/models/{}:generateContent", self.base_url, model);
         debug!("Calling Gemini API endpoint");
 
         let response = self
@@ -119,10 +116,9 @@ impl LlmAdapter for GeminiAdapter {
             )));
         }
 
-        let gemini_resp: GeminiResponse = response
-            .json()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Failed to parse Gemini response: {}", e)))?;
+        let gemini_resp: GeminiResponse = response.json().await.map_err(|e| {
+            AppError::ExternalService(format!("Failed to parse Gemini response: {}", e))
+        })?;
 
         // 转换为 OpenAI 格式
         let content = gemini_resp

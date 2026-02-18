@@ -8,7 +8,10 @@ use memoryos_core::{AppError, HealthStatus};
 use serde::{Deserialize, Serialize};
 
 pub use history::HistoryStorage;
-pub use llm::{ChatDelta, ChatMessage, ChatRequest, ChatResponse, ChatStreamChunk, ChatStreamChoice, LlmAdapter};
+pub use llm::{
+    ChatDelta, ChatMessage, ChatRequest, ChatResponse, ChatStreamChoice, ChatStreamChunk,
+    LlmAdapter,
+};
 pub use memory::{ConcurrencyControl, MemoryManager, ShortTermStorage, VectorStorage};
 pub use wiki::{WikiAdapter, WikiDocument};
 
@@ -31,13 +34,23 @@ pub struct NormalizedResponse {
 
 #[async_trait]
 pub trait UpstreamClient: Send + Sync {
-    async fn send_request(&self, request: NormalizedRequest) -> Result<NormalizedResponse, AppError>;
-    async fn stream_response(&self, request: NormalizedRequest) -> Result<Vec<NormalizedResponse>, AppError>;
+    async fn send_request(
+        &self,
+        request: NormalizedRequest,
+    ) -> Result<NormalizedResponse, AppError>;
+    async fn stream_response(
+        &self,
+        request: NormalizedRequest,
+    ) -> Result<Vec<NormalizedResponse>, AppError>;
 }
 
 #[async_trait]
 pub trait EventBus: Send + Sync {
-    async fn publish_chat_log(&self, event_id: &str, payload: serde_json::Value) -> Result<(), AppError>;
+    async fn publish_chat_log(
+        &self,
+        event_id: &str,
+        payload: serde_json::Value,
+    ) -> Result<(), AppError>;
 }
 
 #[async_trait]

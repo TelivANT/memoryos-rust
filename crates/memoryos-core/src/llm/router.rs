@@ -1,6 +1,6 @@
+use crate::AppError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use crate::AppError;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum RouteTier {
@@ -72,7 +72,11 @@ impl TieredRouter {
     fn select_local_backend(&self) -> String {
         // Simple Round-Robin (Placeholder)
         // In prod, use AtomicUsize counter
-        self.config.local_backends.first().cloned().unwrap_or_default()
+        self.config
+            .local_backends
+            .first()
+            .cloned()
+            .unwrap_or_default()
     }
 }
 
@@ -120,7 +124,10 @@ impl ModelRouter for TieredRouter {
                 tier: RouteTier::Local,
                 endpoint: Some(self.select_local_backend()),
                 model: "local-llama".to_string(), // Should come from config
-                reason: format!("Hotspot Match ({:.2}) + Simple Query", ctx.global_similarity),
+                reason: format!(
+                    "Hotspot Match ({:.2}) + Simple Query",
+                    ctx.global_similarity
+                ),
                 direct_response: None,
             });
         }

@@ -1,5 +1,5 @@
-use async_trait::async_trait;
 use crate::AppError;
+use async_trait::async_trait;
 
 #[derive(Debug, Clone)]
 pub struct ChatMessage {
@@ -21,7 +21,11 @@ pub struct InjectionStats {
 
 #[async_trait]
 pub trait ContextInjector: Send + Sync {
-    async fn inject(&self, request: &mut ChatRequest, user_id: &str) -> Result<InjectionStats, AppError>;
+    async fn inject(
+        &self,
+        request: &mut ChatRequest,
+        user_id: &str,
+    ) -> Result<InjectionStats, AppError>;
 }
 
 /// Minimal placeholder injector.
@@ -38,7 +42,11 @@ impl StandardInjector {
 
 #[async_trait]
 impl ContextInjector for StandardInjector {
-    async fn inject(&self, _request: &mut ChatRequest, _user_id: &str) -> Result<InjectionStats, AppError> {
+    async fn inject(
+        &self,
+        _request: &mut ChatRequest,
+        _user_id: &str,
+    ) -> Result<InjectionStats, AppError> {
         Ok(InjectionStats {
             stm_count: 0,
             mtm_count: 0,

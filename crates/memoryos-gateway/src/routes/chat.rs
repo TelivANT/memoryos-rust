@@ -2,11 +2,11 @@ use axum::{
     extract::State,
     response::{IntoResponse, Json, Response},
 };
-use memoryos_core::{AppError, llm::RouterContext};
+use memoryos_core::{llm::RouterContext, AppError};
 use memoryos_ports::ChatRequest;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::info;
-use serde::{Serialize, Deserialize};
 
 use crate::routes::apply_degraded_header;
 use crate::AppState;
@@ -47,17 +47,22 @@ pub async fn chat_completions(
     );
 
     // 简化：构造路由上下文
-    let query = request.messages.last()
+    let query = request
+        .messages
+        .last()
         .map(|m| m.content.clone())
         .unwrap_or_default();
-    
-    let decision = state.router.route(&RouterContext {
-        query: query.clone(),
-        token_count: query.len() / 4, // 粗略估算
-        global_similarity: 0.0,
-        is_faq_match: false,
-        has_sensitive_keywords: false,
-    }).await?;
+
+    let decision = state
+        .router
+        .route(&RouterContext {
+            query: query.clone(),
+            token_count: query.len() / 4, // 粗略估算
+            global_similarity: 0.0,
+            is_faq_match: false,
+            has_sensitive_keywords: false,
+        })
+        .await?;
 
     let response = ChatCompletionResponse {
         id: format!("chatcmpl-{}", uuid::Uuid::now_v7()),

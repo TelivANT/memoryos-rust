@@ -3,8 +3,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use memoryos_adapters::{
-    AzureOpenAiAdapter, ClaudeAdapter, DeepSeekAdapter, DefaultMemoryManager, GeminiAdapter, OllamaAdapter,
-    OpenAiAdapter, OpenRouterAdapter, QdrantStorage, RedisStorage,
+    AzureOpenAiAdapter, ClaudeAdapter, DeepSeekAdapter, DefaultMemoryManager, GeminiAdapter,
+    OllamaAdapter, OpenAiAdapter, OpenRouterAdapter, QdrantStorage, RedisStorage,
 };
 use memoryos_core::{AppConfig, AppError, Message};
 use memoryos_ports::{LlmAdapter, MemoryManager};
@@ -47,7 +47,10 @@ struct WorkerEvent {
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
-    tracing_subscriber::fmt().json().with_current_span(false).init();
+    tracing_subscriber::fmt()
+        .json()
+        .with_current_span(false)
+        .init();
 
     let app_config = AppConfig::load()?;
     app_config.validate()?;
@@ -69,15 +72,17 @@ async fn main() -> Result<(), AppError> {
         app_config.storage.redis.max_messages,
     )?);
     let qdrant_storage = Arc::new(QdrantStorage::new(&app_config.storage.vector.url).await?);
-    let memory_manager: Arc<dyn MemoryManager> = Arc::new(DefaultMemoryManager::new_with_coordinator(
-        redis_storage.clone(),
-        qdrant_storage,
-        llm,
-        redis_storage,
-    ));
+    let memory_manager: Arc<dyn MemoryManager> =
+        Arc::new(DefaultMemoryManager::new_with_coordinator(
+            redis_storage.clone(),
+            qdrant_storage,
+            llm,
+            redis_storage,
+        ));
 
-    let stream_client = Client::open(app_config.storage.redis.url.as_str())
-        .map_err(|e| AppError::Config(format!("Failed to connect to Redis stream client: {}", e)))?;
+    let stream_client = Client::open(app_config.storage.redis.url.as_str()).map_err(|e| {
+        AppError::Config(format!("Failed to connect to Redis stream client: {}", e))
+    })?;
     ensure_consumer_group(&stream_client, &worker_cfg).await?;
 
     loop {
@@ -89,7 +94,8 @@ async fn main() -> Result<(), AppError> {
 }
 
 fn load_worker_runtime_config() -> WorkerRuntimeConfig {
-    let stream_key = std::env::var(ENV_STREAM_KEY).unwrap_or_else(|_| DEFAULT_STREAM_KEY.to_string());
+    let stream_key =
+        std::env::var(ENV_STREAM_KEY).unwrap_or_else(|_| DEFAULT_STREAM_KEY.to_string());
     let group = std::env::var(ENV_GROUP).unwrap_or_else(|_| DEFAULT_GROUP.to_string());
     let consumer = std::env::var(ENV_CONSUMER).unwrap_or_else(|_| {
         format!(
@@ -121,8 +127,12 @@ fn load_worker_runtime_config() -> WorkerRuntimeConfig {
 fn build_llm_adapter(config: &AppConfig) -> Result<Arc<dyn LlmAdapter>, AppError> {
     // Select the default provider
     let provider_name = &config.llm.default_provider;
-    let provider_cfg = config.llm.providers.get(provider_name)
-        .ok_or_else(|| AppError::Config(format!("Default provider '{}' not configured", provider_name)))?;
+    let provider_cfg = config.llm.providers.get(provider_name).ok_or_else(|| {
+        AppError::Config(format!(
+            "Default provider '{}' not configured",
+            provider_name
+        ))
+    })?;
 
     let api_key = provider_cfg.resolve_api_key();
     let base_url = provider_cfg.base_url.clone();
@@ -135,7 +145,12 @@ fn build_llm_adapter(config: &AppConfig) -> Result<Arc<dyn LlmAdapter>, AppError
         "deepseek" => Arc::new(DeepSeekAdapter::new(api_key, base_url)),
         "openrouter" => Arc::new(OpenRouterAdapter::new(api_key, base_url)),
         "azure-openai" => Arc::new(AzureOpenAiAdapter::new(api_key, base_url)),
-        p => return Err(AppError::Config(format!("Unsupported provider type '{}'", p))),
+        p => {
+            return Err(AppError::Config(format!(
+                "Unsupported provider type '{}'",
+                p
+            )))
+        }
     };
     Ok(adapter)
 }
@@ -211,8 +226,9 @@ async fn handle_stream_entry<C: AsyncCommands + Send + Sync>(
     memory_manager: Arc<dyn MemoryManager>,
     stream_id: StreamId,
 ) -> Result<(), AppError> {
-    let event = parse_worker_event(&stream_id)
-        .map_err(|e| AppError::BadRequest(format!("invalid stream event {}: {}", stream_id.id, e)))?;
+    let event = parse_worker_event(&stream_id).map_err(|e| {
+        AppError::BadRequest(format!("invalid stream event {}: {}", stream_id.id, e))
+    })?;
     let event_id = event
         .event_id
         .clone()

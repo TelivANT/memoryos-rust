@@ -3,19 +3,28 @@ use memoryos_ports::LlmAdapter;
 
 #[test]
 fn openai_adapter_has_correct_name() {
-    let adapter = OpenAiAdapter::new("test-key".to_string(), "https://api.openai.com/v1".to_string());
+    let adapter = OpenAiAdapter::new(
+        "test-key".to_string(),
+        "https://api.openai.com/v1".to_string(),
+    );
     assert_eq!(adapter.name(), "openai");
 }
 
 #[test]
 fn gemini_adapter_has_correct_name() {
-    let adapter = GeminiAdapter::new("test-key".to_string(), "https://generativelanguage.googleapis.com/v1beta".to_string());
+    let adapter = GeminiAdapter::new(
+        "test-key".to_string(),
+        "https://generativelanguage.googleapis.com/v1beta".to_string(),
+    );
     assert_eq!(adapter.name(), "gemini");
 }
 
 #[test]
 fn claude_adapter_has_correct_name() {
-    let adapter = ClaudeAdapter::new("test-key".to_string(), "https://api.anthropic.com/v1".to_string());
+    let adapter = ClaudeAdapter::new(
+        "test-key".to_string(),
+        "https://api.anthropic.com/v1".to_string(),
+    );
     assert_eq!(adapter.name(), "claude");
 }
 
@@ -27,13 +36,19 @@ fn ollama_adapter_has_correct_name() {
 
 #[test]
 fn deepseek_adapter_has_correct_name() {
-    let adapter = DeepSeekAdapter::new("test-key".to_string(), "https://api.deepseek.com/v1".to_string());
+    let adapter = DeepSeekAdapter::new(
+        "test-key".to_string(),
+        "https://api.deepseek.com/v1".to_string(),
+    );
     assert_eq!(adapter.name(), "deepseek");
 }
 
 #[test]
 fn openrouter_adapter_has_correct_name() {
-    let adapter = OpenRouterAdapter::new("test-key".to_string(), "https://openrouter.ai/api/v1".to_string());
+    let adapter = OpenRouterAdapter::new(
+        "test-key".to_string(),
+        "https://openrouter.ai/api/v1".to_string(),
+    );
     assert_eq!(adapter.name(), "openrouter");
 }
 
@@ -48,18 +63,27 @@ fn azure_adapter_has_correct_name() {
 
 #[test]
 fn groq_adapter_has_correct_name() {
-    let adapter = GroqAdapter::new("test-key".to_string(), "https://api.groq.com/openai/v1".to_string());
+    let adapter = GroqAdapter::new(
+        "test-key".to_string(),
+        "https://api.groq.com/openai/v1".to_string(),
+    );
     assert_eq!(adapter.name(), "groq");
 }
 
 #[test]
 fn cohere_adapter_has_correct_name() {
-    let adapter = CohereAdapter::new("test-key".to_string(), "https://api.cohere.ai/v1".to_string());
+    let adapter = CohereAdapter::new(
+        "test-key".to_string(),
+        "https://api.cohere.ai/v1".to_string(),
+    );
     assert_eq!(adapter.name(), "cohere");
 }
 
 #[test]
 fn mistral_adapter_has_correct_name() {
-    let adapter = MistralAdapter::new("test-key".to_string(), "https://api.mistral.ai/v1".to_string());
+    let adapter = MistralAdapter::new(
+        "test-key".to_string(),
+        "https://api.mistral.ai/v1".to_string(),
+    );
     assert_eq!(adapter.name(), "mistral");
 }

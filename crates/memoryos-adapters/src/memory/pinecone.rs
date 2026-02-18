@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use memoryos_core::{AppError, MidTermSegment, LongTermMemory};
+use memoryos_core::{AppError, LongTermMemory, MidTermSegment};
 use memoryos_ports::VectorStorage;
 use reqwest::Client;
 use serde_json::json;
@@ -28,7 +28,12 @@ impl VectorStorage for PineconeStorage {
         Ok(())
     }
 
-    async fn search_segments(&self, _user_id: &str, _query_embedding: Vec<f32>, _limit: usize) -> Result<Vec<MidTermSegment>, AppError> {
+    async fn search_segments(
+        &self,
+        _user_id: &str,
+        _query_embedding: Vec<f32>,
+        _limit: usize,
+    ) -> Result<Vec<MidTermSegment>, AppError> {
         Ok(vec![])
     }
 

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 
-use crate::{AppState, auth::ApiKeyMetadata};
+use crate::{auth::ApiKeyMetadata, AppState};
 use memoryos_core::AppError;
 
 #[derive(Deserialize)]
@@ -45,12 +45,15 @@ pub async fn create_api_key(
         is_active: true,
     };
 
-    store.create_key(&req.api_key, metadata).await.map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": e.to_string()})),
-        )
-    })?;
+    store
+        .create_key(&req.api_key, metadata)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": e.to_string()})),
+            )
+        })?;
 
     Ok(Json(CreateKeyResponse {
         api_key: req.api_key,

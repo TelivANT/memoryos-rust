@@ -2,16 +2,16 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use memoryos_core::{ConfigManager, AppError};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use memoryos_core::{AppError, ConfigManager};
 use std::{net::SocketAddr, sync::Arc};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+mod auth;
 mod handlers;
 mod middleware;
 mod routes;
 mod state;
 mod worker_monitor;
-mod auth;
 
 use handlers::{chat_completions, health_check, health_status};
 use state::AppState;
@@ -31,7 +31,12 @@ async fn main() -> Result<(), AppError> {
     let mut config_manager = ConfigManager::new()?;
     let config = config_manager.get();
     let async_memory_enabled = std::env::var("MEMORYOS_ASYNC_MEMORY_PIPELINE")
-        .map(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on"))
+        .map(|v| {
+            matches!(
+                v.trim().to_ascii_lowercase().as_str(),
+                "1" | "true" | "yes" | "on"
+            )
+        })
         .unwrap_or(false);
 
     // 3. Init App State (Connect to DBs)
@@ -41,7 +46,10 @@ async fn main() -> Result<(), AppError> {
         tracing::info!(
             "Gateway async memory pipeline is enabled; deploy worker as optional consumer for queued memory tasks."
         );
-        spawn_worker_monitor(config.storage.redis.url.clone(), state.worker_monitor.clone());
+        spawn_worker_monitor(
+            config.storage.redis.url.clone(),
+            state.worker_monitor.clone(),
+        );
     } else {
         tracing::info!(
             "Gateway running in standalone sync-memory mode; worker deployment is optional and not required."
@@ -50,7 +58,12 @@ async fn main() -> Result<(), AppError> {
 
     // 4. Spawn config hot-reload task
     let config_reload_enabled = std::env::var("MEMORYOS_CONFIG_HOT_RELOAD")
-        .map(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on"))
+        .map(|v| {
+            matches!(
+                v.trim().to_ascii_lowercase().as_str(),
+                "1" | "true" | "yes" | "on"
+            )
+        })
         .unwrap_or(true); // 默认启用
 
     if config_reload_enabled {
@@ -70,18 +83,24 @@ async fn main() -> Result<(), AppError> {
 
     // 5. Setup Router
     let state_arc = Arc::new(state.clone());
-    
+
     // 需要认证的路由
     let protected_routes = Router::new()
         .route("/v1/chat/completions", post(chat_completions))
         .route("/v1/memory/add", post(routes::memory::add_message))
-        .route("/v1/memory/retrieve", post(routes::memory::retrieve_context))
-        .route("/v1/memory/:memory_id/history", get(routes::history::get_memory_history))
+        .route(
+            "/v1/memory/retrieve",
+            post(routes::memory::retrieve_context),
+        )
+        .route(
+            "/v1/memory/:memory_id/history",
+            get(routes::history::get_memory_history),
+        )
         .layer(axum::middleware::from_fn_with_state(
             state_arc.clone(),
             middleware::auth_middleware,
         ));
-    
+
     // 公开路由（健康检查不需要认证）
     let app = Router::new()
         .route("/health", get(health_check))
@@ -98,11 +117,13 @@ async fn main() -> Result<(), AppError> {
     // 6. Start Server
     let addr = SocketAddr::from(([0, 0, 0, 0], config.server.port));
     tracing::info!("MemoryOS Gateway listening on {}", addr);
-    
-    let listener = tokio::net::TcpListener::bind(addr).await
+
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
         .map_err(|e| AppError::Internal(format!("Failed to bind port: {}", e)))?;
-        
-    axum::serve(listener, app).await
+
+    axum::serve(listener, app)
+        .await
         .map_err(|e| AppError::Internal(format!("Server error: {}", e)))?;
 
     Ok(())

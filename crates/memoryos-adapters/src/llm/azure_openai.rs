@@ -45,7 +45,9 @@ impl LlmAdapter for AzureOpenAiAdapter {
             .json(&request)
             .send()
             .await
-            .map_err(|e| AppError::ExternalService(format!("Azure OpenAI request failed: {}", e)))?;
+            .map_err(|e| {
+                AppError::ExternalService(format!("Azure OpenAI request failed: {}", e))
+            })?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -56,10 +58,9 @@ impl LlmAdapter for AzureOpenAiAdapter {
             )));
         }
 
-        response
-            .json::<ChatResponse>()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Failed to parse Azure OpenAI response: {}", e)))
+        response.json::<ChatResponse>().await.map_err(|e| {
+            AppError::ExternalService(format!("Failed to parse Azure OpenAI response: {}", e))
+        })
     }
 
     async fn chat_stream(&self, request: ChatRequest) -> Result<Vec<ChatStreamChunk>, AppError> {
@@ -77,7 +78,9 @@ impl LlmAdapter for AzureOpenAiAdapter {
             .json(&stream_request)
             .send()
             .await
-            .map_err(|e| AppError::ExternalService(format!("Azure OpenAI stream request failed: {}", e)))?;
+            .map_err(|e| {
+                AppError::ExternalService(format!("Azure OpenAI stream request failed: {}", e))
+            })?;
 
         if !response.status().is_success() {
             let status = response.status();

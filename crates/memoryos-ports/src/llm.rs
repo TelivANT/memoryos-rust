@@ -74,7 +74,7 @@ pub struct ChatDelta {
 pub trait LlmAdapter: Send + Sync {
     /// 发送聊天请求，返回 OpenAI 格式响应
     async fn chat(&self, request: ChatRequest) -> Result<ChatResponse, AppError>;
-    
+
     /// 流式聊天请求，返回 SSE 流
     async fn chat_stream(&self, _request: ChatRequest) -> Result<Vec<ChatStreamChunk>, AppError> {
         // 默认实现：不支持流式
@@ -83,7 +83,7 @@ pub trait LlmAdapter: Send + Sync {
             self.name()
         )))
     }
-    
+
     /// 获取 Adapter 名称（用于日志和监控）
     fn name(&self) -> &str;
 }

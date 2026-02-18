@@ -10,8 +10,9 @@ pub struct RedisStreamEventBus {
 
 impl RedisStreamEventBus {
     pub fn new(redis_url: &str, stream_key: &str) -> Result<Self, AppError> {
-        let client = Client::open(redis_url)
-            .map_err(|e| AppError::Config(format!("Failed to create Redis stream client: {}", e)))?;
+        let client = Client::open(redis_url).map_err(|e| {
+            AppError::Config(format!("Failed to create Redis stream client: {}", e))
+        })?;
         Ok(Self {
             client,
             stream_key: stream_key.to_string(),
@@ -21,7 +22,11 @@ impl RedisStreamEventBus {
 
 #[async_trait]
 impl EventBus for RedisStreamEventBus {
-    async fn publish_chat_log(&self, event_id: &str, payload: serde_json::Value) -> Result<(), AppError> {
+    async fn publish_chat_log(
+        &self,
+        event_id: &str,
+        payload: serde_json::Value,
+    ) -> Result<(), AppError> {
         let payload_str = serde_json::to_string(&payload)
             .map_err(|e| AppError::Internal(format!("Failed to serialize event payload: {}", e)))?;
 

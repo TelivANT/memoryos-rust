@@ -44,10 +44,9 @@ impl LlmAdapter for OllamaAdapter {
             )));
         }
 
-        response
-            .json::<ChatResponse>()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Failed to parse Ollama response: {}", e)))
+        response.json::<ChatResponse>().await.map_err(|e| {
+            AppError::ExternalService(format!("Failed to parse Ollama response: {}", e))
+        })
     }
 
     fn name(&self) -> &str {

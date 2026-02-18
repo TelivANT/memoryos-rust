@@ -1,5 +1,7 @@
-pub mod router;
 pub mod context;
+pub mod router;
 
-pub use router::{ModelRouter, RouterConfig, TieredRouter, RouteDecision, RouteTier, RouterContext};
-pub use context::{ContextInjector, StandardInjector, InjectionStats};
+pub use context::{ContextInjector, InjectionStats, StandardInjector};
+pub use router::{
+    ModelRouter, RouteDecision, RouteTier, RouterConfig, RouterContext, TieredRouter,
+};

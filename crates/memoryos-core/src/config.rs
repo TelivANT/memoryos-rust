@@ -1,7 +1,7 @@
 //! Configuration management with hot-reload support
 
-use arc_swap::ArcSwap;
 use crate::error::{AppError, Result};
+use arc_swap::ArcSwap;
 use serde::Deserialize;
 use std::{
     collections::HashMap,
@@ -35,7 +35,7 @@ pub struct AuthConfig {
     pub api_keys: Vec<String>,
     /// 使用 Qdrant 存储 API Keys（大规模场景，持久化）
     #[serde(default)]
-    pub use_redis_store: bool,  // 名字保留兼容性，实际用 Qdrant
+    pub use_redis_store: bool, // 名字保留兼容性，实际用 Qdrant
 }
 
 impl Default for AuthConfig {
@@ -135,36 +135,61 @@ impl Default for RouterConfig {
     }
 }
 
-fn default_worker_threads() -> usize { num_cpus::get() }
-fn default_timeout() -> u64 { 60 }
-fn default_model() -> String { "gpt-4o-mini".to_string() }
-fn default_redis_ttl() -> usize { 3600 }
-fn default_max_messages() -> usize { 20 }
-fn default_true() -> bool { true }
-fn default_hot_threshold() -> f32 { 0.85 }
-fn default_max_local_tokens() -> usize { 2000 }
-fn default_sensitive_keywords() -> Vec<String> { vec!["confidential".to_string()] }
+fn default_worker_threads() -> usize {
+    num_cpus::get()
+}
+fn default_timeout() -> u64 {
+    60
+}
+fn default_model() -> String {
+    "gpt-4o-mini".to_string()
+}
+fn default_redis_ttl() -> usize {
+    3600
+}
+fn default_max_messages() -> usize {
+    20
+}
+fn default_true() -> bool {
+    true
+}
+fn default_hot_threshold() -> f32 {
+    0.85
+}
+fn default_max_local_tokens() -> usize {
+    2000
+}
+fn default_sensitive_keywords() -> Vec<String> {
+    vec!["confidential".to_string()]
+}
 
 impl AppConfig {
     pub fn load() -> Result<Self> {
-        let config_path = std::env::var("MEMORYOS_CONFIG")
-            .unwrap_or_else(|_| "config.toml".to_string());
+        let config_path =
+            std::env::var("MEMORYOS_CONFIG").unwrap_or_else(|_| "config.toml".to_string());
 
         let builder = config::Config::builder()
             .add_source(config::File::with_name(&config_path).required(false))
             .add_source(config::Environment::with_prefix("MEMORYOS").separator("__"));
 
-        let config = builder.build()
+        let config = builder
+            .build()
             .map_err(|e| AppError::Config(format!("Failed to load config: {}", e)))?;
 
-        config.try_deserialize()
+        config
+            .try_deserialize()
             .map_err(|e| AppError::Config(format!("Invalid config: {}", e)))
     }
 
     pub fn validate(&self) -> Result<()> {
-        if self.server.port == 0 { return Err(AppError::Config("Invalid port".into())); }
+        if self.server.port == 0 {
+            return Err(AppError::Config("Invalid port".into()));
+        }
         if !self.llm.providers.contains_key(&self.llm.default_provider) {
-             return Err(AppError::Config(format!("Default provider '{}' missing", self.llm.default_provider)));
+            return Err(AppError::Config(format!(
+                "Default provider '{}' missing",
+                self.llm.default_provider
+            )));
         }
         Ok(())
     }
@@ -178,13 +203,15 @@ pub struct ConfigManager {
 
 impl ConfigManager {
     pub fn new() -> Result<Self> {
-        let config_path = std::env::var("MEMORYOS_CONFIG")
-            .unwrap_or_else(|_| "config.toml".to_string());
+        let config_path =
+            std::env::var("MEMORYOS_CONFIG").unwrap_or_else(|_| "config.toml".to_string());
         let initial = Arc::new(AppConfig::load()?);
         initial.validate()?;
-        
+
         let path = PathBuf::from(config_path);
-        let modified = std::fs::metadata(&path).ok().and_then(|m| m.modified().ok());
+        let modified = std::fs::metadata(&path)
+            .ok()
+            .and_then(|m| m.modified().ok());
 
         Ok(Self {
             config: ArcSwap::from(initial),

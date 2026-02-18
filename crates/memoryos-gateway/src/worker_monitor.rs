@@ -125,7 +125,11 @@ pub fn spawn_worker_monitor(redis_url: String, status: Arc<RwLock<WorkerMonitorS
     });
 }
 
-async fn check_group_consumers(client: &Client, stream_key: &str, group: &str) -> Result<usize, String> {
+async fn check_group_consumers(
+    client: &Client,
+    stream_key: &str,
+    group: &str,
+) -> Result<usize, String> {
     let mut conn = client
         .get_multiplexed_async_connection()
         .await
@@ -175,7 +179,10 @@ async fn count_active_consumers(
 
     let active = consumers
         .iter()
-        .filter(|entry| read_usize_field(entry, "pending").unwrap_or(0) > 0 || read_usize_field(entry, "idle").unwrap_or(usize::MAX) < 120_000)
+        .filter(|entry| {
+            read_usize_field(entry, "pending").unwrap_or(0) > 0
+                || read_usize_field(entry, "idle").unwrap_or(usize::MAX) < 120_000
+        })
         .count();
 
     Ok(active)

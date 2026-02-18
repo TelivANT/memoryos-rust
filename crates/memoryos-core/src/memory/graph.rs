@@ -1,17 +1,17 @@
-use serde::{Deserialize, Serialize};
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraphEntity {
-    pub id: String, // Normalized ID (e.g., "apple_inc")
+    pub id: String,    // Normalized ID (e.g., "apple_inc")
     pub label: String, // Display Name (e.g., "Apple Inc.")
     pub relations: Vec<GraphRelation>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraphRelation {
-    pub predicate: String, // e.g., "manufactures"
-    pub target_id: String, // e.g., "iphone"
+    pub predicate: String,    // e.g., "manufactures"
+    pub target_id: String,    // e.g., "iphone"
     pub target_label: String, // e.g., "iPhone"
 }
 
@@ -22,7 +22,7 @@ pub struct GraphManager {
 
 impl GraphManager {
     pub fn new() -> Self {
-        Self { 
+        Self {
             // Matches: A[Label]
             node_regex: Regex::new(r"([a-zA-Z0-9_]+)\[(.*?)\]").unwrap(),
             // Matches: A -->|Predicate| B
@@ -52,7 +52,8 @@ impl GraphManager {
             let target_id = caps[3].to_string();
 
             // Get target label first (before mutable borrow)
-            let target_label = entities.get(&target_id)
+            let target_label = entities
+                .get(&target_id)
                 .map(|e| e.label.clone())
                 .unwrap_or_else(|| target_id.clone());
 
@@ -76,15 +77,15 @@ impl GraphManager {
     /// Convert structured Entities back to Mermaid
     pub fn to_mermaid(&self, entities: &[GraphEntity]) -> String {
         let mut mermaid = String::from("graph TD\n");
-        
+
         for entity in entities {
             // Node definition: A[Label]
             mermaid.push_str(&format!("    {}[{}]\n", entity.id, entity.label));
-            
+
             for rel in &entity.relations {
                 // Edge definition: A -->|Rel| B
                 mermaid.push_str(&format!(
-                    "    {} -->|{}| {}({})\n", 
+                    "    {} -->|{}| {}({})\n",
                     entity.id, rel.predicate, rel.target_id, rel.target_label
                 ));
             }
@@ -92,4 +93,3 @@ impl GraphManager {
         mermaid
     }
 }
-

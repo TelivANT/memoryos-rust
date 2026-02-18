@@ -98,7 +98,9 @@ fn looks_like_email(token: &str) -> bool {
     if !token.contains('@') || !token.contains('.') {
         return false;
     }
-    let cleaned = token.trim_matches(|c: char| !c.is_ascii_alphanumeric() && c != '@' && c != '.' && c != '_' && c != '-' && c != '+');
+    let cleaned = token.trim_matches(|c: char| {
+        !c.is_ascii_alphanumeric() && c != '@' && c != '.' && c != '_' && c != '-' && c != '+'
+    });
     let parts: Vec<&str> = cleaned.split('@').collect();
     if parts.len() != 2 {
         return false;

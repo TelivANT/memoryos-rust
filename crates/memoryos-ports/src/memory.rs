@@ -1,17 +1,17 @@
 //! Memory Storage Port
 
 use async_trait::async_trait;
-use memoryos_core::{AppError, Message, MemoryContext, MidTermSegment, LongTermMemory};
+use memoryos_core::{AppError, LongTermMemory, MemoryContext, Message, MidTermSegment};
 
 /// Short-term memory storage (Redis)
 #[async_trait]
 pub trait ShortTermStorage: Send + Sync {
     /// 添加消息到 short-term memory
     async fn add_message(&self, user_id: &str, message: Message) -> Result<(), AppError>;
-    
+
     /// 获取最近 N 条消息
     async fn get_recent(&self, user_id: &str, limit: usize) -> Result<Vec<Message>, AppError>;
-    
+
     /// 清空用户的 short-term memory
     async fn clear(&self, user_id: &str) -> Result<(), AppError>;
 }
@@ -21,7 +21,7 @@ pub trait ShortTermStorage: Send + Sync {
 pub trait VectorStorage: Send + Sync {
     /// 存储 mid-term segment
     async fn store_segment(&self, segment: MidTermSegment) -> Result<(), AppError>;
-    
+
     /// 搜索相似的 segments
     async fn search_segments(
         &self,
@@ -29,7 +29,7 @@ pub trait VectorStorage: Send + Sync {
         query_embedding: Vec<f32>,
         limit: usize,
     ) -> Result<Vec<MidTermSegment>, AppError>;
-    
+
     /// 存储 long-term memory
     async fn store_long_term(&self, memory: LongTermMemory) -> Result<(), AppError>;
 
@@ -41,7 +41,7 @@ pub trait VectorStorage: Send + Sync {
     ) -> Result<(), AppError> {
         self.store_long_term(memory).await
     }
-    
+
     /// 获取 long-term memory
     async fn get_long_term(&self, user_id: &str) -> Result<Option<LongTermMemory>, AppError>;
 }
@@ -86,7 +86,11 @@ pub trait ConcurrencyControl: Send + Sync {
     async fn is_event_processed(&self, event_id: &str) -> Result<bool, AppError>;
 
     /// Mark event as processed with TTL.
-    async fn mark_event_processed(&self, event_id: &str, ttl_seconds: usize) -> Result<(), AppError>;
+    async fn mark_event_processed(
+        &self,
+        event_id: &str,
+        ttl_seconds: usize,
+    ) -> Result<(), AppError>;
 }
 
 /// Memory manager (orchestrates all memory layers)
@@ -104,11 +108,8 @@ pub trait MemoryManager: Send + Sync {
     ) -> Result<(), AppError> {
         self.add_message(user_id, message).await
     }
-    
+
     /// 检索相关的 memory context
-    async fn retrieve_context(
-        &self,
-        user_id: &str,
-        query: &str,
-    ) -> Result<MemoryContext, AppError>;
+    async fn retrieve_context(&self, user_id: &str, query: &str)
+        -> Result<MemoryContext, AppError>;
 }

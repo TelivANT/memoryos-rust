@@ -1,17 +1,11 @@
+pub mod admin;
 pub mod chat;
 pub mod health;
 pub mod history;
 pub mod memory;
 pub mod metrics;
-pub mod admin;
 
-use axum::{
-    http::HeaderValue,
-    response::Response,
-    routing::get,
-    routing::post,
-    Router,
-};
+use axum::{http::HeaderValue, response::Response, routing::get, routing::post, Router};
 
 pub const DEGRADED_HEADER: &str = "X-MemoryOS-Status";
 pub const DEGRADED_VALUE: &str = "degraded";

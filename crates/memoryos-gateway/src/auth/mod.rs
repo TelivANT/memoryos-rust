@@ -1,3 +1,3 @@
 pub mod store;
 
-pub use store::{ApiKeyStore, ApiKeyMetadata};
+pub use store::{ApiKeyMetadata, ApiKeyStore};

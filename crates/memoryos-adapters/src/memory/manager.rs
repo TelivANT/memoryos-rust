@@ -1,8 +1,12 @@
 //! Memory Manager - orchestrates all memory layers
 
 use async_trait::async_trait;
-use memoryos_core::{AppError, KnowledgeItem, LongTermMemory, Message, MemoryContext, MidTermSegment, UserProfile};
-use memoryos_ports::{ConcurrencyControl, LlmAdapter, MemoryManager, ShortTermStorage, VectorStorage};
+use memoryos_core::{
+    AppError, KnowledgeItem, LongTermMemory, MemoryContext, Message, MidTermSegment, UserProfile,
+};
+use memoryos_ports::{
+    ConcurrencyControl, LlmAdapter, MemoryManager, ShortTermStorage, VectorStorage,
+};
 use reqwest::StatusCode;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -165,7 +169,7 @@ impl DefaultMemoryManager {
             .unwrap_or_else(|_| "https://api.openai.com/v1".to_string());
         let embedding_model = std::env::var("EMBEDDING_MODEL")
             .unwrap_or_else(|_| "text-embedding-3-small".to_string());
-        
+
         Self {
             short_term,
             vector_store,
@@ -184,8 +188,11 @@ impl DefaultMemoryManager {
             embedding_model,
         }
     }
-    
-    pub fn with_history(mut self, history_storage: Arc<dyn memoryos_ports::HistoryStorage>) -> Self {
+
+    pub fn with_history(
+        mut self,
+        history_storage: Arc<dyn memoryos_ports::HistoryStorage>,
+    ) -> Self {
         self.history_storage = Some(history_storage);
         self
     }
@@ -201,7 +208,7 @@ impl DefaultMemoryManager {
             .unwrap_or_else(|_| "https://api.openai.com/v1".to_string());
         let embedding_model = std::env::var("EMBEDDING_MODEL")
             .unwrap_or_else(|_| "text-embedding-3-small".to_string());
-        
+
         Self {
             short_term,
             vector_store,
@@ -234,7 +241,7 @@ impl DefaultMemoryManager {
             .unwrap_or_else(|_| "https://api.openai.com/v1".to_string());
         let embedding_model = std::env::var("EMBEDDING_MODEL")
             .unwrap_or_else(|_| "text-embedding-3-small".to_string());
-        
+
         Self {
             short_term,
             vector_store,
@@ -286,7 +293,10 @@ impl DefaultMemoryManager {
         let url = format!("{}/embeddings", self.embedding_base_url);
         let response = match reqwest::Client::new()
             .post(&url)
-            .header("Authorization", format!("Bearer {}", self.embedding_api_key))
+            .header(
+                "Authorization",
+                format!("Bearer {}", self.embedding_api_key),
+            )
             .header("Content-Type", "application/json")
             .json(&request)
             .send()
@@ -300,14 +310,20 @@ impl DefaultMemoryManager {
         };
 
         if response.status() != StatusCode::OK {
-            warn!("Embeddings API returned status {}, using fallback", response.status());
+            warn!(
+                "Embeddings API returned status {}, using fallback",
+                response.status()
+            );
             return Ok(generate_simple_embedding(text));
         }
 
         let json: serde_json::Value = match response.json().await {
             Ok(v) => v,
             Err(err) => {
-                warn!("Failed to parse embeddings response, using fallback: {}", err);
+                warn!(
+                    "Failed to parse embeddings response, using fallback: {}",
+                    err
+                );
                 return Ok(generate_simple_embedding(text));
             }
         };
@@ -346,7 +362,10 @@ impl DefaultMemoryManager {
                 .map(|m| format!("{}: {}", m.role, m.content))
                 .collect::<Vec<_>>()
                 .join("\n");
-            let embedding = self.generate_embedding(&summary).await.unwrap_or_else(|_| vec![0.0; 1536]);
+            let embedding = self
+                .generate_embedding(&summary)
+                .await
+                .unwrap_or_else(|_| vec![0.0; 1536]);
             let segment = MidTermSegment {
                 id: uuid::Uuid::now_v7(),
                 user_id: user_id.to_string(),
@@ -356,12 +375,16 @@ impl DefaultMemoryManager {
                 created_at: chrono::Utc::now(),
             };
             if let Err(err) = self.vector_store.store_segment(segment).await {
-                warn!("Mid-term consolidation failed for user {}: {}", user_id, err);
+                warn!(
+                    "Mid-term consolidation failed for user {}: {}",
+                    user_id, err
+                );
             }
         }
 
         if message.role == "user" && !message.content.trim().is_empty() {
-            let extracted = extract_profile_and_knowledge(&message.content, &self.extraction_policy);
+            let extracted =
+                extract_profile_and_knowledge(&message.content, &self.extraction_policy);
             let existing = self
                 .vector_store
                 .get_long_term(user_id)
@@ -485,7 +508,11 @@ fn extract_after(lower: &str, original: &str, marker: &str) -> Option<String> {
         .find(|c: char| ['.', ',', '!', '?', ';'].contains(&c))
         .unwrap_or(slice.len());
     let value = slice[..end].trim().to_string();
-    if value.is_empty() { None } else { Some(value) }
+    if value.is_empty() {
+        None
+    } else {
+        Some(value)
+    }
 }
 
 #[async_trait]
@@ -548,50 +575,51 @@ impl MemoryManager for DefaultMemoryManager {
             }
         }
 
-        let renewal_task = if let (Some(coordinator), Some(token)) = (&self.write_coordinator, fencing_token) {
-            let coordinator = Arc::clone(coordinator);
-            let lock_key = lock_key.clone();
-            let owner_id = owner_id.clone();
-            let renew_interval = Duration::from_millis((self.lock_ttl_ms / 3).max(1_000));
-            let ttl_ms = self.lock_ttl_ms;
-            let (stop_tx, mut stop_rx) = tokio::sync::oneshot::channel::<()>();
+        let renewal_task =
+            if let (Some(coordinator), Some(token)) = (&self.write_coordinator, fencing_token) {
+                let coordinator = Arc::clone(coordinator);
+                let lock_key = lock_key.clone();
+                let owner_id = owner_id.clone();
+                let renew_interval = Duration::from_millis((self.lock_ttl_ms / 3).max(1_000));
+                let ttl_ms = self.lock_ttl_ms;
+                let (stop_tx, mut stop_rx) = tokio::sync::oneshot::channel::<()>();
 
-            let handle = tokio::spawn(async move {
-                let mut ticker = tokio::time::interval(renew_interval);
-                loop {
-                    tokio::select! {
-                        _ = &mut stop_rx => break,
-                        _ = ticker.tick() => {
-                            match coordinator
-                                .renew_fencing_lock(&lock_key, &owner_id, token, ttl_ms)
-                                .await
-                            {
-                                Ok(true) => {}
-                                Ok(false) => {
-                                    warn!("Lock renewal stopped: lock no longer owned");
-                                    break;
-                                }
-                                Err(err) => {
-                                    warn!("Lock renewal failed: {}", err);
-                                    break;
+                let handle = tokio::spawn(async move {
+                    let mut ticker = tokio::time::interval(renew_interval);
+                    loop {
+                        tokio::select! {
+                            _ = &mut stop_rx => break,
+                            _ = ticker.tick() => {
+                                match coordinator
+                                    .renew_fencing_lock(&lock_key, &owner_id, token, ttl_ms)
+                                    .await
+                                {
+                                    Ok(true) => {}
+                                    Ok(false) => {
+                                        warn!("Lock renewal stopped: lock no longer owned");
+                                        break;
+                                    }
+                                    Err(err) => {
+                                        warn!("Lock renewal failed: {}", err);
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
-            Some((stop_tx, handle))
-        } else {
-            None
-        };
+                });
+                Some((stop_tx, handle))
+            } else {
+                None
+            };
 
         let message_for_consolidation = message.clone();
         let message_content = message.content.clone();
         let message_id = format!("msg_{}", uuid::Uuid::now_v7());
-        
+
         let operation_result = async {
             self.short_term.add_message(user_id, message).await?;
-            
+
             // 记录历史
             if let Some(history) = &self.history_storage {
                 let entry = memoryos_core::MemoryHistoryEntry {
@@ -607,7 +635,7 @@ impl MemoryManager for DefaultMemoryManager {
                     warn!("Failed to record history: {}", e);
                 }
             }
-            
+
             self.consolidate_memory(user_id, &message_for_consolidation, fencing_token)
                 .await?;
             Ok::<(), AppError>(())
@@ -848,7 +876,10 @@ impl MemoryManager for DegradedMemoryManager {
         query: &str,
     ) -> Result<MemoryContext, AppError> {
         let short_term = if let Some(short_term_store) = &self.short_term {
-            match short_term_store.get_recent(user_id, self.short_term_limit).await {
+            match short_term_store
+                .get_recent(user_id, self.short_term_limit)
+                .await
+            {
                 Ok(v) => v,
                 Err(err) => {
                     warn!("Degraded short-term retrieve failed: {}", err);
@@ -916,7 +947,11 @@ mod tests {
             Ok(())
         }
 
-        async fn get_recent(&self, _user_id: &str, _limit: usize) -> Result<Vec<Message>, AppError> {
+        async fn get_recent(
+            &self,
+            _user_id: &str,
+            _limit: usize,
+        ) -> Result<Vec<Message>, AppError> {
             Ok(vec![])
         }
 
@@ -1255,7 +1290,10 @@ mod tests {
             "My name is Alice. I like hiking. I work as engineer.",
             &policy,
         );
-        assert!(out.preferences.iter().any(|v| v.to_ascii_lowercase().contains("hiking")));
+        assert!(out
+            .preferences
+            .iter()
+            .any(|v| v.to_ascii_lowercase().contains("hiking")));
         let bg = out.background.unwrap_or_default().to_ascii_lowercase();
         assert!(bg.contains("name is alice") || bg.contains("works as engineer"));
         assert!(!out.knowledge.is_empty());
@@ -1366,6 +1404,10 @@ mod tests {
             total
         );
 
-        assert!(score >= 0.95, "extraction eval score below threshold: {}", score);
+        assert!(
+            score >= 0.95,
+            "extraction eval score below threshold: {}",
+            score
+        );
     }
 }

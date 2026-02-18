@@ -47,10 +47,9 @@ impl LlmAdapter for OpenRouterAdapter {
             )));
         }
 
-        response
-            .json::<ChatResponse>()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Failed to parse OpenRouter response: {}", e)))
+        response.json::<ChatResponse>().await.map_err(|e| {
+            AppError::ExternalService(format!("Failed to parse OpenRouter response: {}", e))
+        })
     }
 
     async fn chat_stream(&self, request: ChatRequest) -> Result<Vec<ChatStreamChunk>, AppError> {
@@ -68,7 +67,9 @@ impl LlmAdapter for OpenRouterAdapter {
             .json(&stream_request)
             .send()
             .await
-            .map_err(|e| AppError::ExternalService(format!("OpenRouter stream request failed: {}", e)))?;
+            .map_err(|e| {
+                AppError::ExternalService(format!("OpenRouter stream request failed: {}", e))
+            })?;
 
         if !response.status().is_success() {
             let status = response.status();

@@ -18,7 +18,7 @@ impl RedisStorage {
     pub fn new(redis_url: &str, ttl_seconds: usize, max_messages: usize) -> Result<Self, AppError> {
         let client = Client::open(redis_url)
             .map_err(|e| AppError::Config(format!("Failed to connect to Redis: {}", e)))?;
-        
+
         Ok(Self {
             client,
             ttl_seconds,
@@ -101,8 +101,9 @@ impl ShortTermStorage for RedisStorage {
         values
             .into_iter()
             .map(|v| {
-                serde_json::from_str(&v)
-                    .map_err(|e| AppError::Internal(format!("Failed to deserialize message: {}", e)))
+                serde_json::from_str(&v).map_err(|e| {
+                    AppError::Internal(format!("Failed to deserialize message: {}", e))
+                })
             })
             .collect()
     }
@@ -259,19 +260,29 @@ impl ConcurrencyControl for RedisStorage {
             .get_multiplexed_async_connection()
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis connection failed: {}", e)))?;
-        let bucket = format!("processed_events:{}", chrono::Utc::now().format("%Y_%m_%d_%H"));
+        let bucket = format!(
+            "processed_events:{}",
+            chrono::Utc::now().format("%Y_%m_%d_%H")
+        );
         conn.sismember::<_, _, bool>(&bucket, event_id)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis sismember failed: {}", e)))
     }
 
-    async fn mark_event_processed(&self, event_id: &str, ttl_seconds: usize) -> Result<(), AppError> {
+    async fn mark_event_processed(
+        &self,
+        event_id: &str,
+        ttl_seconds: usize,
+    ) -> Result<(), AppError> {
         let mut conn = self
             .client
             .get_multiplexed_async_connection()
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis connection failed: {}", e)))?;
-        let bucket = format!("processed_events:{}", chrono::Utc::now().format("%Y_%m_%d_%H"));
+        let bucket = format!(
+            "processed_events:{}",
+            chrono::Utc::now().format("%Y_%m_%d_%H")
+        );
         conn.sadd::<_, _, ()>(&bucket, event_id)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis sadd failed: {}", e)))?;

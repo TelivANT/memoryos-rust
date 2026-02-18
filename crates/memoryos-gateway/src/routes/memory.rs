@@ -51,7 +51,8 @@ pub async fn add_message(
 
     // 直接同步写入
     let manager = state.memory_manager.read().await;
-    manager.add_message_with_event(&request.user_id, message, Some(&event_id))
+    manager
+        .add_message_with_event(&request.user_id, message, Some(&event_id))
         .await?;
 
     let mut response = Json(AddMessageResponse {
@@ -70,7 +71,8 @@ pub async fn retrieve_context(
     info!("Retrieving context for user: {}", request.user_id);
 
     let manager = state.memory_manager.read().await;
-    let context = manager.retrieve_context(&request.user_id, &request.query)
+    let context = manager
+        .retrieve_context(&request.user_id, &request.query)
         .await?;
 
     let value = serde_json::to_value(context)
@@ -90,8 +92,8 @@ mod tests {
     use memoryos_adapters::NoopMemoryManager;
     use memoryos_core::{DependencyState, HealthMode, HealthStatus, MemoryContext};
     use memoryos_ports::{
-        llm::ChatChoice, ChatDelta, ChatMessage, ChatRequest, ChatResponse, ChatStreamChunk, ChatStreamChoice,
-        EventBus, LlmAdapter, MemoryManager,
+        llm::ChatChoice, ChatDelta, ChatMessage, ChatRequest, ChatResponse, ChatStreamChoice,
+        ChatStreamChunk, EventBus, LlmAdapter, MemoryManager,
     };
     use std::sync::atomic::{AtomicUsize, Ordering};
     use tokio::sync::Mutex;
@@ -103,7 +105,10 @@ mod tests {
 
     #[async_trait]
     impl LlmAdapter for TestLlmAdapter {
-        async fn chat(&self, request: ChatRequest) -> Result<ChatResponse, memoryos_core::AppError> {
+        async fn chat(
+            &self,
+            request: ChatRequest,
+        ) -> Result<ChatResponse, memoryos_core::AppError> {
             Ok(ChatResponse {
                 id: "resp_test".to_string(),
                 object: "chat.completion".to_string(),
@@ -149,7 +154,11 @@ mod tests {
 
     #[async_trait]
     impl MemoryManager for CountingMemoryManager {
-        async fn add_message(&self, _user_id: &str, _message: Message) -> Result<(), memoryos_core::AppError> {
+        async fn add_message(
+            &self,
+            _user_id: &str,
+            _message: Message,
+        ) -> Result<(), memoryos_core::AppError> {
             self.add_count.fetch_add(1, Ordering::SeqCst);
             Ok(())
         }
@@ -266,7 +275,8 @@ mod tests {
             add_count: add_count.clone(),
         });
 
-        let app = routes::memory_routes().with_state(async_state(true, Some(event_bus), memory_manager));
+        let app =
+            routes::memory_routes().with_state(async_state(true, Some(event_bus), memory_manager));
         let request = Request::builder()
             .method("POST")
             .uri("/memory/add")
@@ -295,7 +305,8 @@ mod tests {
             add_count: add_count.clone(),
         });
 
-        let app = routes::memory_routes().with_state(async_state(true, Some(event_bus), memory_manager));
+        let app =
+            routes::memory_routes().with_state(async_state(true, Some(event_bus), memory_manager));
         let request = Request::builder()
             .method("POST")
             .uri("/memory/add")

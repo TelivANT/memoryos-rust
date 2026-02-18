@@ -11,10 +11,13 @@ use memoryos_ports::{HealthProbe, NormalizedRequest, NormalizedResponse, Upstrea
 pub use eventbus::RedisStreamEventBus;
 pub use history::QdrantHistoryStorage;
 pub use llm::{
-    AzureOpenAiAdapter, ClaudeAdapter, CohereAdapter, DeepSeekAdapter, GeminiAdapter, 
-    GroqAdapter, MistralAdapter, OllamaAdapter, OpenAiAdapter, OpenRouterAdapter,
+    AzureOpenAiAdapter, ClaudeAdapter, CohereAdapter, DeepSeekAdapter, GeminiAdapter, GroqAdapter,
+    MistralAdapter, OllamaAdapter, OpenAiAdapter, OpenRouterAdapter,
 };
-pub use memory::{ChromaStorage, DefaultMemoryManager, DegradedMemoryManager, NoopMemoryManager, PineconeStorage, QdrantStorage, RedisStorage};
+pub use memory::{
+    ChromaStorage, DefaultMemoryManager, DegradedMemoryManager, NoopMemoryManager, PineconeStorage,
+    QdrantStorage, RedisStorage,
+};
 pub use wiki::OpenDALAdapter;
 
 #[derive(Debug, Default)]
@@ -22,7 +25,10 @@ pub struct StubUpstreamClient;
 
 #[async_trait]
 impl UpstreamClient for StubUpstreamClient {
-    async fn send_request(&self, request: NormalizedRequest) -> Result<NormalizedResponse, AppError> {
+    async fn send_request(
+        &self,
+        request: NormalizedRequest,
+    ) -> Result<NormalizedResponse, AppError> {
         let body = serde_json::json!({
             "id": format!("chatcmpl-{}", request.request_id),
             "object": "chat.completion",
@@ -41,7 +47,10 @@ impl UpstreamClient for StubUpstreamClient {
         })
     }
 
-    async fn stream_response(&self, request: NormalizedRequest) -> Result<Vec<NormalizedResponse>, AppError> {
+    async fn stream_response(
+        &self,
+        request: NormalizedRequest,
+    ) -> Result<Vec<NormalizedResponse>, AppError> {
         let one = self.send_request(request).await?;
         Ok(vec![one])
     }

@@ -1,18 +1,18 @@
-use std::{collections::HashMap, sync::Arc};
-use tokio::sync::RwLock;
+use memoryos_adapters::{
+    llm::{ClaudeAdapter, GeminiAdapter, OllamaAdapter, OpenAiAdapter},
+    memory::{DefaultMemoryManager, QdrantStorage, RedisStorage},
+};
 use memoryos_core::{
     config::AppConfig,
-    llm::{ModelRouter, TieredRouter, RouterConfig, ContextInjector, StandardInjector},
-    security::{SecurityShield, SecurityConfig},
+    llm::{ContextInjector, ModelRouter, RouterConfig, StandardInjector, TieredRouter},
+    security::{SecurityConfig, SecurityShield},
 };
-use memoryos_ports::{LlmAdapter, VectorStorage, MemoryManager, HistoryStorage, ShortTermStorage};
-use memoryos_adapters::{
-    llm::{OpenAiAdapter, GeminiAdapter, ClaudeAdapter, OllamaAdapter},
-    memory::{QdrantStorage, DefaultMemoryManager, RedisStorage},
-};
+use memoryos_ports::{HistoryStorage, LlmAdapter, MemoryManager, ShortTermStorage, VectorStorage};
+use std::{collections::HashMap, sync::Arc};
+use tokio::sync::RwLock;
 
-use crate::worker_monitor::WorkerMonitorSnapshot;
 use crate::auth::ApiKeyStore;
+use crate::worker_monitor::WorkerMonitorSnapshot;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -32,12 +32,14 @@ impl AppState {
     pub async fn new(config: AppConfig) -> Self {
         // 1. Init Storage (Qdrant Only)
         let vector_store = Arc::new(
-            QdrantStorage::new(&config.storage.vector.url).await.expect("Failed to init Qdrant")
+            QdrantStorage::new(&config.storage.vector.url)
+                .await
+                .expect("Failed to init Qdrant"),
         );
 
         // 2. Init Providers Registry
         let mut providers: HashMap<String, Arc<dyn LlmAdapter>> = HashMap::new();
-        
+
         for (name, cfg) in &config.llm.providers {
             let api_key = cfg.resolve_api_key();
             let adapter: Arc<dyn LlmAdapter> = match cfg.provider_type.as_str() {
@@ -57,7 +59,7 @@ impl AppState {
             hot_threshold: config.router.hot_threshold,
             max_local_tokens: config.router.max_local_tokens,
             local_backends: config.router.local_backends.clone(),
-            cloud_model: config.llm.default_provider.clone(), 
+            cloud_model: config.llm.default_provider.clone(),
         };
         let router = Arc::new(TieredRouter::new(router_config));
 
@@ -73,21 +75,19 @@ impl AppState {
 
         // 4. Init Memory Manager
         let redis_storage: Arc<dyn ShortTermStorage> = Arc::new(
-            RedisStorage::new(&config.storage.redis.url, 3600, 20)
-                .expect("Failed to init Redis")
+            RedisStorage::new(&config.storage.redis.url, 3600, 20).expect("Failed to init Redis"),
         );
-        
-        let default_llm = providers.get(&config.llm.default_provider)
+
+        let default_llm = providers
+            .get(&config.llm.default_provider)
             .expect("Default LLM provider not found")
             .clone();
-        
-        let memory_manager: Arc<dyn MemoryManager> = Arc::new(
-            DefaultMemoryManager::new(
-                redis_storage,
-                vector_store.clone(),
-                default_llm,
-            )
-        );
+
+        let memory_manager: Arc<dyn MemoryManager> = Arc::new(DefaultMemoryManager::new(
+            redis_storage,
+            vector_store.clone(),
+            default_llm,
+        ));
 
         // 5. Init Worker Monitor
         let worker_monitor = Arc::new(RwLock::new(WorkerMonitorSnapshot::from_env(false)));
@@ -97,7 +97,7 @@ impl AppState {
             Some(Arc::new(
                 ApiKeyStore::new(&config.storage.vector.url)
                     .await
-                    .expect("Failed to init API Key Store")
+                    .expect("Failed to init API Key Store"),
             ))
         } else {
             None
