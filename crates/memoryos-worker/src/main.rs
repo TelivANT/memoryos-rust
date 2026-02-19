@@ -197,6 +197,23 @@ async fn poll_once(
         .await
         .map_err(|e| AppError::ExternalService(format!("Redis connection failed: {}", e)))?;
 
+    // 1. Process pending messages first (retry failed deliveries)
+    let pending_options = StreamReadOptions::default()
+        .group(&cfg.group, &cfg.consumer)
+        .count(cfg.batch_size);
+
+    let pending_reply: StreamReadReply = conn
+        .xread_options(&[&cfg.stream_key], &["0"], &pending_options)
+        .await
+        .map_err(|e| AppError::ExternalService(format!("Redis XREADGROUP pending failed: {}", e)))?;
+
+    for stream_key in pending_reply.keys {
+        for stream_id in stream_key.ids {
+            handle_stream_entry(&mut conn, cfg, memory_manager.clone(), stream_id).await?;
+        }
+    }
+
+    // 2. Process new messages
     let options = StreamReadOptions::default()
         .group(&cfg.group, &cfg.consumer)
         .count(cfg.batch_size)

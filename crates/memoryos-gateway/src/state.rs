@@ -1,6 +1,6 @@
 use memoryos_adapters::{
     llm::{ClaudeAdapter, GeminiAdapter, OllamaAdapter, OpenAiAdapter},
-    memory::{DefaultMemoryManager, QdrantStorage},
+    memory::{DefaultMemoryManager, QdrantStorage, RedisStorage},
 };
 use memoryos_core::{
     config::AppConfig,
@@ -75,14 +75,28 @@ impl AppState {
 
         let context_injector = Arc::new(StandardInjector::new(2000));
 
-        // 4. Init Memory Manager
+        // 4. Init Memory Manager with Coordinator for idempotency
         let default_llm = providers
             .get(&config.llm.default_provider)
             .expect("Default LLM provider not found")
             .clone();
 
-        let memory_manager: Arc<dyn MemoryManager> =
-            Arc::new(DefaultMemoryManager::new(vector_store.clone(), default_llm));
+        let redis_storage = Arc::new(
+            RedisStorage::new(
+                &config.storage.redis.url,
+                config.storage.redis.ttl_seconds,
+                config.storage.redis.max_messages,
+            )
+            .expect("Failed to init Redis storage"),
+        );
+
+        let memory_manager: Arc<dyn MemoryManager> = Arc::new(
+            DefaultMemoryManager::new_with_coordinator(
+                vector_store.clone(),
+                default_llm,
+                redis_storage,
+            ),
+        );
 
         // 5. Init Worker Monitor
         let worker_monitor = Arc::new(RwLock::new(WorkerMonitorSnapshot::from_env(false)));

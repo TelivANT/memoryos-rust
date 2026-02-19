@@ -49,11 +49,24 @@ pub async fn add_message(
         embedding: None,
     };
 
-    // 直接同步写入
-    let manager = state.memory_manager.read().await;
-    manager
-        .add_message_with_event(&request.user_id, message, Some(&event_id))
-        .await?;
+    // Check if async pipeline is enabled
+    if state.async_memory_pipeline {
+        // Async mode: spawn task and return immediately
+        let manager = state.memory_manager.clone();
+        let user_id = request.user_id.clone();
+        tokio::spawn(async move {
+            let mgr = manager.read().await;
+            if let Err(e) = mgr.add_message_with_event(&user_id, message, Some(&event_id)).await {
+                tracing::error!("Async memory pipeline failed: {}", e);
+            }
+        });
+    } else {
+        // Sync mode: wait for completion
+        let manager = state.memory_manager.read().await;
+        manager
+            .add_message_with_event(&request.user_id, message, Some(&event_id))
+            .await?;
+    }
 
     let mut response = Json(AddMessageResponse {
         status: "ok".to_string(),
