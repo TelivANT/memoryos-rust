@@ -9,11 +9,18 @@ High-Performance AI Agent Memory Management System - Rust Implementation
 
 **Languages**: [English](README.md) | [简体中文](README_CN.md) | [日本語](README_JA.md) | [Français](README_FR.md) | [العربية](README_AR.md) | [Deutsch](README_DE.md) | [Español](README_ES.md) | [한국어](README_KO.md)
 
+> 📌 **Version Note**: This is the **Personal/Enterprise Single-Tenant Edition**. For SaaS multi-tenant features, see the [`feature/saas-multi-tenant`](https://github.com/TelivANT/memoryos-rust/tree/feature/saas-multi-tenant) branch.
+
 ---
 
 ## 🎯 Overview
 
 MemoryOS-Rust is a high-performance AI Agent memory management system built with Rust + Tokio, featuring a 3-Tier memory architecture (STM/MTM/LTM), OpenAI API compatibility, and support for 100,000+ concurrent users.
+
+**This edition is optimized for**:
+- 👤 Individual developers and researchers
+- 🏢 Single enterprise/organization deployments
+- 🔒 On-premise installations with full data control
 
 ---
 
@@ -208,6 +215,17 @@ This project is **feature-complete** (100%) and in maintenance mode. We focus on
 
 ---
 
+## 🏢 Enterprise & SaaS Edition
+
+Looking for multi-tenant SaaS features? Check out the **[`feature/saas-multi-tenant`](https://github.com/TelivANT/memoryos-rust/tree/feature/saas-multi-tenant)** branch, which includes:
+
+- 🏢 **Multi-Tenant Architecture**: Complete tenant isolation
+- 💳 **Billing Integration**: Usage tracking and quota management
+- 🔑 **Flexible LLM Configuration**: Per-tenant API key management
+- 📊 **Usage Analytics**: Detailed per-tenant metrics
+
+---
+
 ## 📞 Contact
 
 - **GitHub Issues**: [Report Issues](https://github.com/TelivANT/memoryos-rust/issues)
@@ -230,4 +248,4 @@ Apache 2.0 License - See [LICENSE](./LICENSE)
 
 ---
 
-**Version**: 0.2.0 | **Updated**: 2026-02-18
+**Version**: 0.3.0 (Personal Edition) | **Updated**: 2026-02-19
