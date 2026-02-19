@@ -3,12 +3,7 @@
 use crate::error::{AppError, Result};
 use arc_swap::ArcSwap;
 use serde::Deserialize;
-use std::{
-    collections::HashMap,
-    path::PathBuf,
-    sync::Arc,
-    time::SystemTime,
-};
+use std::{collections::HashMap, path::PathBuf, sync::Arc, time::SystemTime};
 
 /// Application configuration
 #[derive(Debug, Clone, Deserialize)]

@@ -1,5 +1,5 @@
 //! NATS 短期存储适配器
-//! 
+//!
 //! 作为 Redis 的备选方案，使用 NATS JetStream 提供持久化消息存储
 
 use async_trait::async_trait;
@@ -8,6 +8,7 @@ use memoryos_ports::ShortTermStorage;
 use std::time::Duration;
 
 pub struct NatsStorage {
+    #[allow(dead_code)]
     client: async_nats::Client,
     jetstream: async_nats::jetstream::Context,
     bucket_name: String,
@@ -72,9 +73,7 @@ impl ShortTermStorage for NatsStorage {
             Ok(Some(entry)) => serde_json::from_slice(&entry)
                 .map_err(|e| AppError::Internal(format!("Deserialization error: {}", e)))?,
             Ok(None) => Vec::new(),
-            Err(e) => {
-                return Err(AppError::ExternalService(format!("NATS get error: {}", e)))
-            }
+            Err(e) => return Err(AppError::ExternalService(format!("NATS get error: {}", e))),
         };
 
         // 添加新消息
@@ -104,9 +103,7 @@ impl ShortTermStorage for NatsStorage {
             Ok(Some(entry)) => serde_json::from_slice(&entry)
                 .map_err(|e| AppError::Internal(format!("Deserialization error: {}", e)))?,
             Ok(None) => return Ok(Vec::new()),
-            Err(e) => {
-                return Err(AppError::ExternalService(format!("NATS get error: {}", e)))
-            }
+            Err(e) => return Err(AppError::ExternalService(format!("NATS get error: {}", e))),
         };
 
         // 返回最近的 N 条消息
@@ -129,7 +126,6 @@ impl ShortTermStorage for NatsStorage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use memoryos_core::MessageRole;
 
     #[tokio::test]
     #[ignore] // 需要运行 NATS 服务器
@@ -139,9 +135,10 @@ mod tests {
             .unwrap();
 
         let message = Message {
-            role: MessageRole::User,
+            role: "user".to_string(),
             content: "Hello".to_string(),
-            timestamp: chrono::Utc::now().timestamp(),
+            timestamp: chrono::Utc::now(),
+            embedding: None,
         };
 
         storage.add_message("user1", message).await.unwrap();

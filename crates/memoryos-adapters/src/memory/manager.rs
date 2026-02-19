@@ -975,6 +975,26 @@ mod tests {
 
     #[async_trait]
     impl VectorStorage for TestVectorStorage {
+        async fn add_short_term_message(
+            &self,
+            _user_id: &str,
+            _message: Message,
+        ) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        async fn get_short_term_messages(
+            &self,
+            _user_id: &str,
+            _limit: usize,
+        ) -> Result<Vec<Message>, AppError> {
+            Ok(vec![])
+        }
+
+        async fn clear_short_term(&self, _user_id: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+
         async fn store_segment(&self, _segment: MidTermSegment) -> Result<(), AppError> {
             Ok(())
         }
@@ -1093,6 +1113,7 @@ mod tests {
             role: "user".to_string(),
             content: "hello".to_string(),
             timestamp: chrono::Utc::now(),
+            embedding: None,
         }
     }
 
@@ -1280,6 +1301,7 @@ mod tests {
                     role: "user".to_string(),
                     content: "My name is Alice. I like hiking in mountains.".to_string(),
                     timestamp: chrono::Utc::now(),
+                    embedding: None,
                 },
                 Some("evt-5"),
             )

@@ -35,7 +35,7 @@ pub struct MidTermSegment {
     pub embedding: Vec<f32>,
     pub heat: f32,
     pub created_at: chrono::DateTime<chrono::Utc>,
-    
+
     // FAQ 热度追踪字段
     #[serde(default)]
     pub access_count: u32,
@@ -103,7 +103,6 @@ pub enum MemoryType {
     #[serde(rename = "faq")]
     Faq,
 }
-
 
 /// Memory retrieval result
 #[derive(Debug, Clone, Serialize, Deserialize)]

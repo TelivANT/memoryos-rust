@@ -79,7 +79,10 @@ impl ApiKeyStore {
         let mut payload: HashMap<String, Value> = HashMap::new();
         payload.insert("api_key".to_string(), api_key.to_string().into());
         payload.insert("user_id".to_string(), metadata.user_id.clone().into());
-        payload.insert("description".to_string(), metadata.description.clone().into());
+        payload.insert(
+            "description".to_string(),
+            metadata.description.clone().into(),
+        );
         payload.insert("created_at".to_string(), metadata.created_at.clone().into());
         payload.insert("is_active".to_string(), metadata.is_active.into());
 
@@ -110,10 +113,9 @@ impl ApiKeyStore {
 
         self.qdrant
             .delete_points(
-                DeletePointsBuilder::new(API_KEY_COLLECTION)
-                    .points(PointsIdsList {
-                        ids: vec![point_id],
-                    })
+                DeletePointsBuilder::new(API_KEY_COLLECTION).points(PointsIdsList {
+                    ids: vec![point_id],
+                }),
             )
             .await
             .map_err(|e| AppError::ExternalService(format!("Qdrant error: {}", e)))?;
@@ -130,8 +132,7 @@ impl ApiKeyStore {
         let points = self
             .qdrant
             .get_points(
-                GetPointsBuilder::new(API_KEY_COLLECTION, vec![point_id])
-                    .with_payload(true)
+                GetPointsBuilder::new(API_KEY_COLLECTION, vec![point_id]).with_payload(true),
             )
             .await
             .map_err(|e| AppError::ExternalService(format!("Qdrant error: {}", e)))?;

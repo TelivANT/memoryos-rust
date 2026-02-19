@@ -28,33 +28,33 @@ impl EmbeddingCache {
             })),
         }
     }
-    
+
     pub async fn get(&self, query: &str) -> Option<Vec<f32>> {
         let mut cache = self.cache.write().await;
-        
+
         if let Some(entry) = cache.map.get(query) {
             let embedding = entry.embedding.clone();
-            
+
             // Update access count
             if let Some(e) = cache.map.get_mut(query) {
                 e.access_count += 1;
             }
-            
+
             // Update LRU order
             if let Some(pos) = cache.access_order.iter().position(|k| k == query) {
                 cache.access_order.remove(pos);
             }
             cache.access_order.push(query.to_string());
-            
+
             return Some(embedding);
         }
-        
+
         None
     }
-    
+
     pub async fn put(&self, query: String, embedding: Vec<f32>) {
         let mut cache = self.cache.write().await;
-        
+
         // Evict if full
         if cache.map.len() >= cache.capacity {
             if let Some(oldest) = cache.access_order.first().cloned() {
@@ -62,14 +62,17 @@ impl EmbeddingCache {
                 cache.access_order.remove(0);
             }
         }
-        
-        cache.map.insert(query.clone(), CacheEntry {
-            embedding,
-            access_count: 1,
-        });
+
+        cache.map.insert(
+            query.clone(),
+            CacheEntry {
+                embedding,
+                access_count: 1,
+            },
+        );
         cache.access_order.push(query);
     }
-    
+
     pub async fn stats(&self) -> CacheStats {
         let cache = self.cache.read().await;
         CacheStats {
@@ -89,16 +92,16 @@ pub struct CacheStats {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_embedding_cache() {
         let cache = EmbeddingCache::new(2);
-        
+
         cache.put("query1".to_string(), vec![1.0, 2.0]).await;
         cache.put("query2".to_string(), vec![3.0, 4.0]).await;
-        
+
         assert!(cache.get("query1").await.is_some());
-        
+
         // Evict oldest
         cache.put("query3".to_string(), vec![5.0, 6.0]).await;
         assert!(cache.get("query2").await.is_none());

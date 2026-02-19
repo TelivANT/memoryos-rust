@@ -1,5 +1,5 @@
 //! 攻击防御系统 - IP 封禁和限流
-//! 
+//!
 //! 架构:
 //! - 临时封禁: Redis (TTL 自动过期)
 //! - 永久封禁: Qdrant (持久化存储)
@@ -12,11 +12,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /// 攻击类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AttackType {
-    AuthFailure,      // 5 次/分钟
-    RateLimit,        // 100 次/分钟
-    PromptInjection,  // 3 次/小时
-    Scraping,         // 200 次/分钟
-    DDoS,             // 500 次/分钟
+    AuthFailure,     // 5 次/分钟
+    RateLimit,       // 100 次/分钟
+    PromptInjection, // 3 次/小时
+    Scraping,        // 200 次/分钟
+    DDoS,            // 500 次/分钟
 }
 
 impl AttackType {
@@ -195,7 +195,12 @@ impl IpDefenseSystem {
             tracing::warn!("IP {} permanently banned ({:?})", ip, reason);
         } else {
             self.add_temp_ban(ip, reason).await?;
-            tracing::warn!("IP {} temp banned ({:?}, count: {})", ip, reason, ban_count + 1);
+            tracing::warn!(
+                "IP {} temp banned ({:?}, count: {})",
+                ip,
+                reason,
+                ban_count + 1
+            );
         }
 
         Ok(())

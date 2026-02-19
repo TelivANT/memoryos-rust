@@ -128,33 +128,46 @@ fn long_term_point_id(user_id: &str) -> String {
 #[async_trait]
 impl VectorStorage for QdrantStorage {
     // ========== Short-Term Memory ==========
-    
-    async fn add_short_term_message(&self, user_id: &str, message: memoryos_core::Message) -> Result<(), AppError> {
+
+    async fn add_short_term_message(
+        &self,
+        user_id: &str,
+        message: memoryos_core::Message,
+    ) -> Result<(), AppError> {
         let message_id = uuid::Uuid::now_v7();
         let embedding = message.embedding.unwrap_or_else(|| vec![0.0; 1536]);
-        
+
         let mut payload: HashMap<String, Value> = HashMap::new();
         payload.insert("user_id".to_string(), Value::from(user_id.to_string()));
         payload.insert("role".to_string(), Value::from(message.role));
         payload.insert("content".to_string(), Value::from(message.content));
-        payload.insert("timestamp".to_string(), Value::from(message.timestamp.to_rfc3339()));
-        
+        payload.insert(
+            "timestamp".to_string(),
+            Value::from(message.timestamp.to_rfc3339()),
+        );
+
         let point = PointStruct::new(message_id.to_string(), embedding, payload);
-        
+
         self.client
             .upsert_points(
                 UpsertPointsBuilder::new(&self.shortterm_collection, vec![point]).wait(true),
             )
             .await
-            .map_err(|e| AppError::ExternalService(format!("Qdrant upsert short-term failed: {}", e)))?;
-        
+            .map_err(|e| {
+                AppError::ExternalService(format!("Qdrant upsert short-term failed: {}", e))
+            })?;
+
         debug!("Stored short-term message for user: {}", user_id);
         Ok(())
     }
-    
-    async fn get_short_term_messages(&self, user_id: &str, limit: usize) -> Result<Vec<memoryos_core::Message>, AppError> {
+
+    async fn get_short_term_messages(
+        &self,
+        user_id: &str,
+        limit: usize,
+    ) -> Result<Vec<memoryos_core::Message>, AppError> {
         let filter = Filter::must([Condition::matches("user_id", user_id.to_string())]);
-        
+
         let search_result = self
             .client
             .search_points(
@@ -163,8 +176,10 @@ impl VectorStorage for QdrantStorage {
                     .filter(filter),
             )
             .await
-            .map_err(|e| AppError::ExternalService(format!("Qdrant search short-term failed: {}", e)))?;
-        
+            .map_err(|e| {
+                AppError::ExternalService(format!("Qdrant search short-term failed: {}", e))
+            })?;
+
         let mut messages: Vec<memoryos_core::Message> = search_result
             .result
             .into_iter()
@@ -180,34 +195,38 @@ impl VectorStorage for QdrantStorage {
                 })
             })
             .collect();
-        
+
         messages.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
         messages.truncate(limit);
-        
-        debug!("Retrieved {} short-term messages for user: {}", messages.len(), user_id);
+
+        debug!(
+            "Retrieved {} short-term messages for user: {}",
+            messages.len(),
+            user_id
+        );
         Ok(messages)
     }
-    
+
     async fn clear_short_term(&self, user_id: &str) -> Result<(), AppError> {
         use qdrant_client::qdrant::{Condition, DeletePointsBuilder, Filter};
-        
+
         let filter = Filter::must([Condition::matches("user_id", user_id.to_string())]);
-        
+
         self.client
             .delete_points(
                 DeletePointsBuilder::new(&self.shortterm_collection)
                     .points(filter)
-                    .wait(true)
+                    .wait(true),
             )
             .await
             .map_err(|e| AppError::ExternalService(format!("Qdrant delete failed: {}", e)))?;
-        
+
         debug!("Cleared short-term memory for user {}", user_id);
         Ok(())
     }
-    
+
     // ========== Mid-Term Memory ==========
-    
+
     async fn store_segment(&self, segment: MidTermSegment) -> Result<(), AppError> {
         let mut payload: HashMap<String, Value> = HashMap::new();
         payload.insert("user_id".to_string(), Value::from(segment.user_id));
@@ -217,10 +236,19 @@ impl VectorStorage for QdrantStorage {
             "created_at".to_string(),
             Value::from(segment.created_at.to_rfc3339()),
         );
-        payload.insert("access_count".to_string(), Value::from(segment.access_count as i64));
-        payload.insert("heat_score".to_string(), Value::from(segment.heat_score as f64));
+        payload.insert(
+            "access_count".to_string(),
+            Value::from(segment.access_count as i64),
+        );
+        payload.insert(
+            "heat_score".to_string(),
+            Value::from(segment.heat_score as f64),
+        );
         if let Some(last_accessed) = segment.last_accessed {
-            payload.insert("last_accessed".to_string(), Value::from(last_accessed.to_rfc3339()));
+            payload.insert(
+                "last_accessed".to_string(),
+                Value::from(last_accessed.to_rfc3339()),
+            );
         }
         let memory_type_str = match segment.memory_type {
             memoryos_core::MemoryType::QA => "qa",

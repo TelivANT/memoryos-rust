@@ -13,7 +13,7 @@ pub mod wiki;
 pub use config::{AppConfig, ConfigManager};
 pub use error::AppError;
 pub use faq::{
-    AutoPromotionConfig, AutoPromoter, ExportResult, ExportTarget, HeatConfig, HeatStats,
+    AutoPromoter, AutoPromotionConfig, ExportResult, ExportTarget, HeatConfig, HeatStats,
     HeatTracker, PromotionRecord, PromotionResult, PromotionStats, WikiExportConfig, WikiExporter,
 };
 pub use health::{DependencyState, HealthMode, HealthStatus};

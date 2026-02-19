@@ -98,10 +98,7 @@ async fn promote_to_faq(
 
 /// DELETE /admin/faq/:id - 删除 FAQ
 #[allow(dead_code)]
-async fn delete_faq(
-    State(_state): State<FaqState>,
-    Path(id): Path<Uuid>,
-) -> impl IntoResponse {
+async fn delete_faq(State(_state): State<FaqState>, Path(id): Path<Uuid>) -> impl IntoResponse {
     // TODO: 实现删除逻辑
     (
         StatusCode::OK,

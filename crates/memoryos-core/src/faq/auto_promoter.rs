@@ -169,8 +169,9 @@ impl AutoPromoter {
         F: FnMut() -> Vec<MidTermSegment> + Send + 'static,
     {
         tokio::spawn(async move {
-            let mut interval =
-                tokio::time::interval(tokio::time::Duration::from_secs(self.config.scan_interval_secs));
+            let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(
+                self.config.scan_interval_secs,
+            ));
 
             loop {
                 interval.tick().await;
@@ -227,7 +228,7 @@ mod tests {
             last_accessed: None,
             memory_type: MemoryType::QA,
         };
-        
+
         let tracker = HeatTracker::new(HeatConfig::default());
         segment.heat_score = tracker.calculate_heat(&segment);
         segment

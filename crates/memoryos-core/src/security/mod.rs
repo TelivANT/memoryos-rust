@@ -1,5 +1,5 @@
-pub mod shield;
 pub mod defense;
+pub mod shield;
 
-pub use shield::{ComplianceResult, SecurityConfig, SecurityShield};
 pub use defense::{AttackType, DefenseStats, IpDefenseSystem};
+pub use shield::{ComplianceResult, SecurityConfig, SecurityShield};

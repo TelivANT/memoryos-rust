@@ -21,18 +21,23 @@ pub trait ShortTermStorage: Send + Sync {
 #[async_trait]
 pub trait VectorStorage: Send + Sync {
     // ========== Short-Term Memory ==========
-    
+
     /// Add a message to short-term memory
-    async fn add_short_term_message(&self, user_id: &str, message: Message) -> Result<(), AppError>;
-    
+    async fn add_short_term_message(&self, user_id: &str, message: Message)
+        -> Result<(), AppError>;
+
     /// Get recent N messages from short-term memory (sorted by timestamp desc)
-    async fn get_short_term_messages(&self, user_id: &str, limit: usize) -> Result<Vec<Message>, AppError>;
-    
+    async fn get_short_term_messages(
+        &self,
+        user_id: &str,
+        limit: usize,
+    ) -> Result<Vec<Message>, AppError>;
+
     /// Clear short-term memory for a user
     async fn clear_short_term(&self, user_id: &str) -> Result<(), AppError>;
-    
+
     // ========== Mid-Term Memory ==========
-    
+
     /// 存储 mid-term segment
     async fn store_segment(&self, segment: MidTermSegment) -> Result<(), AppError>;
 
@@ -45,7 +50,7 @@ pub trait VectorStorage: Send + Sync {
     ) -> Result<Vec<MidTermSegment>, AppError>;
 
     // ========== Long-Term Memory ==========
-    
+
     /// 存储 long-term memory
     async fn store_long_term(&self, memory: LongTermMemory) -> Result<(), AppError>;
 

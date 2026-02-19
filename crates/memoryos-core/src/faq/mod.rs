@@ -5,7 +5,7 @@ pub mod heat_tracker;
 pub mod wiki_exporter;
 
 pub use auto_promoter::{
-    AutoPromotionConfig, AutoPromoter, PromotionRecord, PromotionResult, PromotionStats,
+    AutoPromoter, AutoPromotionConfig, PromotionRecord, PromotionResult, PromotionStats,
 };
 pub use heat_tracker::{HeatConfig, HeatStats, HeatTracker};
 pub use wiki_exporter::{ExportResult, ExportTarget, WikiExportConfig, WikiExporter};

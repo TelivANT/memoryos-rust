@@ -3,10 +3,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 // 编译时验证的正则表达式（避免运行时 panic）
-static NODE_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"([a-zA-Z0-9_]+)\[(.*?)\]")
-        .expect("BUG: Invalid node regex pattern")
-});
+static NODE_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"([a-zA-Z0-9_]+)\[(.*?)\]").expect("BUG: Invalid node regex pattern"));
 
 static EDGE_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"([a-zA-Z0-9_]+)\s*-+>\|(.*?)\|\s*([a-zA-Z0-9_]+)")

@@ -15,7 +15,7 @@ impl IncrementalSummarizer {
             threshold,
         }
     }
-    
+
     pub async fn add_messages<F, Fut>(
         &mut self,
         messages: Vec<String>,
@@ -31,7 +31,7 @@ impl IncrementalSummarizer {
             self.current_summary.push('\n');
             self.message_count += 1;
         }
-        
+
         // Check if threshold reached
         if self.message_count >= self.threshold {
             let summary = summarize_fn(self.current_summary.clone()).await?;
@@ -39,14 +39,14 @@ impl IncrementalSummarizer {
             self.message_count = 0;
             return Ok(Some(summary));
         }
-        
+
         Ok(None)
     }
-    
+
     pub fn current_summary(&self) -> &str {
         &self.current_summary
     }
-    
+
     pub fn message_count(&self) -> usize {
         self.message_count
     }
@@ -55,24 +55,27 @@ impl IncrementalSummarizer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_incremental_summarizer() {
         let mut summarizer = IncrementalSummarizer::new(3);
-        
-        let result = summarizer.add_messages(
-            vec!["msg1".to_string(), "msg2".to_string()],
-            |text| async move { Ok(format!("Summary: {}", text)) }
-        ).await;
-        
+
+        let result = summarizer
+            .add_messages(
+                vec!["msg1".to_string(), "msg2".to_string()],
+                |text| async move { Ok(format!("Summary: {}", text)) },
+            )
+            .await;
+
         assert!(result.unwrap().is_none());
         assert_eq!(summarizer.message_count(), 2);
-        
-        let result = summarizer.add_messages(
-            vec!["msg3".to_string()],
-            |text| async move { Ok(format!("Summary: {}", text)) }
-        ).await;
-        
+
+        let result = summarizer
+            .add_messages(vec!["msg3".to_string()], |text| async move {
+                Ok(format!("Summary: {}", text))
+            })
+            .await;
+
         assert!(result.unwrap().is_some());
         assert_eq!(summarizer.message_count(), 0);
     }
