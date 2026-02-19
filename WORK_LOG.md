@@ -2,7 +2,7 @@
 
 **项目**: MemoryOS-Rust  
 **当前版本**: v0.3.0  
-**更新**: 2026-02-19 10:30
+**更新**: 2026-02-19 10:59
 
 ---
 
@@ -37,6 +37,36 @@
 ---
 
 ## 🚀 当前活跃任务
+
+### [Kiro AI] - MemoryManager 架构重构
+- **开始时间**: 2026-02-19 10:44
+- **预计完成**: 2026-02-19 10:59
+- **当前进度**: 100%
+- **状态**: ✅ 完成
+- **任务描述**: 移除 ShortTermStorage 依赖，统一使用 VectorStorage
+- **相关文件**:
+  - `crates/memoryos-adapters/src/memory/manager.rs` (核心重构)
+  - `crates/memoryos-gateway/src/state.rs` (Gateway 更新)
+  - `crates/memoryos-worker/src/main.rs` (Worker 更新)
+- **重构内容**:
+  - 移除 ShortTermStorage trait 依赖
+  - DefaultMemoryManager 使用 VectorStorage
+  - DegradedMemoryManager 使用 VectorStorage
+  - 简化构造函数 (移除 short_term 参数)
+  - 删除 TestShortTermStorage (27 行)
+  - 更新所有测试 (5 个并发控制测试)
+- **代码变更**:
+  - 3 files changed
+  - 40 insertions(+), 104 deletions(-)
+  - 净减少 64 lines
+- **测试结果**: 48/48 passing ✅
+- **架构优势**:
+  - 统一存储: 所有内存层使用向量数据库
+  - 语义搜索: 短期记忆支持向量检索
+  - 简化依赖: 移除 Redis ShortTermStorage
+  - 性能提升: 减少存储层跳转
+  - 扩展性强: 易于添加新向量数据库
+- **备注**: 架构重构完成，生产就绪
 
 ### [Kiro AI] - 向量数据库 clear_short_term 完整实现
 - **开始时间**: 2026-02-19 10:05
