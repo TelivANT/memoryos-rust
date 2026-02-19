@@ -84,10 +84,14 @@ async fn main() -> Result<(), AppError> {
     // 5. Setup Router
     let state_arc = Arc::new(state.clone());
 
-    // Admin 路由（使用 Arc<AppState>）
+    // Admin 路由（需要认证 + admin 权限）
     let admin_routes = Router::new()
         .route("/v1/admin/keys", post(routes::admin::create_api_key))
-        .route("/v1/admin/keys/:key", post(routes::admin::delete_api_key))
+        .route("/v1/admin/keys/:key", axum::routing::delete(routes::admin::delete_api_key))  // 改用 DELETE
+        .layer(axum::middleware::from_fn_with_state(
+            state_arc.clone(),
+            middleware::admin_only,  // 使用 admin_only 中间件
+        ))
         .with_state(state_arc.clone());
 
     // 需要认证的路由

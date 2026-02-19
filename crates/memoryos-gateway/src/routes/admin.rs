@@ -56,15 +56,10 @@ pub async fn create_api_key(
     }))
 }
 
-#[derive(Deserialize)]
-pub struct DeleteKeyRequest {
-    pub api_key: String,
-}
-
-/// DELETE /admin/keys - 删除 API Key
+/// DELETE /admin/keys/:key - 删除 API Key（使用 path 参数）
 pub async fn delete_api_key(
     State(state): State<Arc<AppState>>,
-    Json(req): Json<DeleteKeyRequest>,
+    axum::extract::Path(api_key): axum::extract::Path<String>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     let store = state.api_key_store.as_ref().ok_or_else(|| {
         (
@@ -73,7 +68,7 @@ pub async fn delete_api_key(
         )
     })?;
 
-    store.delete_key(&req.api_key).await.map_err(|e| {
+    store.delete_key(&api_key).await.map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({"error": e.to_string()})),
