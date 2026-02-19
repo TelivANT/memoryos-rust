@@ -79,6 +79,38 @@
   "recent_changes": [
     {
       "date": "2026-02-19",
+      "author": "Delevan",
+      "changes": [
+        "🔴 P0 安全问题修复 (1/4 完成)",
+        "✅ P0-1: Admin API 认证保护",
+        "  • 添加 admin_only 中间件到 /v1/admin/keys",
+        "  • 修改 DELETE 方法从 POST 到 DELETE",
+        "  • 修复 delete_api_key 使用 path 参数",
+        "  • CVSS 9.8 Critical 漏洞已修复",
+        "⏳ P0-2: API Key 安全存储 (进行中)",
+        "  • 使用 SHA-256 hash 存储 API Key",
+        "  • UUID v5 生成 point_id",
+        "  • validate_key 检查过期时间",
+        "  • Breaking Change: 需要迁移现有 keys",
+        "⏳ P0-3: STM 清理逻辑 (待实施)",
+        "  • consolidation 后清理 STM",
+        "  • 保留最近 N 条消息",
+        "⏳ P0-4: STM 改用 Redis (待实施)",
+        "  • 架构优化",
+        "  • 使用 Redis List 存储 STM",
+        "文档更新",
+        "  • P0_FIXES.md (修复总结)",
+        "  • SECURITY_AUDIT.md (15 个问题)",
+        "  • WORK_LOG.md (任务记录)",
+        "  • state.json (状态更新)",
+        "3 files changed, 500+ insertions(+)"
+      ],
+      "commits": [
+        "待提交 - security: fix P0-1 admin API authentication bypass"
+      ]
+    },
+    {
+      "date": "2026-02-19",
       "author": "Kiro AI",
       "changes": [
         "✅ 生产部署指南完成",

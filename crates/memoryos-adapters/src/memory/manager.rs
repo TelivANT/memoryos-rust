@@ -762,12 +762,26 @@ impl DefaultMemoryManager {
         // 4. 存储到向量数据库
         self.vector_store.store_segment(segment).await?;
 
-        // 5. 清理 STM（保留最近 5 条消息）
+        // 5. 清理 STM（保留最近 keep_count 条消息）
         let keep_count = 5.min(messages.len());
         info!(
-            "Consolidation completed, keeping {} recent messages in STM",
-            keep_count
+            "Clearing STM, keeping {} most recent messages for user: {}",
+            keep_count, user_id
         );
+
+        // 清空 STM
+        self.vector_store.clear_short_term(user_id).await?;
+
+        // 重新写入最近的消息
+        if keep_count > 0 {
+            let recent_messages: Vec<_> = messages.iter().rev().take(keep_count).rev().cloned().collect();
+            for msg in recent_messages {
+                self.vector_store
+                    .add_short_term_message(user_id, msg)
+                    .await?;
+            }
+            info!("Re-added {} recent messages to STM", keep_count);
+        }
 
         Ok(())
     }

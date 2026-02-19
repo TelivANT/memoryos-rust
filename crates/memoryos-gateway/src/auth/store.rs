@@ -1,10 +1,12 @@
 use memoryos_core::AppError;
 use qdrant_client::{
-    qdrant::{PointStruct, Value},
+    qdrant::{PointStruct, Value, Filter, Condition},
     Qdrant,
 };
 use serde::{Deserialize, Serialize};
+use sha2::{Sha256, Digest};
 use std::collections::HashMap;
+use uuid::Uuid;
 
 const API_KEY_COLLECTION: &str = "api_keys";
 
@@ -62,9 +64,33 @@ impl ApiKeyStore {
         Ok(())
     }
 
+    /// Hash API key using SHA-256
+    fn hash_api_key(api_key: &str) -> String {
+        let mut hasher = Sha256::new();
+        hasher.update(api_key.as_bytes());
+        format!("{:x}", hasher.finalize())
+    }
+
+    /// Validate API key and check expiration
     pub async fn validate_key(&self, api_key: &str) -> Result<bool, AppError> {
         match self.get_metadata(api_key).await? {
-            Some(meta) => Ok(meta.is_active),
+            Some(meta) => {
+                // Check if active
+                if !meta.is_active {
+                    return Ok(false);
+                }
+                
+                // Check expiration
+                if let Some(expires_at) = &meta.expires_at {
+                    let expiry = chrono::DateTime::parse_from_rfc3339(expires_at)
+                        .map_err(|e| AppError::Internal(format!("Invalid expires_at: {}", e)))?;
+                    if expiry < chrono::Utc::now() {
+                        return Ok(false);
+                    }
+                }
+                
+                Ok(true)
+            }
             None => Ok(false),
         }
     }
@@ -74,15 +100,14 @@ impl ApiKeyStore {
         api_key: &str,
         metadata: ApiKeyMetadata,
     ) -> Result<(), AppError> {
-        use qdrant_client::qdrant::{UpsertPointsBuilder, Value};
+        use qdrant_client::qdrant::UpsertPointsBuilder;
 
+        let key_hash = Self::hash_api_key(api_key);
+        
         let mut payload: HashMap<String, Value> = HashMap::new();
-        payload.insert("api_key".to_string(), api_key.to_string().into());
+        payload.insert("key_hash".to_string(), key_hash.into());
         payload.insert("user_id".to_string(), metadata.user_id.clone().into());
-        payload.insert(
-            "description".to_string(),
-            metadata.description.clone().into(),
-        );
+        payload.insert("description".to_string(), metadata.description.clone().into());
         payload.insert("created_at".to_string(), metadata.created_at.clone().into());
         payload.insert("is_active".to_string(), metadata.is_active.into());
 
@@ -94,7 +119,8 @@ impl ApiKeyStore {
             .map_err(|e| AppError::Internal(format!("Serialization error: {}", e)))?;
         payload.insert("permissions".to_string(), permissions_json.into());
 
-        let point_id = Self::hash_api_key(api_key);
+        // Use UUID v7 for point_id (time-ordered + unique)
+        let point_id = Uuid::now_v7().to_string();
         let point = PointStruct::new(point_id, vec![0.0], payload);
 
         self.qdrant
@@ -106,16 +132,17 @@ impl ApiKeyStore {
     }
 
     pub async fn delete_key(&self, api_key: &str) -> Result<(), AppError> {
-        use qdrant_client::qdrant::{DeletePointsBuilder, PointId, PointsIdsList};
+        use qdrant_client::qdrant::{DeletePointsBuilder, PointsSelector};
 
-        let point_id = Self::hash_api_key(api_key);
-        let point_id = PointId::from(point_id);
-
+        let key_hash = Self::hash_api_key(api_key);
+        
+        // Delete by filter (key_hash)
+        let filter = Filter::must([Condition::matches("key_hash", key_hash)]);
+        
         self.qdrant
             .delete_points(
-                DeletePointsBuilder::new(API_KEY_COLLECTION).points(PointsIdsList {
-                    ids: vec![point_id],
-                }),
+                DeletePointsBuilder::new(API_KEY_COLLECTION)
+                    .points_selector(PointsSelector::from(filter)),
             )
             .await
             .map_err(|e| AppError::ExternalService(format!("Qdrant error: {}", e)))?;
@@ -124,20 +151,25 @@ impl ApiKeyStore {
     }
 
     pub async fn get_metadata(&self, api_key: &str) -> Result<Option<ApiKeyMetadata>, AppError> {
-        use qdrant_client::qdrant::{GetPointsBuilder, PointId};
+        use qdrant_client::qdrant::{ScrollPointsBuilder, SearchPointsBuilder};
 
-        let point_id = Self::hash_api_key(api_key);
-        let point_id = PointId::from(point_id);
-
-        let points = self
+        let key_hash = Self::hash_api_key(api_key);
+        
+        // Search by key_hash filter
+        let filter = Filter::must([Condition::matches("key_hash", key_hash.clone())]);
+        
+        let results = self
             .qdrant
-            .get_points(
-                GetPointsBuilder::new(API_KEY_COLLECTION, vec![point_id]).with_payload(true),
+            .scroll(
+                ScrollPointsBuilder::new(API_KEY_COLLECTION)
+                    .filter(filter)
+                    .limit(1)
+                    .with_payload(true),
             )
             .await
             .map_err(|e| AppError::ExternalService(format!("Qdrant error: {}", e)))?;
 
-        if let Some(point) = points.result.first() {
+        if let Some(point) = results.result.first() {
             let payload = &point.payload;
 
             let user_id = Self::get_string_field(payload, "user_id")?;
@@ -161,15 +193,6 @@ impl ApiKeyStore {
         } else {
             Ok(None)
         }
-    }
-
-    fn hash_api_key(api_key: &str) -> u64 {
-        use std::collections::hash_map::DefaultHasher;
-        use std::hash::{Hash, Hasher};
-
-        let mut hasher = DefaultHasher::new();
-        api_key.hash(&mut hasher);
-        hasher.finish()
     }
 
     fn get_string_field(payload: &HashMap<String, Value>, key: &str) -> Result<String, AppError> {

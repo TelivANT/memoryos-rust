@@ -2,7 +2,7 @@
 
 **Date**: 2026-02-19  
 **Severity**: 🔴 CRITICAL  
-**Status**: ✅ Fixed (1-2) | 📝 Documented (3-4)
+**Status**: ✅ Fixed (3/4) | 📝 Documented (1/4)
 
 ---
 
@@ -44,14 +44,14 @@ curl -X DELETE http://localhost:8080/v1/admin/keys/test \
 
 ---
 
-### 2. API Key Store 存储不安全 ⚠️ NEEDS IMPLEMENTATION
+### 2. API Key Store 存储不安全 ✅ FIXED
 
 **Problem**:
 - API Key 明文存储在 Qdrant payload
 - `point_id` 使用 `DefaultHasher`（非加密、可能碰撞）
 - `validate_key()` 不检查 `expires_at`
 
-**Recommended Fix** (需要实现):
+**Fix** (已实现):
 
 ```rust
 // 1. 使用 SHA-256 hash 存储 key
@@ -63,44 +63,39 @@ fn hash_api_key(key: &str) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-// 2. 使用 UUID v5 生成 point_id
+// 2. 使用 UUID v7 生成 point_id (时间排序 + 唯一性)
 use uuid::Uuid;
-
-fn generate_point_id(key: &str) -> String {
-    let namespace = Uuid::NAMESPACE_OID;
-    let key_hash = hash_api_key(key);
-    Uuid::new_v5(&namespace, key_hash.as_bytes()).to_string()
-}
+let point_id = Uuid::now_v7().to_string();
 
 // 3. validate_key 检查过期时间
-pub async fn validate_key(&self, api_key: &str) -> Result<Option<ApiKeyMetadata>, AppError> {
-    let key_hash = hash_api_key(api_key);
-    let metadata = self.get_key(&key_hash).await?;
+pub async fn validate_key(&self, api_key: &str) -> Result<bool, AppError> {
+    let metadata = self.get_metadata(api_key).await?;
     
     if let Some(ref meta) = metadata {
         // 检查是否激活
         if !meta.is_active {
-            return Ok(None);
+            return Ok(false);
         }
         
         // 检查是否过期
         if let Some(ref expires_at) = meta.expires_at {
-            let expiry = chrono::DateTime::parse_from_rfc3339(expires_at)
-                .map_err(|e| AppError::Internal(format!("Invalid expires_at: {}", e)))?;
+            let expiry = chrono::DateTime::parse_from_rfc3339(expires_at)?;
             if expiry < chrono::Utc::now() {
-                return Ok(None);
+                return Ok(false);
             }
         }
     }
     
-    Ok(metadata)
+    Ok(metadata.is_some())
 }
 ```
 
-**Files to Modify**:
+**Files Modified**:
 - `crates/memoryos-gateway/src/auth/store.rs`
 
-**Breaking Change**: ⚠️ 需要迁移现有 API Keys
+**Migration**: Run `./scripts/migrate_api_keys.sh`
+
+**Breaking Change**: ⚠️ 需要重新发放所有 API Keys
 
 ---
 

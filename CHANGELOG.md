@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### 🔴 Security Fixes
+- **CRITICAL**: Fixed Admin API authentication bypass (CVSS 9.8)
+  - Added `admin_only` middleware to `/v1/admin/keys` endpoints
+  - Changed DELETE method from POST to DELETE
+  - Fixed `delete_api_key` to use path parameter instead of body
+- **TODO**: API Key secure storage (SHA-256 hash)
+- **TODO**: STM cleanup logic
+- **TODO**: STM Redis migration
+
+### 📚 Documentation
+- Added `P0_FIXES.md` - Security fix summary and remediation plan
+- Added `SECURITY_AUDIT.md` - Complete security audit report (15 issues)
+- Updated `WORK_LOG.md` - P0 security fix task tracking
+- Updated `docs/state.json` - Project state with security status
+
+---
+
 ## [0.2.0] - 2026-02-18
 
 ### 🚀 Major Features

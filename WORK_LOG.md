@@ -38,6 +38,29 @@
 
 ## 🚀 当前活跃任务
 
+### [Delevan] - P0 安全问题修复
+- **开始时间**: 2026-02-19 23:00
+- **预计完成**: 2026-02-20 02:00
+- **当前进度**: 25% (1/4 完成)
+- **状态**: 🟢 进行中
+- **任务描述**: 修复代码审查发现的 4 个 P0 级安全问题
+- **相关文件**: 
+  - `crates/memoryos-gateway/src/main.rs` (✅ Admin API 认证)
+  - `crates/memoryos-gateway/src/routes/admin.rs` (✅ DELETE 方法)
+  - `crates/memoryos-gateway/src/auth/store.rs` (⏳ API Key hash 存储)
+  - `crates/memoryos-core/src/memory/manager.rs` (⏳ STM 清理)
+  - `P0_FIXES.md` (✅ 修复总结)
+  - `SECURITY_AUDIT.md` (✅ 安全审计报告)
+- **技术方案**: 
+  - ✅ P0-1: 添加 admin_only 中间件保护 Admin API
+  - ⏳ P0-2: 使用 SHA-256 hash 存储 API Key（Breaking Change）
+  - ⏳ P0-3: 实现 STM consolidation 后清理逻辑
+  - ⏳ P0-4: STM 改用 Redis 存储（架构优化）
+- **遇到的问题**: 
+  - P0-2 需要迁移现有 API Keys（Breaking Change）
+  - P0-3/4 需要重构 memory manager 架构
+- **备注**: CVSS 9.8 Critical 漏洞已修复，剩余问题需要代码重构
+
 ### [Kiro AI] - 生产部署指南
 - **开始时间**: 2026-02-19 15:15
 - **预计完成**: 2026-02-19 15:25

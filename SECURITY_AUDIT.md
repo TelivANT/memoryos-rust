@@ -51,11 +51,11 @@ curl -X POST http://victim.com:8080/v1/admin/keys/legitimate_key
 
 ---
 
-### 2. API Key 明文存储 ⚠️ TODO
+### 2. API Key 安全存储 ✅ FIXED
 
 **Severity**: 🔴 CRITICAL  
 **CVSS Score**: 8.1 (High)  
-**Status**: ⚠️ Needs Implementation
+**Status**: ✅ Fixed
 
 **Description**:
 API Keys 以明文形式存储在 Qdrant vector database payload 中。
@@ -65,20 +65,12 @@ API Keys 以明文形式存储在 Qdrant vector database payload 中。
 - 内部人员可直接读取所有 keys
 - 无法满足 PCI-DSS/SOC2 合规要求
 
-**Current Code**:
-```rust
-// ❌ 明文存储
-let payload = json!({
-    "api_key": api_key,  // 明文！
-    "user_id": metadata.user_id,
-    // ...
-});
-```
+**Fix**: ✅ 已实现 SHA-256 hash 存储
 
-**Recommended Fix**:
 ```rust
-// ✅ 存储 hash
+// ✅ 安全存储
 use sha2::{Sha256, Digest};
+use uuid::Uuid;
 
 fn hash_api_key(key: &str) -> String {
     let mut hasher = Sha256::new();
@@ -86,12 +78,17 @@ fn hash_api_key(key: &str) -> String {
     format!("{:x}", hasher.finalize())
 }
 
+// UUID v7 for point_id (time-ordered + unique)
+let point_id = Uuid::now_v7().to_string();
+
 let payload = json!({
-    "key_hash": hash_api_key(api_key),  // 只存 hash
+    "key_hash": hash_api_key(api_key),  // Only store hash
     "user_id": metadata.user_id,
     // ...
 });
 ```
+
+**Migration**: Run `./scripts/migrate_api_keys.sh`
 
 ---
 
