@@ -84,6 +84,12 @@ async fn main() -> Result<(), AppError> {
     // 5. Setup Router
     let state_arc = Arc::new(state.clone());
 
+    // Admin 路由（使用 Arc<AppState>）
+    let admin_routes = Router::new()
+        .route("/v1/admin/keys", post(routes::admin::create_api_key))
+        .route("/v1/admin/keys/:key", post(routes::admin::delete_api_key))
+        .with_state(state_arc.clone());
+
     // 需要认证的路由
     let protected_routes = Router::new()
         .route("/v1/chat/completions", post(chat_completions))
@@ -106,6 +112,7 @@ async fn main() -> Result<(), AppError> {
         .route("/health", get(health_check))
         .route("/health/status", get(health_status))
         .merge(protected_routes)
+        .merge(admin_routes)
         .with_state(state);
 
     if config.auth.enabled {
