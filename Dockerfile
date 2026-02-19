@@ -1,5 +1,5 @@
 # MemoryOS Gateway Dockerfile
-FROM rust:1.83-slim AS builder
+FROM rustlang/rust:nightly-slim AS builder
 
 WORKDIR /build
 
