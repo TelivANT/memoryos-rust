@@ -189,9 +189,20 @@ impl VectorStorage for QdrantStorage {
     }
     
     async fn clear_short_term(&self, user_id: &str) -> Result<(), AppError> {
-        // TODO: Qdrant delete by filter has complex type inference issues
-        // Workaround: Use TTL or manual cleanup for now
-        warn!("clear_short_term not fully implemented for Qdrant (user: {})", user_id);
+        use qdrant_client::qdrant::{Condition, DeletePointsBuilder, Filter};
+        
+        let filter = Filter::must([Condition::matches("user_id", user_id.to_string())]);
+        
+        self.client
+            .delete_points(
+                DeletePointsBuilder::new(&self.shortterm_collection)
+                    .points(filter)
+                    .wait(true)
+            )
+            .await
+            .map_err(|e| AppError::ExternalService(format!("Qdrant delete failed: {}", e)))?;
+        
+        debug!("Cleared short-term memory for user {}", user_id);
         Ok(())
     }
     
