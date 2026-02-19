@@ -19,3 +19,9 @@ memoryos-core = { path = "../memoryos-core" }
 memoryos-ports = { path = "../memoryos-ports" }
 # Unified Storage Layer
 opendal = { version = "0.45", features = ["services-s3", "services-fs"] }
+# NATS as Redis alternative
+async-nats = { version = "0.37", optional = true }
+
+[features]
+default = []
+nats = ["async-nats"]

@@ -4,6 +4,7 @@ use memoryos_ports::VectorStorage;
 use reqwest::Client;
 use serde_json::json;
 
+#[allow(dead_code)]
 pub struct ChromaStorage {
     client: Client,
     base_url: String,

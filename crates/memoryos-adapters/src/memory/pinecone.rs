@@ -3,6 +3,7 @@ use memoryos_core::{AppError, LongTermMemory, MidTermSegment};
 use memoryos_ports::VectorStorage;
 use reqwest::Client;
 
+#[allow(dead_code)]
 pub struct PineconeStorage {
     client: Client,
     api_key: String,
