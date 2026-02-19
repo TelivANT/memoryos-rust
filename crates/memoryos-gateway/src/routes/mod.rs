@@ -1,5 +1,6 @@
 pub mod admin;
 pub mod chat;
+pub mod defense;
 pub mod faq;
 pub mod health;
 pub mod history;

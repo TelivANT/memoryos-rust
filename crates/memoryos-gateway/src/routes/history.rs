@@ -5,7 +5,6 @@ use axum::{
     Json,
 };
 use memoryos_core::{AppError, MemoryHistoryEntry};
-use std::sync::Arc;
 
 use crate::state::AppState;
 

@@ -33,3 +33,24 @@ url = "http://localhost:6334"
 # api_key = "sk-your-embedding-key"  # Or set OPENAI_API_KEY env var
 # base_url = "https://api.openai.com/v1"
 # model = "text-embedding-3-small"
+
+# Authentication configuration
+[auth]
+enabled = false
+admin_keys = []  # Admin API keys for management endpoints
+api_keys = []    # Regular API keys for normal endpoints
+use_redis_store = false  # Use Qdrant for API key storage
+
+# IP Defense System configuration
+[defense]
+enabled = true
+redis_url = "redis://localhost:6379"
+qdrant_url = "http://localhost:6334"
+
+# Attack thresholds (requests per time window)
+[defense.thresholds]
+auth_failure = { limit = 5, window_secs = 60, ban_duration_secs = 900 }      # 5/min → 15min ban
+rate_limit = { limit = 100, window_secs = 60, ban_duration_secs = 300 }      # 100/min → 5min ban
+prompt_injection = { limit = 3, window_secs = 3600, ban_duration_secs = 3600 } # 3/hour → 1hour ban
+scraping = { limit = 200, window_secs = 60, ban_duration_secs = 1800 }       # 200/min → 30min ban
+ddos = { limit = 500, window_secs = 60, ban_duration_secs = 0 }              # 500/min → permanent ban

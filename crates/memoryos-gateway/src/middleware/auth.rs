@@ -9,6 +9,45 @@ use std::sync::Arc;
 
 use crate::AppState;
 
+pub async fn admin_only(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    request: Request,
+    next: Next,
+) -> Result<Response, Response> {
+    if !state.config.auth.enabled {
+        return Ok(next.run(request).await);
+    }
+
+    let auth_header = headers
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("");
+
+    let token = if auth_header.starts_with("Bearer ") {
+        &auth_header[7..]
+    } else {
+        auth_header
+    };
+
+    let is_admin = state.config.auth.admin_keys.contains(&token.to_string());
+
+    if is_admin {
+        Ok(next.run(request).await)
+    } else {
+        Err((
+            StatusCode::FORBIDDEN,
+            axum::Json(json!({
+                "error": {
+                    "code": "forbidden",
+                    "message": "Admin access required"
+                }
+            })),
+        )
+            .into_response())
+    }
+}
+
 pub async fn auth_middleware(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,

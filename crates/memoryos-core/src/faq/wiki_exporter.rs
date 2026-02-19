@@ -302,11 +302,9 @@ mod tests {
     fn test_categorize() {
         let exporter = WikiExporter::new(WikiExportConfig::default());
         
-        let segments = vec![
-            create_test_faq("WiFi 密码是多少？", 15, 35),
+        let segments = [create_test_faq("WiFi 密码是多少？", 15, 35),
             create_test_faq("报销流程是什么？", 15, 35),
-            create_test_faq("如何请假？", 15, 35),
-        ];
+            create_test_faq("如何请假？", 15, 35)];
 
         let exportable: Vec<&MidTermSegment> = segments.iter().collect();
         let categories = exporter.categorize(exportable);
@@ -320,9 +318,7 @@ mod tests {
     fn test_generate_markdown() {
         let exporter = WikiExporter::new(WikiExportConfig::default());
         
-        let segments = vec![
-            create_test_faq("WiFi 密码是多少？", 15, 35),
-        ];
+        let segments = [create_test_faq("WiFi 密码是多少？", 15, 35)];
 
         let exportable: Vec<&MidTermSegment> = segments.iter().collect();
         let categories = exporter.categorize(exportable);

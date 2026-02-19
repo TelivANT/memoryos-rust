@@ -1,7 +1,5 @@
 //! FAQ 管理 API
 
-use crate::auth::store::ApiKeyStore;
-use crate::middleware::auth::AuthMiddleware;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -9,7 +7,7 @@ use axum::{
     routing::{delete, get, post},
     Json, Router,
 };
-use memoryos_core::{AutoPromoter, HeatTracker, MemoryType, MidTermSegment, PromotionRecord};
+use memoryos_core::{AutoPromoter, HeatTracker, PromotionRecord};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
@@ -56,17 +54,13 @@ pub struct PromoteResponse {
 }
 
 /// 创建 FAQ 路由
-pub fn create_faq_routes(faq_state: FaqState, api_key_store: Arc<ApiKeyStore>) -> Router {
+pub fn create_faq_routes(faq_state: FaqState) -> Router {
     Router::new()
         .route("/candidates", get(get_candidates))
         .route("/promote", post(promote_to_faq))
         .route("/:id", delete(delete_faq))
         .route("/history", get(get_promotion_history))
         .route("/stats", get(get_stats))
-        .layer(axum::middleware::from_fn_with_state(
-            api_key_store,
-            AuthMiddleware::admin_only,
-        ))
         .with_state(faq_state)
 }
 

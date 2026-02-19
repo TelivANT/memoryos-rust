@@ -5,7 +5,6 @@ use axum::{
 use memoryos_core::{llm::RouterContext, AppError};
 use memoryos_ports::ChatRequest;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use tracing::info;
 
 use crate::routes::apply_degraded_header;

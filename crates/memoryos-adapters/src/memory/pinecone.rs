@@ -2,7 +2,6 @@ use async_trait::async_trait;
 use memoryos_core::{AppError, LongTermMemory, MidTermSegment};
 use memoryos_ports::VectorStorage;
 use reqwest::Client;
-use serde_json::json;
 
 pub struct PineconeStorage {
     client: Client,

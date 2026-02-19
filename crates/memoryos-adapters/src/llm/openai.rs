@@ -90,8 +90,7 @@ impl LlmAdapter for OpenAiAdapter {
         // 解析 SSE 格式
         let mut chunks = Vec::new();
         for line in body.lines() {
-            if line.starts_with("data: ") {
-                let data = &line[6..];
+            if let Some(data) = line.strip_prefix("data: ") {
                 if data == "[DONE]" {
                     break;
                 }

@@ -3,9 +3,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Json, Response},
 };
-use memoryos_core::HealthMode;
 use serde_json::json;
-use std::sync::Arc;
 
 use crate::routes::apply_degraded_header;
 use crate::AppState;

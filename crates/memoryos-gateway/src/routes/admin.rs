@@ -1,14 +1,13 @@
 use axum::{
     extract::State,
     http::StatusCode,
-    response::{IntoResponse, Json},
+    response::Json,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 
 use crate::{auth::ApiKeyMetadata, AppState};
-use memoryos_core::AppError;
 
 #[derive(Deserialize)]
 pub struct CreateKeyRequest {

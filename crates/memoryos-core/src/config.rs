@@ -29,6 +29,9 @@ pub struct AuthConfig {
     /// 管理员 API Key（用于管理其他 Key）
     #[serde(default)]
     pub admin_key: Option<String>,
+    /// 管理员 API Keys 列表
+    #[serde(default)]
+    pub admin_keys: Vec<String>,
     /// 静态 API Keys（兼容小规模场景）
     #[serde(default)]
     pub api_keys: Vec<String>,

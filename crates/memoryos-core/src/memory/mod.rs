@@ -87,9 +87,11 @@ pub struct GraphMemory {
 /// 记忆类型
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum MemoryType {
     /// 普通问答
     #[serde(rename = "qa")]
+    #[default]
     QA,
     /// FAQ 候选
     #[serde(rename = "faq_candidate")]
@@ -99,11 +101,6 @@ pub enum MemoryType {
     Faq,
 }
 
-impl Default for MemoryType {
-    fn default() -> Self {
-        Self::QA
-    }
-}
 
 /// Memory retrieval result
 #[derive(Debug, Clone, Serialize, Deserialize)]

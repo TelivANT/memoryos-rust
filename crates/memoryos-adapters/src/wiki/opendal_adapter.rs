@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use memoryos_core::AppError;
 use memoryos_ports::{WikiAdapter, WikiDocument};
-use opendal::{Builder, Operator, Scheme};
+use opendal::{Builder, Operator};
 use std::collections::HashMap;
 use tracing::info;
 

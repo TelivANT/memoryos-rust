@@ -1387,7 +1387,7 @@ mod tests {
                 (Some(expected), Some(actual)) => actual.eq_ignore_ascii_case(expected),
                 _ => false,
             };
-            let knowledge_ok = !out.knowledge.is_empty() == case.expect.knowledge_saved;
+            let knowledge_ok = out.knowledge.is_empty() != case.expect.knowledge_saved;
 
             let case_ok = traits_ok && prefs_ok && background_ok && knowledge_ok;
             if case_ok {

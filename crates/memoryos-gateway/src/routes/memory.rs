@@ -4,8 +4,7 @@ use axum::{
 };
 use memoryos_core::{AppError, Message};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::routes::apply_degraded_header;
 use crate::AppState;

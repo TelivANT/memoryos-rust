@@ -140,12 +140,12 @@ impl ConcurrencyControl for RedisStorage {
             .map_err(|e| AppError::ExternalService(format!("Redis connection failed: {}", e)))?;
 
         let fence_key = format!("fence:{}", lock_key);
-        let lock_value: String;
+        
         let token: u64 = conn
             .incr::<_, _, u64>(&fence_key, 1)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis incr failed: {}", e)))?;
-        lock_value = format!("{}:{}", owner_id, token);
+        let lock_value: String = format!("{}:{}", owner_id, token);
 
         let acquired: bool = conn
             .set_nx(lock_key, &lock_value)
