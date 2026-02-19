@@ -149,8 +149,26 @@ impl VectorStorage for ChromaStorage {
     }
     
     async fn clear_short_term(&self, user_id: &str) -> Result<(), AppError> {
-        // Chroma doesn't support delete by filter easily, so we skip for now
-        debug!("Clear short-term for user {} (not implemented for Chroma)", user_id);
+        // Chroma: Delete by metadata filter
+        let url = format!("{}/api/v1/collections/{}/delete", self.base_url, self.shortterm_collection);
+        
+        let mut where_clause = HashMap::new();
+        where_clause.insert("user_id", json!(user_id));
+        
+        let request = json!({
+            "where": where_clause
+        });
+        
+        self.client
+            .post(&url)
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| AppError::ExternalService(format!("Chroma delete request failed: {}", e)))?
+            .error_for_status()
+            .map_err(|e| AppError::ExternalService(format!("Chroma delete failed: {}", e)))?;
+        
+        debug!("Cleared short-term memory for user {}", user_id);
         Ok(())
     }
     

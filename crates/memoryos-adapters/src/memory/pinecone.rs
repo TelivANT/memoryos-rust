@@ -177,8 +177,25 @@ impl VectorStorage for PineconeStorage {
     }
     
     async fn clear_short_term(&self, user_id: &str) -> Result<(), AppError> {
-        // Pinecone delete by namespace
-        debug!("Clear short-term for user {} (requires namespace deletion)", user_id);
+        // Pinecone: Delete all vectors in user's namespace
+        let url = format!("{}/vectors/delete", self.get_index_url(&self.shortterm_index));
+        
+        let request = json!({
+            "deleteAll": true,
+            "namespace": user_id
+        });
+        
+        self.client
+            .post(&url)
+            .header("Api-Key", &self.api_key)
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| AppError::ExternalService(format!("Pinecone delete request failed: {}", e)))?
+            .error_for_status()
+            .map_err(|e| AppError::ExternalService(format!("Pinecone delete failed: {}", e)))?;
+        
+        debug!("Cleared short-term memory for user {}", user_id);
         Ok(())
     }
     

@@ -13,7 +13,7 @@ use qdrant_client::{
 };
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::debug;
+use tracing::{debug, warn};
 
 pub struct QdrantStorage {
     client: Arc<Qdrant>,
@@ -189,9 +189,9 @@ impl VectorStorage for QdrantStorage {
     }
     
     async fn clear_short_term(&self, user_id: &str) -> Result<(), AppError> {
-        // TODO: Implement delete by filter
-        // Qdrant delete_points has type inference issues, will fix later
-        debug!("Clear short-term for user {} (not yet implemented)", user_id);
+        // TODO: Qdrant delete by filter has complex type inference issues
+        // Workaround: Use TTL or manual cleanup for now
+        warn!("clear_short_term not fully implemented for Qdrant (user: {})", user_id);
         Ok(())
     }
     
