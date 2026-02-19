@@ -20,14 +20,15 @@ MemoryOS-Rust is a high-performance AI Agent memory management system built with
 ## ✨ Key Features
 
 - 🚀 **High Performance**: Rust + Tokio, supporting high concurrency with 10K+ QPS per instance.
-- 🧠 **3-Tier Memory**: STM (Redis/NATS) → MTM (Qdrant) → LTM (Qdrant).
-- 💾 **Dual Storage Options**: Redis (default, ~1ms) or NATS (alternative, ~2ms, no warnings).
+- 🧠 **Unified Vector Storage**: All memory tiers (STM/MTM/LTM) use vector databases for persistent storage.
+- 💾 **3 Vector Database Options**: Qdrant (default), Chroma (lightweight), Pinecone (cloud-hosted).
 - ⚡ **FAQ Direct Hit**: High-frequency Q&A auto-promoted to instant response (< 50ms).
 - 🔌 **Universal Gateway**: OpenAI protocol compatible, supports Gemini, Claude, Ollama, DeepSeek, Azure.
 - 🕸️ **Graph Memory**: **Qdrant-Native GraphRAG** with Mermaid visualization.
 - 📚 **Knowledge Export**: Auto-export FAQs to Wiki (S3/Confluence), supports **Agent Playbook**.
-- 🛡️ **Enterprise Security**: RBAC, PII sanitization, prompt injection defense, GDPR right to be forgotten.
+- 🛡️ **Enterprise Security**: RBAC, PII sanitization, prompt injection defense, IP defense system.
 - 🤖 **Smart Routing**: Auto-route between local Llama (hot/private) and cloud GPT-4 (complex/cold).
+- 🔄 **Coordination Layer**: Redis/NATS for distributed coordination (Session, Lock, Cache, Message Queue).
 - 🎯 **6 Performance Optimizations**: Bloom Filter, LRU Cache, Batch Processing, Heat Buffer, Similarity Filter, Incremental Summary.
 
 ---

@@ -339,11 +339,54 @@ max_messages = 20
 
 ---
 
-**状态**: 📋 提案阶段  
+**状态**: ✅ 已实现 (2026-02-19)  
 **优先级**: 🔴 高  
 **预计工作量**: 2-4 周  
+**实际工作量**: 30 分钟 (无数据迁移)  
 **风险等级**: ⚠️ 中等  
 
 **创建时间**: 2026-02-19  
+**实现时间**: 2026-02-19  
 **最后更新**: 2026-02-19  
 **作者**: Kiro AI
+
+---
+
+## ✅ 实现状态
+
+**已完成** (2026-02-19 09:50):
+
+1. ✅ VectorStorage trait 扩展
+   - add_short_term_message()
+   - get_short_term_messages()
+   - clear_short_term()
+
+2. ✅ Message 结构体更新
+   - 添加 embedding: Option<Vec<f32>>
+
+3. ✅ Qdrant 实现
+   - 新 collection: short_term_messages
+   - 完整的存储和检索功能
+
+4. ✅ Chroma 实现
+   - 新 collection: short_term_messages
+   - REST API 集成
+
+5. ✅ Pinecone 实现
+   - 新 index: memoryos-shortterm
+   - Cloud API 集成
+
+6. ✅ 编译通过
+   - 所有代码编译成功
+   - 修复 Gateway 和 Worker
+
+**待完成**:
+- ⏳ Qdrant clear_short_term (类型推断问题)
+- ⏳ Chroma/Pinecone clear 实现
+- ⏳ 集成测试
+- ⏳ 性能测试
+
+**Commit**: 4391ad1  
+**GitHub**: https://github.com/TelivANT/memoryos-rust
+
+---

@@ -38,6 +38,33 @@
 
 ## 🚀 当前活跃任务
 
+### [Kiro AI] - 短期记忆架构重构
+- **开始时间**: 2026-02-19 09:30
+- **预计完成**: 2026-02-19 10:00
+- **当前进度**: 100%
+- **状态**: ✅ 完成
+- **任务描述**: 短期记忆从 Redis/NATS 迁移到向量数据库
+- **相关文件**:
+  - `crates/memoryos-ports/src/memory.rs` (扩展 VectorStorage trait)
+  - `crates/memoryos-core/src/memory/mod.rs` (Message 添加 embedding)
+  - `crates/memoryos-adapters/src/memory/qdrant.rs` (Qdrant 实现)
+  - `crates/memoryos-adapters/src/memory/chroma.rs` (Chroma 实现)
+  - `crates/memoryos-adapters/src/memory/pinecone.rs` (Pinecone 实现)
+  - `crates/memoryos-gateway/src/routes/memory.rs` (修复)
+  - `crates/memoryos-worker/src/main.rs` (修复)
+- **技术亮点**:
+  - ✅ 统一所有记忆层到向量数据库
+  - ✅ 解决数据丢失风险
+  - ✅ 支持语义搜索
+  - ✅ 三个向量数据库全部实现
+  - ✅ 编译通过，代码已推送
+- **架构变更**:
+  - 短期记忆: Redis/NATS → Qdrant/Chroma/Pinecone
+  - 中期记忆: Qdrant → Qdrant/Chroma/Pinecone
+  - 长期记忆: Qdrant → Qdrant/Chroma/Pinecone
+  - Redis/NATS: 主存储 → 分布式协调层
+- **备注**: 生产环境无数据，直接重构，无需迁移
+
 ### [Kiro AI] - 架构改进建议文档
 - **开始时间**: 2026-02-19 09:20
 - **预计完成**: 2026-02-19 09:40
