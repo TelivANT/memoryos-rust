@@ -1,0 +1,57 @@
+# High-Performance Configuration for MemoryOS-Rust
+# Suitable for: High-throughput scenarios, 10K+ QPS
+
+[server]
+host = "0.0.0.0"
+port = 8080
+worker_threads = 16  # Match CPU cores
+timeout_seconds = 30
+
+[llm]
+default_provider = "openai"
+default_model = "gpt-3.5-turbo"  # Faster than GPT-4
+
+[llm.providers.openai]
+type = "openai"
+api_key = "<YOUR_OPENAI_API_KEY>"
+base_url = "https://api.openai.com/v1"
+max_retries = 2  # Reduce retries for speed
+
+[llm.providers.gemini]
+type = "gemini"
+api_key = "<YOUR_GEMINI_API_KEY>"
+base_url = "<YOUR_GEMINI_BASE_URL>"
+max_retries = 2
+
+[storage.redis]
+# High-performance: Local Redis with AOF disabled
+url = "redis://127.0.0.1:6379"
+# Optimize for speed
+# appendonly = "no"
+# save = ""
+
+[storage.vector]
+# High-performance: Local Qdrant
+url = "http://127.0.0.1:6334"
+
+[router]
+enable = true
+hot_threshold = 0.9  # Aggressive local routing
+max_local_tokens = 4000
+local_backends = ["http://localhost:11434"]  # Ollama
+sensitive_keywords = []
+
+[embedding]
+api_key = "<YOUR_OPENAI_API_KEY>"
+base_url = "https://api.openai.com/v1"
+model = "text-embedding-3-small"  # Fastest embedding model
+
+[auth]
+enabled = false  # Disable for benchmarking
+
+# Performance tuning tips:
+# 1. Use local Redis and Qdrant
+# 2. Increase worker_threads to match CPU cores
+# 3. Enable router for FAQ direct hit (<10ms)
+# 4. Use faster LLM models (gpt-3.5-turbo, gemini-flash)
+# 5. Disable auth for internal services

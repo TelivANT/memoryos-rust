@@ -1,0 +1,35 @@
+# Basic Configuration for MemoryOS-Rust
+# Suitable for: Development, Testing, Small-scale deployment
+
+[server]
+host = "0.0.0.0"
+port = 8080
+worker_threads = 2
+timeout_seconds = 30
+
+[llm]
+default_provider = "openai"
+default_model = "gpt-3.5-turbo"
+
+[llm.providers.openai]
+type = "openai"
+api_key = "<YOUR_OPENAI_API_KEY>"
+base_url = "https://api.openai.com/v1"
+max_retries = 3
+
+[storage.redis]
+url = "redis://127.0.0.1:6379"
+
+[storage.vector]
+url = "http://127.0.0.1:6334"
+
+[router]
+enable = false
+
+[embedding]
+api_key = "<YOUR_OPENAI_API_KEY>"
+base_url = "https://api.openai.com/v1"
+model = "text-embedding-3-small"
+
+[auth]
+enabled = false

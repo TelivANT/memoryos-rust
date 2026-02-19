@@ -1,0 +1,69 @@
+# Cost-Optimized Configuration for MemoryOS-Rust
+# Suitable for: Budget-conscious deployments, 85-90% cost savings
+
+[server]
+host = "0.0.0.0"
+port = 8080
+worker_threads = 4
+timeout_seconds = 60
+
+[llm]
+default_provider = "local_llama"
+default_model = "llama3:8b"
+
+# Primary: Local Llama (Free, 90% cost savings)
+[llm.providers.local_llama]
+type = "ollama"
+base_url = "http://localhost:11434"
+model = "llama3:8b"
+max_retries = 2
+
+# Fallback: Cheap cloud provider (DeepSeek, Groq)
+[llm.providers.deepseek]
+type = "openai"
+api_key = "<YOUR_DEEPSEEK_API_KEY>"
+base_url = "https://api.deepseek.com/v1"
+max_retries = 3
+
+# Emergency fallback: OpenAI (only for complex queries)
+[llm.providers.openai]
+type = "openai"
+api_key = "<YOUR_OPENAI_API_KEY>"
+base_url = "https://api.openai.com/v1"
+max_retries = 2
+
+[storage.redis]
+url = "redis://127.0.0.1:6379"
+
+[storage.vector]
+url = "http://127.0.0.1:6334"
+
+[router]
+enable = true
+hot_threshold = 0.7
+max_local_tokens = 2000
+local_backends = ["http://localhost:11434"]
+sensitive_keywords = []
+
+[embedding]
+# Use free local embedding
+api_key = ""
+base_url = "http://localhost:11434"
+model = "nomic-embed-text"  # Free local embedding
+
+[auth]
+enabled = true
+api_keys = ["<YOUR_API_KEY>"]
+
+# Cost optimization strategy:
+# 1. FAQ Direct Hit (95% savings) - <10ms response
+# 2. Local Llama (90% savings) - Hot topics, simple queries
+# 3. DeepSeek (80% savings) - Medium complexity
+# 4. OpenAI GPT-4 (0% savings) - Only for complex reasoning
+#
+# Expected cost breakdown:
+# - 60% FAQ Direct Hit: $0
+# - 30% Local Llama: $0
+# - 8% DeepSeek: ~$0.001/1K tokens
+# - 2% OpenAI: ~$0.03/1K tokens
+# Total savings: ~85-90% vs pure OpenAI

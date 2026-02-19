@@ -1,0 +1,79 @@
+# Local LLM Configuration for MemoryOS-Rust
+# Suitable for: Privacy-sensitive deployments, Air-gapped environments
+
+[server]
+host = "0.0.0.0"
+port = 8080
+worker_threads = 8
+timeout_seconds = 120  # Local LLM may be slower
+
+[llm]
+default_provider = "ollama"
+default_model = "llama3:70b"
+
+# Primary: Ollama (Local, Private)
+[llm.providers.ollama]
+type = "ollama"
+base_url = "http://localhost:11434"
+model = "llama3:70b"  # Or llama3:8b for faster response
+max_retries = 2
+
+# Alternative: vLLM (High-performance local inference)
+[llm.providers.vllm]
+type = "openai"
+base_url = "http://localhost:8000/v1"
+api_key = "dummy"  # vLLM doesn't require API key
+max_retries = 2
+
+[storage.redis]
+# Local Redis for privacy
+url = "redis://127.0.0.1:6379"
+
+[storage.vector]
+# Local Qdrant for privacy
+url = "http://127.0.0.1:6334"
+
+[router]
+enable = true
+hot_threshold = 0.8
+max_local_tokens = 4000
+local_backends = ["http://localhost:11434"]
+sensitive_keywords = []
+
+[embedding]
+# Local embedding model (no external API calls)
+api_key = ""
+base_url = "http://localhost:11434"
+model = "nomic-embed-text"  # Or bge-m3, mxbai-embed-large
+
+[auth]
+enabled = true
+api_keys = ["<YOUR_API_KEY>"]
+
+# Local LLM Setup Guide:
+#
+# 1. Install Ollama:
+#    curl -fsSL https://ollama.com/install.sh | sh
+#
+# 2. Pull models:
+#    ollama pull llama3:70b          # Best quality
+#    ollama pull llama3:8b           # Faster
+#    ollama pull nomic-embed-text    # Embedding
+#
+# 3. (Optional) Install vLLM for better performance:
+#    pip install vllm
+#    python -m vllm.entrypoints.openai.api_server \
+#      --model meta-llama/Llama-3-70B-Instruct \
+#      --port 8000
+#
+# 4. Start MemoryOS-Rust:
+#    cargo run --release --bin memoryos-gateway
+#
+# Hardware Requirements:
+# - llama3:8b:  8GB VRAM (RTX 3060 Ti)
+# - llama3:70b: 48GB VRAM (A100) or CPU with 64GB RAM
+#
+# Privacy Benefits:
+# - No data leaves your infrastructure
+# - GDPR/HIPAA compliant
+# - Air-gapped deployment supported
