@@ -6,6 +6,9 @@ use uuid::Uuid;
 pub mod graph;
 pub use graph::{GraphEntity, GraphManager, GraphRelation};
 
+pub mod multimodal;
+pub use multimodal::{MultiModalContent, MultiModalMessage};
+
 /// 对话消息
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message {
