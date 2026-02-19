@@ -66,6 +66,7 @@ struct PineconeFetchResponse {
 }
 
 #[derive(Deserialize)]
+#[allow(dead_code)]
 struct PineconeFetchedVector {
     id: String,
     values: Option<Vec<f32>>,

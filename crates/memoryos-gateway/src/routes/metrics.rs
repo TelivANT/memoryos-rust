@@ -3,6 +3,7 @@
 use axum::{http::StatusCode, response::IntoResponse};
 
 /// GET /metrics
+#[allow(dead_code)]
 pub async fn metrics_handler() -> impl IntoResponse {
     (
         StatusCode::OK,

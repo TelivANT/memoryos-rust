@@ -11,6 +11,7 @@ use serde_json::json;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+#[allow(dead_code)]
 pub async fn ip_defense_middleware(
     State(defense): State<Arc<IpDefenseSystem>>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,

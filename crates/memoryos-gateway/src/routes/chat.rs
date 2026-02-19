@@ -10,6 +10,7 @@ use tracing::info;
 use crate::routes::apply_degraded_header;
 use crate::AppState;
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChatCompletionResponse {
     pub id: String,
@@ -19,6 +20,7 @@ pub struct ChatCompletionResponse {
     pub choices: Vec<ChatChoice>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChatChoice {
     pub index: u32,
@@ -26,6 +28,7 @@ pub struct ChatChoice {
     pub finish_reason: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChatMessage {
     pub role: String,
@@ -34,6 +37,7 @@ pub struct ChatMessage {
 
 /// POST /v1/chat/completions
 /// 支持透传模式：保留所有未知字段
+#[allow(dead_code)]
 pub async fn chat_completions(
     State(state): State<AppState>,
     Json(request): Json<ChatRequest>,

@@ -13,7 +13,7 @@ use qdrant_client::{
 };
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, warn};
+use tracing::debug;
 
 pub struct QdrantStorage {
     client: Arc<Qdrant>,

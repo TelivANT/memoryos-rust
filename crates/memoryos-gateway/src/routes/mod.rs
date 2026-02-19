@@ -20,6 +20,7 @@ pub fn apply_degraded_header(response: &mut Response, degraded_mode: bool) {
     }
 }
 
+#[allow(dead_code)]
 pub fn health_routes() -> Router<crate::AppState> {
     Router::new()
         .route("/health", get(health::health))
@@ -29,10 +30,12 @@ pub fn health_routes() -> Router<crate::AppState> {
         .route("/metrics", get(metrics::metrics_handler))
 }
 
+#[allow(dead_code)]
 pub fn chat_routes() -> Router<crate::AppState> {
     Router::new().route("/chat/completions", post(chat::chat_completions))
 }
 
+#[allow(dead_code)]
 pub fn memory_routes() -> Router<crate::AppState> {
     Router::new()
         .route("/memory/add", post(memory::add_message))

@@ -13,6 +13,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 /// FAQ 管理状态
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct FaqState {
     pub heat_tracker: Arc<HeatTracker>,
@@ -20,12 +21,14 @@ pub struct FaqState {
 }
 
 /// FAQ 候选响应
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct FaqCandidateResponse {
     pub candidates: Vec<FaqCandidate>,
     pub total: usize,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct FaqCandidate {
     pub id: Uuid,
@@ -39,6 +42,7 @@ pub struct FaqCandidate {
 }
 
 /// 手动提升请求
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct PromoteRequest {
     pub memory_id: Uuid,
@@ -46,6 +50,7 @@ pub struct PromoteRequest {
 }
 
 /// 提升响应
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct PromoteResponse {
     pub success: bool,
@@ -54,6 +59,7 @@ pub struct PromoteResponse {
 }
 
 /// 创建 FAQ 路由
+#[allow(dead_code)]
 pub fn create_faq_routes(faq_state: FaqState) -> Router {
     Router::new()
         .route("/candidates", get(get_candidates))
@@ -65,6 +71,7 @@ pub fn create_faq_routes(faq_state: FaqState) -> Router {
 }
 
 /// GET /admin/faq/candidates - 获取候选 FAQ
+#[allow(dead_code)]
 async fn get_candidates(State(_state): State<FaqState>) -> impl IntoResponse {
     // TODO: 从 Qdrant 获取实际数据
     let candidates = vec![];
@@ -76,6 +83,7 @@ async fn get_candidates(State(_state): State<FaqState>) -> impl IntoResponse {
 }
 
 /// POST /admin/faq/promote - 手动提升为 FAQ
+#[allow(dead_code)]
 async fn promote_to_faq(
     State(_state): State<FaqState>,
     Json(req): Json<PromoteRequest>,
@@ -89,6 +97,7 @@ async fn promote_to_faq(
 }
 
 /// DELETE /admin/faq/:id - 删除 FAQ
+#[allow(dead_code)]
 async fn delete_faq(
     State(_state): State<FaqState>,
     Path(id): Path<Uuid>,
@@ -104,6 +113,7 @@ async fn delete_faq(
 }
 
 /// GET /admin/faq/history - 获取提升历史
+#[allow(dead_code)]
 async fn get_promotion_history(State(state): State<FaqState>) -> impl IntoResponse {
     let history = state.auto_promoter.get_history(50).await;
     Json(serde_json::json!({
@@ -113,6 +123,7 @@ async fn get_promotion_history(State(state): State<FaqState>) -> impl IntoRespon
 }
 
 /// GET /admin/faq/stats - 获取统计信息
+#[allow(dead_code)]
 async fn get_stats(State(state): State<FaqState>) -> impl IntoResponse {
     let stats = state.auto_promoter.get_stats().await;
     Json(stats)

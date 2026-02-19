@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use crate::AppState;
 
+#[allow(dead_code)]
 pub async fn admin_only(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,

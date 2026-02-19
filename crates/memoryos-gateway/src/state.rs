@@ -19,7 +19,9 @@ pub struct AppState {
     pub config: Arc<AppConfig>,
     pub router: Arc<dyn ModelRouter>,
     pub shield: Arc<SecurityShield>,
+    #[allow(dead_code)]
     pub context_injector: Arc<dyn ContextInjector>,
+    #[allow(dead_code)]
     pub vector_store: Arc<dyn VectorStorage>,
     pub providers: HashMap<String, Arc<dyn LlmAdapter>>,
     pub memory_manager: Arc<RwLock<Arc<dyn MemoryManager>>>,
@@ -145,10 +147,14 @@ impl AppState {
 
 #[derive(Clone)]
 pub struct HealthStatus {
+    #[allow(dead_code)]
     pub redis: bool,
+    #[allow(dead_code)]
     pub qdrant: bool,
     pub degraded: bool,
     pub mode: String,
+    #[allow(dead_code)]
     pub upstream: bool,
+    #[allow(dead_code)]
     pub auth_cache: bool,
 }
