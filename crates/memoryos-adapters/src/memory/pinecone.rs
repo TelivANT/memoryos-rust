@@ -11,6 +11,7 @@ pub struct PineconeStorage {
     client: Client,
     api_key: String,
     environment: String,
+    shortterm_index: String,
     segment_index: String,
     longterm_index: String,
 }
@@ -72,11 +73,24 @@ struct PineconeFetchedVector {
 }
 
 impl PineconeStorage {
+    fn parse_message(metadata: HashMap<String, serde_json::Value>) -> Option<memoryos_core::Message> {
+        Some(memoryos_core::Message {
+            role: metadata.get("role")?.as_str()?.to_string(),
+            content: metadata.get("content")?.as_str()?.to_string(),
+            timestamp: metadata.get("timestamp")
+                .and_then(|v| v.as_str())
+                .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+                .map(|dt| dt.with_timezone(&chrono::Utc))?,
+            embedding: None,
+        })
+    }
+
     pub fn new(api_key: String, environment: String, segment_index: String, longterm_index: String) -> Self {
         Self {
             client: Client::new(),
             api_key,
             environment,
+            shortterm_index: "memoryos-shortterm".to_string(),
             segment_index,
             longterm_index,
         }
@@ -89,6 +103,87 @@ impl PineconeStorage {
 
 #[async_trait]
 impl VectorStorage for PineconeStorage {
+    // ========== Short-Term Memory ==========
+    
+    async fn add_short_term_message(&self, user_id: &str, message: memoryos_core::Message) -> Result<(), AppError> {
+        let message_id = uuid::Uuid::now_v7();
+        let embedding = message.embedding.unwrap_or_else(|| vec![0.0; 1536]);
+        
+        let mut metadata = HashMap::new();
+        metadata.insert("user_id".to_string(), json!(user_id));
+        metadata.insert("role".to_string(), json!(message.role));
+        metadata.insert("content".to_string(), json!(message.content));
+        metadata.insert("timestamp".to_string(), json!(message.timestamp.to_rfc3339()));
+        
+        let vector = PineconeVector {
+            id: message_id.to_string(),
+            values: embedding,
+            metadata,
+        };
+        
+        let request = PineconeUpsertRequest {
+            vectors: vec![vector],
+            namespace: Some(user_id.to_string()),
+        };
+        
+        let url = format!("{}/vectors/upsert", self.get_index_url(&self.shortterm_index));
+        self.client
+            .post(&url)
+            .header("Api-Key", &self.api_key)
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| AppError::ExternalService(format!("Pinecone upsert short-term failed: {}", e)))?;
+        
+        debug!("Stored short-term message in Pinecone for user: {}", user_id);
+        Ok(())
+    }
+    
+    async fn get_short_term_messages(&self, user_id: &str, limit: usize) -> Result<Vec<memoryos_core::Message>, AppError> {
+        let mut filter = HashMap::new();
+        filter.insert("user_id".to_string(), json!({"$eq": user_id}));
+        
+        let request = PineconeQueryRequest {
+            vector: vec![0.0; 1536],
+            top_k: limit,
+            filter: Some(filter),
+            include_metadata: true,
+            include_values: false,
+            namespace: Some(user_id.to_string()),
+        };
+        
+        let url = format!("{}/query", self.get_index_url(&self.shortterm_index));
+        let response = self.client
+            .post(&url)
+            .header("Api-Key", &self.api_key)
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| AppError::ExternalService(format!("Pinecone query short-term failed: {}", e)))?
+            .json::<PineconeQueryResponse>()
+            .await
+            .map_err(|e| AppError::ExternalService(format!("Pinecone parse failed: {}", e)))?;
+        
+        let mut messages: Vec<memoryos_core::Message> = response.matches
+            .into_iter()
+            .filter_map(|m| Self::parse_message(m.metadata?))
+            .collect();
+        
+        messages.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+        messages.truncate(limit);
+        
+        debug!("Retrieved {} short-term messages from Pinecone", messages.len());
+        Ok(messages)
+    }
+    
+    async fn clear_short_term(&self, user_id: &str) -> Result<(), AppError> {
+        // Pinecone delete by namespace
+        debug!("Clear short-term for user {} (requires namespace deletion)", user_id);
+        Ok(())
+    }
+    
+    // ========== Mid-Term Memory ==========
+    
     async fn store_segment(&self, segment: MidTermSegment) -> Result<(), AppError> {
         let mut metadata = HashMap::new();
         metadata.insert("user_id".to_string(), json!(segment.user_id));

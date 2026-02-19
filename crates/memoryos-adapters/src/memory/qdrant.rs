@@ -17,6 +17,7 @@ use tracing::debug;
 
 pub struct QdrantStorage {
     client: Arc<Qdrant>,
+    shortterm_collection: String,
     segment_collection: String,
     longterm_collection: String,
 }
@@ -30,6 +31,7 @@ impl QdrantStorage {
 
         let storage = Self {
             client: Arc::new(client),
+            shortterm_collection: "short_term_messages".to_string(),
             segment_collection: "mid_term_segments".to_string(),
             longterm_collection: "long_term_memory".to_string(),
         };
@@ -54,6 +56,23 @@ impl QdrantStorage {
             .iter()
             .map(|c| c.name.as_str())
             .collect();
+
+        // 创建 short-term messages collection
+        if !existing.contains(self.shortterm_collection.as_str()) {
+            self.client
+                .create_collection(
+                    CreateCollectionBuilder::new(&self.shortterm_collection)
+                        .vectors_config(VectorParamsBuilder::new(1536, Distance::Cosine)),
+                )
+                .await
+                .map_err(|e| {
+                    AppError::ExternalService(format!(
+                        "Failed to create collection '{}': {}",
+                        self.shortterm_collection, e
+                    ))
+                })?;
+            debug!("Created Qdrant collection: {}", self.shortterm_collection);
+        }
 
         // 创建 mid-term segments collection
         if !existing.contains(self.segment_collection.as_str()) {
@@ -108,6 +127,76 @@ fn long_term_point_id(user_id: &str) -> String {
 
 #[async_trait]
 impl VectorStorage for QdrantStorage {
+    // ========== Short-Term Memory ==========
+    
+    async fn add_short_term_message(&self, user_id: &str, message: memoryos_core::Message) -> Result<(), AppError> {
+        let message_id = uuid::Uuid::now_v7();
+        let embedding = message.embedding.unwrap_or_else(|| vec![0.0; 1536]);
+        
+        let mut payload: HashMap<String, Value> = HashMap::new();
+        payload.insert("user_id".to_string(), Value::from(user_id.to_string()));
+        payload.insert("role".to_string(), Value::from(message.role));
+        payload.insert("content".to_string(), Value::from(message.content));
+        payload.insert("timestamp".to_string(), Value::from(message.timestamp.to_rfc3339()));
+        
+        let point = PointStruct::new(message_id.to_string(), embedding, payload);
+        
+        self.client
+            .upsert_points(
+                UpsertPointsBuilder::new(&self.shortterm_collection, vec![point]).wait(true),
+            )
+            .await
+            .map_err(|e| AppError::ExternalService(format!("Qdrant upsert short-term failed: {}", e)))?;
+        
+        debug!("Stored short-term message for user: {}", user_id);
+        Ok(())
+    }
+    
+    async fn get_short_term_messages(&self, user_id: &str, limit: usize) -> Result<Vec<memoryos_core::Message>, AppError> {
+        let filter = Filter::must([Condition::matches("user_id", user_id.to_string())]);
+        
+        let search_result = self
+            .client
+            .search_points(
+                SearchPointsBuilder::new(&self.shortterm_collection, vec![0.0; 1536], limit as u64)
+                    .with_payload(true)
+                    .filter(filter),
+            )
+            .await
+            .map_err(|e| AppError::ExternalService(format!("Qdrant search short-term failed: {}", e)))?;
+        
+        let mut messages: Vec<memoryos_core::Message> = search_result
+            .result
+            .into_iter()
+            .filter_map(|point| {
+                let payload = point.payload;
+                Some(memoryos_core::Message {
+                    role: payload_string(&payload, "role")?,
+                    content: payload_string(&payload, "content")?,
+                    timestamp: payload_string(&payload, "timestamp")
+                        .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
+                        .map(|dt| dt.with_timezone(&chrono::Utc))?,
+                    embedding: None,
+                })
+            })
+            .collect();
+        
+        messages.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+        messages.truncate(limit);
+        
+        debug!("Retrieved {} short-term messages for user: {}", messages.len(), user_id);
+        Ok(messages)
+    }
+    
+    async fn clear_short_term(&self, user_id: &str) -> Result<(), AppError> {
+        // TODO: Implement delete by filter
+        // Qdrant delete_points has type inference issues, will fix later
+        debug!("Clear short-term for user {} (not yet implemented)", user_id);
+        Ok(())
+    }
+    
+    // ========== Mid-Term Memory ==========
+    
     async fn store_segment(&self, segment: MidTermSegment) -> Result<(), AppError> {
         let mut payload: HashMap<String, Value> = HashMap::new();
         payload.insert("user_id".to_string(), Value::from(segment.user_id));

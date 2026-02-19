@@ -12,6 +12,9 @@ pub struct Message {
     pub role: String,
     pub content: String,
     pub timestamp: chrono::DateTime<chrono::Utc>,
+    /// Embedding for vector search (optional)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub embedding: Option<Vec<f32>>,
 }
 
 /// Short-term memory (最近 N 轮对话)

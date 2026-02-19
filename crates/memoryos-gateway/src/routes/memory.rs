@@ -46,6 +46,7 @@ pub async fn add_message(
         role: request.role.clone(),
         content: request.content.clone(),
         timestamp,
+        embedding: None,
     };
 
     // 直接同步写入

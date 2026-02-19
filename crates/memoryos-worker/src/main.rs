@@ -238,6 +238,7 @@ async fn handle_stream_entry<C: AsyncCommands + Send + Sync>(
         role: event.role.clone(),
         content: event.content.clone(),
         timestamp: event.timestamp.unwrap_or_else(chrono::Utc::now),
+        embedding: None,
     };
 
     match memory_manager
