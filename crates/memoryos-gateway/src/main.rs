@@ -126,7 +126,10 @@ async fn main() -> Result<(), AppError> {
     }
 
     // 6. Start Server
-    let addr = SocketAddr::from(([0, 0, 0, 0], config.server.port));
+    let addr: std::net::SocketAddr = format!("{}:{}", config.server.host, config.server.port)
+        .parse()
+        .map_err(|e| AppError::Config(format!("Invalid host/port: {}", e)))?;
+    
     tracing::info!("MemoryOS Gateway listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr)

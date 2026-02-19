@@ -15,6 +15,36 @@ pub struct AppConfig {
     pub router: RouterConfig,
     #[serde(default)]
     pub auth: AuthConfig,
+    #[serde(default)]
+    pub embedding: EmbeddingConfig,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct EmbeddingConfig {
+    #[serde(default)]
+    pub api_key: String,
+    #[serde(default = "default_embedding_base_url")]
+    pub base_url: String,
+    #[serde(default = "default_embedding_model")]
+    pub model: String,
+}
+
+impl Default for EmbeddingConfig {
+    fn default() -> Self {
+        Self {
+            api_key: String::new(),
+            base_url: default_embedding_base_url(),
+            model: default_embedding_model(),
+        }
+    }
+}
+
+fn default_embedding_base_url() -> String {
+    "https://api.openai.com/v1".to_string()
+}
+
+fn default_embedding_model() -> String {
+    "text-embedding-3-small".to_string()
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
