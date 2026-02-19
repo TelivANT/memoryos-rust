@@ -37,17 +37,37 @@
       "Phase 10: System Refinement (Compile Fixes, Defense Integration, Documentation)",
       "Security: Prompt Injection Defense, PII Sanitization, API Key Auth, IP Defense System",
       "Ops: Docker Compose, K8s Deployment Plan, K3s Auto-Deploy",
-      "Docs: User Manual, K3s Deployment, FAQ System, Optimization, Defense System"
+      "Docs: User Manual, K3s Deployment, FAQ System, Optimization, Defense System, Vector Databases"
     ],
-    "in_progress": [],
+    "in_progress": [
+      "Phase 11: Architecture Improvement (Short-term Memory to Vector DB) - 📋 Documented"
+    ],
     "todo": [
       "Phase 11: Monitoring & Observability (Prometheus, Grafana)",
       "Phase 12 (Future): Multi-Modal Support (Image/Audio)",
       "Phase 13 (Future): SaaS Billing Integration",
-      "FAQ Enhancement: S3/Confluence Export Implementation"
+      "FAQ Enhancement: S3/Confluence Export Implementation",
+      "Architecture Migration: Short-term Memory to Vector Database (High Priority)"
     ]
   },
   "recent_changes": [
+    {
+      "date": "2026-02-19",
+      "author": "Kiro AI",
+      "changes": [
+        "🔍 发现短期记忆架构问题",
+        "创建 ARCHITECTURE_IMPROVEMENT.md 文档 (完整改进方案)",
+        "问题: 短期记忆存储在 Redis/NATS 有数据丢失风险",
+        "建议: 短期记忆应该存储在向量数据库（持久化）",
+        "Redis/NATS 应该用于分布式协调，而不是主存储",
+        "提供渐进式迁移方案 (双写模式 → 数据迁移 → 切换)",
+        "标记为高优先级改进项",
+        "采用文档先行策略，避免破坏现有代码"
+      ],
+      "commits": [
+        "待提交 - docs: 添加架构改进建议文档"
+      ]
+    },
     {
       "date": "2026-02-19",
       "author": "Kiro AI",
@@ -210,6 +230,7 @@
     "defense_system": "./docs/DEFENSE_SYSTEM.md",
     "nats_alternative": "./docs/NATS_ALTERNATIVE.md",
     "vector_databases": "./docs/VECTOR_DATABASES.md",
+    "architecture_improvement": "./docs/ARCHITECTURE_IMPROVEMENT.md",
     "project_review": "./docs/PROJECT_REVIEW.md",
     "source_code_root": "./crates"
   },
