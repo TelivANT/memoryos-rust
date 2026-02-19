@@ -48,7 +48,7 @@
       "Docs: User Manual, K3s Deployment, FAQ System, Optimization, Defense System, Vector Databases, Architecture Improvement"
     ],
     "in_progress": [
-      "Performance Benchmarking"
+      "Production Deployment Guide"
     ],
     "todo": [
       "Phase 12: Performance Benchmarking (in progress)",
@@ -60,6 +60,49 @@
     ]
   },
   "recent_changes": [
+    {
+      "date": "2026-02-19",
+      "author": "Kiro AI",
+      "changes": [
+        "✅ 性能基准测试基础设施完成",
+        "创建 memoryos-benchmarks 包",
+        "  • 独立的 benchmark 包",
+        "  • Criterion 基准测试支持",
+        "  • 简单性能测试工具",
+        "Criterion 基准测试",
+        "  • vector_storage_benchmark.rs",
+        "  • 统计分析（平均值、标准差、置信区间）",
+        "  • HTML 报告生成",
+        "  • 历史对比",
+        "简单性能测试工具",
+        "  • perf_test.rs",
+        "  • 快速性能测量",
+        "  • 友好的输出格式",
+        "自动化脚本",
+        "  • run_benchmarks.sh",
+        "  • 自动检查 Qdrant",
+        "  • 运行 benchmark",
+        "详细文档",
+        "  • PERFORMANCE_BENCHMARKING.md",
+        "  • 完整测试指南",
+        "  • 性能基准参考",
+        "  • 优化建议",
+        "测试覆盖",
+        "  • add_short_term_message ✅",
+        "  • get_short_term_messages ✅",
+        "  • clear_short_term ✅",
+        "  • 并发写入 ✅",
+        "预期性能",
+        "  • add: 10-20ms",
+        "  • get: 8-15ms",
+        "  • clear: 50-100ms",
+        "  • 吞吐量: 50-100 ops/sec",
+        "9 files changed, 974 insertions(+)"
+      ],
+      "commits": [
+        "c6ae685 - feat: 添加性能基准测试"
+      ]
+    },
     {
       "date": "2026-02-19",
       "author": "Kiro AI",

@@ -38,6 +38,32 @@
 
 ## 🚀 当前活跃任务
 
+### [Kiro AI] - 性能基准测试
+- **开始时间**: 2026-02-19 15:11
+- **预计完成**: 2026-02-19 15:35
+- **当前进度**: 100%
+- **状态**: ✅ 完成
+- **任务描述**: 创建性能基准测试基础设施
+- **相关文件**:
+  - `crates/memoryos-benchmarks/` (新包)
+  - `benches/vector_storage_benchmark.rs` (Criterion 测试)
+  - `src/bin/perf_test.rs` (简单测试工具)
+  - `scripts/run_benchmarks.sh` (自动化脚本)
+  - `docs/PERFORMANCE_BENCHMARKING.md` (详细文档)
+  - `PERFORMANCE_BENCHMARKING_README.md` (快速入门)
+- **测试覆盖**:
+  - add_short_term_message ✅
+  - get_short_term_messages (5/10/20条) ✅
+  - clear_short_term ✅
+  - 并发写入 (1/5/10/20并发) ✅
+- **预期性能**:
+  - add: 10-20ms
+  - get: 8-15ms
+  - clear: 50-100ms
+  - 吞吐量: 50-100 ops/sec
+- **代码变更**: 9 files changed, 974 insertions(+)
+- **备注**: 性能测试基础设施完成，可以开始部署指南
+
 ### [Kiro AI] - 向量存储集成测试
 - **开始时间**: 2026-02-19 15:05
 - **预计完成**: 2026-02-19 15:30
