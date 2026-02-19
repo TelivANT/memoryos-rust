@@ -1,6 +1,6 @@
 use memoryos_core::AppError;
 use qdrant_client::{
-    qdrant::{Condition, Filter, PointStruct, Value},
+    qdrant::{Condition, Filter, PointStruct, ScrollPointsBuilder, Value},
     Qdrant,
 };
 use serde::{Deserialize, Serialize};
@@ -139,16 +139,26 @@ impl ApiKeyStore {
 
         let key_hash = Self::hash_api_key(api_key);
 
-        // Delete by filter (key_hash)
+        // Query to find point_id
         let filter = Filter::must([Condition::matches("key_hash", key_hash)]);
-
-        self.qdrant
-            .delete_points(
-                DeletePointsBuilder::new(API_KEY_COLLECTION)
-                    .points_selector(PointsSelector::from(filter)),
-            )
+        let search_result = self
+            .qdrant
+            .scroll(ScrollPointsBuilder::new(API_KEY_COLLECTION).filter(filter).limit(1).build())
             .await
             .map_err(|e| AppError::ExternalService(format!("Qdrant error: {}", e)))?;
+
+        if let Some(point) = search_result.result.first() {
+            if let Some(point_id) = &point.id {
+                // Delete by point_id
+                self.qdrant
+                    .delete_points(
+                        qdrant_client::qdrant::DeletePointsBuilder::new(API_KEY_COLLECTION)
+                            .points(vec![point_id.clone()]),
+                    )
+                    .await
+                    .map_err(|e| AppError::ExternalService(format!("Qdrant error: {}", e)))?;
+            }
+        }
 
         Ok(())
     }

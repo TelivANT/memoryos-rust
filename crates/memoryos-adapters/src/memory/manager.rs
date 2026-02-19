@@ -182,10 +182,6 @@ impl DefaultMemoryManager {
             http_client: reqwest::Client::builder()
                 .pool_max_idle_per_host(10)
                 .timeout(std::time::Duration::from_secs(30))
-            embedding_model,
-            http_client: reqwest::Client::builder()
-                .pool_max_idle_per_host(10)
-                .timeout(std::time::Duration::from_secs(30))
                 .build()
                 .unwrap_or_else(|_| reqwest::Client::new()),
         }

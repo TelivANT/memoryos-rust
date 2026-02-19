@@ -1706,6 +1706,7 @@ dependencies = [
  "redis 0.32.7",
  "serde",
  "serde_json",
+ "sha2",
  "tokio",
  "tower 0.4.13",
  "tracing",

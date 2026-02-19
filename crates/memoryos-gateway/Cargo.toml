@@ -24,6 +24,7 @@ memoryos-ports = { path = "../memoryos-ports" }
 memoryos-adapters = { path = "../memoryos-adapters" }
 qdrant-client.workspace = true
 redis.workspace = true
+sha2 = "0.10"
 
 [dev-dependencies]
 tower.workspace = true

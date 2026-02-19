@@ -28,6 +28,7 @@ pub struct AppState {
     pub history_storage: Option<Arc<dyn HistoryStorage>>,
     pub worker_monitor: Arc<RwLock<WorkerMonitorSnapshot>>,
     pub api_key_store: Option<Arc<ApiKeyStore>>,
+    pub async_memory_pipeline: bool,
 }
 
 impl AppState {
@@ -122,6 +123,7 @@ impl AppState {
             history_storage: None, // Optional feature
             worker_monitor,
             api_key_store,
+            async_memory_pipeline: false, // Default to sync mode
         }
     }
 
