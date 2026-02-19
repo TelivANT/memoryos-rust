@@ -1,0 +1,63 @@
+groups:
+  - name: memoryos_alerts
+    interval: 30s
+    rules:
+      # High latency alert
+      - alert: HighRequestLatency
+        expr: histogram_quantile(0.95, rate(memoryos_http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High request latency detected"
+          description: "95th percentile latency is {{ $value }}s"
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(memoryos_http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} req/s"
+
+      # Vector DB down
+      - alert: VectorDBDown
+        expr: up{job="qdrant"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Vector database is down"
+          description: "Qdrant is not responding"
+
+      # Redis down
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis is down"
+          description: "Redis is not responding"
+
+      # High memory operation failure rate
+      - alert: HighMemoryOperationFailureRate
+        expr: rate(memoryos_memory_operations_total{status="error"}[5m]) / rate(memoryos_memory_operations_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory operation failure rate"
+          description: "Failure rate is {{ $value | humanizePercentage }}"
+
+      # Vector DB high latency
+      - alert: VectorDBHighLatency
+        expr: histogram_quantile(0.95, rate(memoryos_vector_db_latency_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Vector DB high latency"
+          description: "95th percentile latency is {{ $value }}s for {{$labels.db_type}}"

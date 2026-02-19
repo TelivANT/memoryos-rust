@@ -1,0 +1,76 @@
+{
+  "dashboard": {
+    "title": "MemoryOS Overview",
+    "tags": ["memoryos"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "title": "HTTP Requests Rate",
+        "targets": [
+          {
+            "expr": "rate(memoryos_http_requests_total[5m])",
+            "legendFormat": "{{method}} {{path}} - {{status}}"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "HTTP Request Duration (p95)",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(memoryos_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{method}} {{path}}"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "Memory Operations Rate",
+        "targets": [
+          {
+            "expr": "rate(memoryos_memory_operations_total[5m])",
+            "legendFormat": "{{operation}} - {{status}}"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "Vector DB Latency (p95)",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(memoryos_vector_db_latency_seconds_bucket[5m]))",
+            "legendFormat": "{{db_type}} - {{operation}}"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "Active Users",
+        "targets": [
+          {
+            "expr": "memoryos_active_users"
+          }
+        ],
+        "type": "stat"
+      },
+      {
+        "title": "Memory Storage",
+        "targets": [
+          {
+            "expr": "memoryos_short_term_messages_total",
+            "legendFormat": "Short-term"
+          },
+          {
+            "expr": "memoryos_mid_term_segments_total",
+            "legendFormat": "Mid-term"
+          },
+          {
+            "expr": "memoryos_long_term_memories_total",
+            "legendFormat": "Long-term"
+          }
+        ],
+        "type": "graph"
+      }
+    ]
+  }
+}

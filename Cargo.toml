@@ -6,6 +6,7 @@ members = [
     "crates/memoryos-gateway",
     "crates/memoryos-worker",
     "crates/memoryos-benchmarks",
+    "crates/memoryos-metrics",
 ]
 resolver = "2"
 
@@ -47,3 +48,5 @@ async-trait = "0.1"
 arc-swap = "1.6"
 validator = { version = "0.16", features = ["derive"] }
 criterion = { version = "0.5", features = ["async_tokio"] }
+prometheus = "0.13"
+lazy_static = "1.4"
