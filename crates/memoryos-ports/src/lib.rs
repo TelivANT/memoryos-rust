@@ -1,8 +1,8 @@
 pub mod history;
 pub mod llm;
 pub mod memory;
-pub mod wiki;
 pub mod multimodal;
+pub mod wiki;
 
 use async_trait::async_trait;
 use memoryos_core::{AppError, HealthStatus};
@@ -14,8 +14,8 @@ pub use llm::{
     LlmAdapter,
 };
 pub use memory::{ConcurrencyControl, MemoryManager, ShortTermStorage, VectorStorage};
-pub use wiki::{WikiAdapter, WikiDocument};
 pub use multimodal::MultiModalStorage;
+pub use wiki::{WikiAdapter, WikiDocument};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NormalizedRequest {

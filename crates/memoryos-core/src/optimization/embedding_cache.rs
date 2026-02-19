@@ -55,12 +55,24 @@ impl EmbeddingCache {
     pub async fn put(&self, query: String, embedding: Vec<f32>) {
         let mut cache = self.cache.write().await;
 
-        // Evict if full
-        if cache.map.len() >= cache.capacity {
-            if let Some(oldest) = cache.access_order.first().cloned() {
-                cache.map.remove(&oldest);
-                cache.access_order.remove(0);
+        // If already exists, update it
+        if cache.map.contains_key(&query) {
+            if let Some(entry) = cache.map.get_mut(&query) {
+                entry.embedding = embedding;
+                entry.access_count += 1;
             }
+            // Move to end (most recently used)
+            if let Some(pos) = cache.access_order.iter().position(|k| k == &query) {
+                cache.access_order.remove(pos);
+            }
+            cache.access_order.push(query);
+            return;
+        }
+
+        // Evict LRU if full
+        if cache.map.len() >= cache.capacity && !cache.access_order.is_empty() {
+            let lru_key = cache.access_order.remove(0);
+            cache.map.remove(&lru_key);
         }
 
         cache.map.insert(

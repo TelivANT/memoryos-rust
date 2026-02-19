@@ -1,10 +1,10 @@
 use memoryos_core::AppError;
 use qdrant_client::{
-    qdrant::{PointStruct, Value, Filter, Condition},
+    qdrant::{Condition, Filter, PointStruct, Value},
     Qdrant,
 };
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use uuid::Uuid;
 
@@ -79,7 +79,7 @@ impl ApiKeyStore {
                 if !meta.is_active {
                     return Ok(false);
                 }
-                
+
                 // Check expiration
                 if let Some(expires_at) = &meta.expires_at {
                     let expiry = chrono::DateTime::parse_from_rfc3339(expires_at)
@@ -88,7 +88,7 @@ impl ApiKeyStore {
                         return Ok(false);
                     }
                 }
-                
+
                 Ok(true)
             }
             None => Ok(false),
@@ -103,11 +103,14 @@ impl ApiKeyStore {
         use qdrant_client::qdrant::UpsertPointsBuilder;
 
         let key_hash = Self::hash_api_key(api_key);
-        
+
         let mut payload: HashMap<String, Value> = HashMap::new();
         payload.insert("key_hash".to_string(), key_hash.into());
         payload.insert("user_id".to_string(), metadata.user_id.clone().into());
-        payload.insert("description".to_string(), metadata.description.clone().into());
+        payload.insert(
+            "description".to_string(),
+            metadata.description.clone().into(),
+        );
         payload.insert("created_at".to_string(), metadata.created_at.clone().into());
         payload.insert("is_active".to_string(), metadata.is_active.into());
 
@@ -135,10 +138,10 @@ impl ApiKeyStore {
         use qdrant_client::qdrant::{DeletePointsBuilder, PointsSelector};
 
         let key_hash = Self::hash_api_key(api_key);
-        
+
         // Delete by filter (key_hash)
         let filter = Filter::must([Condition::matches("key_hash", key_hash)]);
-        
+
         self.qdrant
             .delete_points(
                 DeletePointsBuilder::new(API_KEY_COLLECTION)
@@ -154,10 +157,10 @@ impl ApiKeyStore {
         use qdrant_client::qdrant::{ScrollPointsBuilder, SearchPointsBuilder};
 
         let key_hash = Self::hash_api_key(api_key);
-        
+
         // Search by key_hash filter
         let filter = Filter::must([Condition::matches("key_hash", key_hash.clone())]);
-        
+
         let results = self
             .qdrant
             .scroll(

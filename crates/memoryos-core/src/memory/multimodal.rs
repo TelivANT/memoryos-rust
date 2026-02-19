@@ -6,10 +6,24 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum MultiModalContent {
-    Text { content: String },
-    Image { url: String, caption: Option<String>, embedding: Option<Vec<f32>> },
-    Audio { url: String, transcript: Option<String>, embedding: Option<Vec<f32>> },
-    Video { url: String, transcript: Option<String>, thumbnail: Option<String> },
+    Text {
+        content: String,
+    },
+    Image {
+        url: String,
+        caption: Option<String>,
+        embedding: Option<Vec<f32>>,
+    },
+    Audio {
+        url: String,
+        transcript: Option<String>,
+        embedding: Option<Vec<f32>>,
+    },
+    Video {
+        url: String,
+        transcript: Option<String>,
+        thumbnail: Option<String>,
+    },
 }
 
 /// Multi-modal message

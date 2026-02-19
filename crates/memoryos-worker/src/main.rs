@@ -205,7 +205,9 @@ async fn poll_once(
     let pending_reply: StreamReadReply = conn
         .xread_options(&[&cfg.stream_key], &["0"], &pending_options)
         .await
-        .map_err(|e| AppError::ExternalService(format!("Redis XREADGROUP pending failed: {}", e)))?;
+        .map_err(|e| {
+            AppError::ExternalService(format!("Redis XREADGROUP pending failed: {}", e))
+        })?;
 
     for stream_key in pending_reply.keys {
         for stream_id in stream_key.ids {

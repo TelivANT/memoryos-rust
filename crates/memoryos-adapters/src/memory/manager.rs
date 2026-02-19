@@ -61,6 +61,7 @@ pub struct DefaultMemoryManager {
     embedding_api_key: String,
     embedding_base_url: String,
     embedding_model: String,
+    http_client: reqwest::Client,
 }
 
 #[derive(Default)]
@@ -178,6 +179,15 @@ impl DefaultMemoryManager {
             embedding_api_key,
             embedding_base_url,
             embedding_model,
+            http_client: reqwest::Client::builder()
+                .pool_max_idle_per_host(10)
+                .timeout(std::time::Duration::from_secs(30))
+            embedding_model,
+            http_client: reqwest::Client::builder()
+                .pool_max_idle_per_host(10)
+                .timeout(std::time::Duration::from_secs(30))
+                .build()
+                .unwrap_or_else(|_| reqwest::Client::new()),
         }
     }
 
@@ -215,6 +225,11 @@ impl DefaultMemoryManager {
             embedding_api_key,
             embedding_base_url,
             embedding_model,
+            http_client: reqwest::Client::builder()
+                .pool_max_idle_per_host(10)
+                .timeout(std::time::Duration::from_secs(30))
+                .build()
+                .unwrap_or_else(|_| reqwest::Client::new()),
         }
     }
 
@@ -246,6 +261,11 @@ impl DefaultMemoryManager {
             embedding_api_key,
             embedding_base_url,
             embedding_model,
+            http_client: reqwest::Client::builder()
+                .pool_max_idle_per_host(10)
+                .timeout(std::time::Duration::from_secs(30))
+                .build()
+                .unwrap_or_else(|_| reqwest::Client::new()),
         }
     }
 
@@ -279,7 +299,8 @@ impl DefaultMemoryManager {
         });
 
         let url = format!("{}/embeddings", self.embedding_base_url);
-        let response = match reqwest::Client::new()
+        let response = match self
+            .http_client
             .post(&url)
             .header(
                 "Authorization",
@@ -774,7 +795,13 @@ impl DefaultMemoryManager {
 
         // 重新写入最近的消息
         if keep_count > 0 {
-            let recent_messages: Vec<_> = messages.iter().rev().take(keep_count).rev().cloned().collect();
+            let recent_messages: Vec<_> = messages
+                .iter()
+                .rev()
+                .take(keep_count)
+                .rev()
+                .cloned()
+                .collect();
             for msg in recent_messages {
                 self.vector_store
                     .add_short_term_message(user_id, msg)

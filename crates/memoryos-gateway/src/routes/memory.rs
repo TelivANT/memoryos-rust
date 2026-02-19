@@ -56,7 +56,10 @@ pub async fn add_message(
         let user_id = request.user_id.clone();
         tokio::spawn(async move {
             let mgr = manager.read().await;
-            if let Err(e) = mgr.add_message_with_event(&user_id, message, Some(&event_id)).await {
+            if let Err(e) = mgr
+                .add_message_with_event(&user_id, message, Some(&event_id))
+                .await
+            {
                 tracing::error!("Async memory pipeline failed: {}", e);
             }
         });

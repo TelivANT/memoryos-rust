@@ -87,10 +87,13 @@ async fn main() -> Result<(), AppError> {
     // Admin 路由（需要认证 + admin 权限）
     let admin_routes = Router::new()
         .route("/v1/admin/keys", post(routes::admin::create_api_key))
-        .route("/v1/admin/keys/:key", axum::routing::delete(routes::admin::delete_api_key))  // 改用 DELETE
+        .route(
+            "/v1/admin/keys/:key",
+            axum::routing::delete(routes::admin::delete_api_key),
+        ) // 改用 DELETE
         .layer(axum::middleware::from_fn_with_state(
             state_arc.clone(),
-            middleware::admin_only,  // 使用 admin_only 中间件
+            middleware::admin_only, // 使用 admin_only 中间件
         ))
         .with_state(state_arc.clone());
 
@@ -129,7 +132,7 @@ async fn main() -> Result<(), AppError> {
     let addr: std::net::SocketAddr = format!("{}:{}", config.server.host, config.server.port)
         .parse()
         .map_err(|e| AppError::Config(format!("Invalid host/port: {}", e)))?;
-    
+
     tracing::info!("MemoryOS Gateway listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr)
