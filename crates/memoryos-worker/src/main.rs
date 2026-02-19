@@ -72,13 +72,9 @@ async fn main() -> Result<(), AppError> {
         app_config.storage.redis.max_messages,
     )?);
     let qdrant_storage = Arc::new(QdrantStorage::new(&app_config.storage.vector.url).await?);
-    let memory_manager: Arc<dyn MemoryManager> =
-        Arc::new(DefaultMemoryManager::new_with_coordinator(
-            redis_storage.clone(),
-            qdrant_storage,
-            llm,
-            redis_storage,
-        ));
+    let memory_manager: Arc<dyn MemoryManager> = Arc::new(
+        DefaultMemoryManager::new_with_coordinator(qdrant_storage, llm, redis_storage),
+    );
 
     let stream_client = Client::open(app_config.storage.redis.url.as_str()).map_err(|e| {
         AppError::Config(format!("Failed to connect to Redis stream client: {}", e))

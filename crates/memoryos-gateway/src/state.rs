@@ -1,13 +1,13 @@
 use memoryos_adapters::{
     llm::{ClaudeAdapter, GeminiAdapter, OllamaAdapter, OpenAiAdapter},
-    memory::{DefaultMemoryManager, QdrantStorage, RedisStorage},
+    memory::{DefaultMemoryManager, QdrantStorage},
 };
 use memoryos_core::{
     config::AppConfig,
     llm::{ContextInjector, ModelRouter, RouterConfig, StandardInjector, TieredRouter},
     security::{SecurityConfig, SecurityShield},
 };
-use memoryos_ports::{HistoryStorage, LlmAdapter, MemoryManager, ShortTermStorage, VectorStorage};
+use memoryos_ports::{HistoryStorage, LlmAdapter, MemoryManager, VectorStorage};
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 
@@ -76,20 +76,13 @@ impl AppState {
         let context_injector = Arc::new(StandardInjector::new(2000));
 
         // 4. Init Memory Manager
-        let redis_storage: Arc<dyn ShortTermStorage> = Arc::new(
-            RedisStorage::new(&config.storage.redis.url, 3600, 20).expect("Failed to init Redis"),
-        );
-
         let default_llm = providers
             .get(&config.llm.default_provider)
             .expect("Default LLM provider not found")
             .clone();
 
-        let memory_manager: Arc<dyn MemoryManager> = Arc::new(DefaultMemoryManager::new(
-            redis_storage,
-            vector_store.clone(),
-            default_llm,
-        ));
+        let memory_manager: Arc<dyn MemoryManager> =
+            Arc::new(DefaultMemoryManager::new(vector_store.clone(), default_llm));
 
         // 5. Init Worker Monitor
         let worker_monitor = Arc::new(RwLock::new(WorkerMonitorSnapshot::from_env(false)));

@@ -4,9 +4,7 @@ use async_trait::async_trait;
 use memoryos_core::{
     AppError, KnowledgeItem, LongTermMemory, MemoryContext, Message, MidTermSegment, UserProfile,
 };
-use memoryos_ports::{
-    ConcurrencyControl, LlmAdapter, MemoryManager, ShortTermStorage, VectorStorage,
-};
+use memoryos_ports::{ConcurrencyControl, LlmAdapter, MemoryManager, VectorStorage};
 use reqwest::StatusCode;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -49,7 +47,6 @@ impl EmbeddingCache {
 }
 
 pub struct DefaultMemoryManager {
-    short_term: Arc<dyn ShortTermStorage>,
     vector_store: Arc<dyn VectorStorage>,
     write_coordinator: Option<Arc<dyn ConcurrencyControl>>,
     history_storage: Option<Arc<dyn memoryos_ports::HistoryStorage>>,
@@ -159,11 +156,7 @@ fn load_extraction_policy_from_env() -> ExtractionPolicy {
 }
 
 impl DefaultMemoryManager {
-    pub fn new(
-        short_term: Arc<dyn ShortTermStorage>,
-        vector_store: Arc<dyn VectorStorage>,
-        llm: Arc<dyn LlmAdapter>,
-    ) -> Self {
+    pub fn new(vector_store: Arc<dyn VectorStorage>, llm: Arc<dyn LlmAdapter>) -> Self {
         let embedding_api_key = std::env::var("OPENAI_API_KEY").unwrap_or_default();
         let embedding_base_url = std::env::var("EMBEDDING_BASE_URL")
             .unwrap_or_else(|_| "https://api.openai.com/v1".to_string());
@@ -171,7 +164,6 @@ impl DefaultMemoryManager {
             .unwrap_or_else(|_| "text-embedding-3-small".to_string());
 
         Self {
-            short_term,
             vector_store,
             write_coordinator: None,
             history_storage: None,
@@ -198,7 +190,6 @@ impl DefaultMemoryManager {
     }
 
     pub fn new_with_coordinator(
-        short_term: Arc<dyn ShortTermStorage>,
         vector_store: Arc<dyn VectorStorage>,
         llm: Arc<dyn LlmAdapter>,
         write_coordinator: Arc<dyn ConcurrencyControl>,
@@ -210,7 +201,6 @@ impl DefaultMemoryManager {
             .unwrap_or_else(|_| "text-embedding-3-small".to_string());
 
         Self {
-            short_term,
             vector_store,
             write_coordinator: Some(write_coordinator),
             history_storage: None,
@@ -229,7 +219,6 @@ impl DefaultMemoryManager {
     }
 
     pub fn new_with_coordinator_tuning(
-        short_term: Arc<dyn ShortTermStorage>,
         vector_store: Arc<dyn VectorStorage>,
         llm: Arc<dyn LlmAdapter>,
         write_coordinator: Arc<dyn ConcurrencyControl>,
@@ -243,7 +232,6 @@ impl DefaultMemoryManager {
             .unwrap_or_else(|_| "text-embedding-3-small".to_string());
 
         Self {
-            short_term,
             vector_store,
             write_coordinator: Some(write_coordinator),
             history_storage: None,
@@ -350,8 +338,8 @@ impl DefaultMemoryManager {
         fencing_token: Option<u64>,
     ) -> Result<(), AppError> {
         let recent = self
-            .short_term
-            .get_recent(user_id, self.short_term_limit)
+            .vector_store
+            .get_short_term_messages(user_id, self.short_term_limit)
             .await
             .unwrap_or_default();
 
@@ -622,7 +610,9 @@ impl MemoryManager for DefaultMemoryManager {
         let message_id = format!("msg_{}", uuid::Uuid::now_v7());
 
         let operation_result = async {
-            self.short_term.add_message(user_id, message).await?;
+            self.vector_store
+                .add_short_term_message(user_id, message)
+                .await?;
 
             // 记录历史
             if let Some(history) = &self.history_storage {
@@ -683,8 +673,8 @@ impl MemoryManager for DefaultMemoryManager {
 
         // 1. Get short-term memory
         let short_term = self
-            .short_term
-            .get_recent(user_id, self.short_term_limit)
+            .vector_store
+            .get_short_term_messages(user_id, self.short_term_limit)
             .await?;
 
         // 2. Search mid-term memory
@@ -711,8 +701,8 @@ impl DefaultMemoryManager {
     async fn check_and_consolidate_internal(&self, user_id: &str) -> Result<(), AppError> {
         // 获取 STM 中的消息数量
         let recent_messages = self
-            .short_term
-            .get_recent(user_id, self.short_term_capacity)
+            .vector_store
+            .get_short_term_messages(user_id, self.short_term_capacity)
             .await?;
 
         // 如果 STM 达到容量，触发 consolidation
@@ -831,7 +821,6 @@ impl MemoryManager for NoopMemoryManager {
 
 /// Partial-degraded manager that keeps available memory layers online.
 pub struct DegradedMemoryManager {
-    short_term: Option<Arc<dyn ShortTermStorage>>,
     vector_store: Option<Arc<dyn VectorStorage>>,
     _llm: Arc<dyn LlmAdapter>,
     short_term_limit: usize,
@@ -839,13 +828,8 @@ pub struct DegradedMemoryManager {
 }
 
 impl DegradedMemoryManager {
-    pub fn new(
-        short_term: Option<Arc<dyn ShortTermStorage>>,
-        vector_store: Option<Arc<dyn VectorStorage>>,
-        llm: Arc<dyn LlmAdapter>,
-    ) -> Self {
+    pub fn new(vector_store: Option<Arc<dyn VectorStorage>>, llm: Arc<dyn LlmAdapter>) -> Self {
         Self {
-            short_term,
             vector_store,
             _llm: llm,
             short_term_limit: 10,
@@ -870,8 +854,8 @@ impl MemoryManager for DegradedMemoryManager {
         message: Message,
         _event_id: Option<&str>,
     ) -> Result<(), AppError> {
-        if let Some(short_term) = &self.short_term {
-            if let Err(err) = short_term.add_message(user_id, message).await {
+        if let Some(vector_store) = &self.vector_store {
+            if let Err(err) = vector_store.add_short_term_message(user_id, message).await {
                 warn!("Degraded short-term add failed: {}", err);
             }
         }
@@ -883,9 +867,9 @@ impl MemoryManager for DegradedMemoryManager {
         user_id: &str,
         query: &str,
     ) -> Result<MemoryContext, AppError> {
-        let short_term = if let Some(short_term_store) = &self.short_term {
-            match short_term_store
-                .get_recent(user_id, self.short_term_limit)
+        let short_term = if let Some(vector_store) = &self.vector_store {
+            match vector_store
+                .get_short_term_messages(user_id, self.short_term_limit)
                 .await
             {
                 Ok(v) => v,
@@ -940,37 +924,11 @@ mod tests {
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use tokio::sync::Mutex;
 
-    struct TestShortTermStorage {
-        writes: Arc<AtomicUsize>,
-        delay_ms: u64,
-    }
-
-    #[async_trait]
-    impl ShortTermStorage for TestShortTermStorage {
-        async fn add_message(&self, _user_id: &str, _message: Message) -> Result<(), AppError> {
-            if self.delay_ms > 0 {
-                tokio::time::sleep(Duration::from_millis(self.delay_ms)).await;
-            }
-            self.writes.fetch_add(1, Ordering::SeqCst);
-            Ok(())
-        }
-
-        async fn get_recent(
-            &self,
-            _user_id: &str,
-            _limit: usize,
-        ) -> Result<Vec<Message>, AppError> {
-            Ok(vec![])
-        }
-
-        async fn clear(&self, _user_id: &str) -> Result<(), AppError> {
-            Ok(())
-        }
-    }
-
     struct TestVectorStorage {
         long_term_writes: Arc<AtomicUsize>,
         last_fencing: Arc<Mutex<Option<u64>>>,
+        short_term_writes: Arc<AtomicUsize>,
+        delay_ms: u64,
     }
 
     #[async_trait]
@@ -980,6 +938,10 @@ mod tests {
             _user_id: &str,
             _message: Message,
         ) -> Result<(), AppError> {
+            if self.delay_ms > 0 {
+                tokio::time::sleep(Duration::from_millis(self.delay_ms)).await;
+            }
+            self.short_term_writes.fetch_add(1, Ordering::SeqCst);
             Ok(())
         }
 
@@ -1120,13 +1082,11 @@ mod tests {
     #[tokio::test]
     async fn duplicate_event_is_skipped() {
         let writes = Arc::new(AtomicUsize::new(0));
-        let short_term: Arc<dyn ShortTermStorage> = Arc::new(TestShortTermStorage {
-            writes: writes.clone(),
-            delay_ms: 0,
-        });
         let vector_store: Arc<dyn VectorStorage> = Arc::new(TestVectorStorage {
             long_term_writes: Arc::new(AtomicUsize::new(0)),
             last_fencing: Arc::new(Mutex::new(None)),
+            short_term_writes: writes.clone(),
+            delay_ms: 0,
         });
         let llm: Arc<dyn LlmAdapter> = Arc::new(TestLlmAdapter);
         let coordinator = Arc::new(TestCoordinator {
@@ -1137,7 +1097,6 @@ mod tests {
         });
 
         let manager = DefaultMemoryManager::new_with_coordinator_tuning(
-            short_term,
             vector_store,
             llm,
             coordinator,
@@ -1154,13 +1113,11 @@ mod tests {
 
     #[tokio::test]
     async fn lock_contention_returns_rate_limited() {
-        let short_term: Arc<dyn ShortTermStorage> = Arc::new(TestShortTermStorage {
-            writes: Arc::new(AtomicUsize::new(0)),
-            delay_ms: 0,
-        });
         let vector_store: Arc<dyn VectorStorage> = Arc::new(TestVectorStorage {
             long_term_writes: Arc::new(AtomicUsize::new(0)),
             last_fencing: Arc::new(Mutex::new(None)),
+            short_term_writes: Arc::new(AtomicUsize::new(0)),
+            delay_ms: 0,
         });
         let llm: Arc<dyn LlmAdapter> = Arc::new(TestLlmAdapter);
         let coordinator = Arc::new(TestCoordinator {
@@ -1171,7 +1128,6 @@ mod tests {
         });
 
         let manager = DefaultMemoryManager::new_with_coordinator_tuning(
-            short_term,
             vector_store,
             llm,
             coordinator,
@@ -1192,13 +1148,11 @@ mod tests {
     #[tokio::test]
     async fn long_write_triggers_lock_renewal() {
         let writes = Arc::new(AtomicUsize::new(0));
-        let short_term: Arc<dyn ShortTermStorage> = Arc::new(TestShortTermStorage {
-            writes,
-            delay_ms: 1_500,
-        });
         let vector_store: Arc<dyn VectorStorage> = Arc::new(TestVectorStorage {
             long_term_writes: Arc::new(AtomicUsize::new(0)),
             last_fencing: Arc::new(Mutex::new(None)),
+            short_term_writes: writes,
+            delay_ms: 1_500,
         });
         let llm: Arc<dyn LlmAdapter> = Arc::new(TestLlmAdapter);
         let coordinator = Arc::new(TestCoordinator {
@@ -1210,7 +1164,6 @@ mod tests {
         let coordinator_ref = coordinator.clone();
 
         let manager = DefaultMemoryManager::new_with_coordinator_tuning(
-            short_term,
             vector_store,
             llm,
             coordinator,
@@ -1229,13 +1182,11 @@ mod tests {
 
     #[tokio::test]
     async fn stale_fencing_token_is_rejected() {
-        let short_term: Arc<dyn ShortTermStorage> = Arc::new(TestShortTermStorage {
-            writes: Arc::new(AtomicUsize::new(0)),
-            delay_ms: 0,
-        });
         let vector_store: Arc<dyn VectorStorage> = Arc::new(TestVectorStorage {
             long_term_writes: Arc::new(AtomicUsize::new(0)),
             last_fencing: Arc::new(Mutex::new(None)),
+            short_term_writes: Arc::new(AtomicUsize::new(0)),
+            delay_ms: 0,
         });
         let llm: Arc<dyn LlmAdapter> = Arc::new(TestLlmAdapter);
         let coordinator = Arc::new(TestCoordinator {
@@ -1246,7 +1197,6 @@ mod tests {
         });
 
         let manager = DefaultMemoryManager::new_with_coordinator_tuning(
-            short_term,
             vector_store,
             llm,
             coordinator,
@@ -1267,15 +1217,13 @@ mod tests {
     #[tokio::test]
     async fn consolidation_passes_fencing_token_to_long_term_write() {
         let writes = Arc::new(AtomicUsize::new(0));
-        let short_term: Arc<dyn ShortTermStorage> = Arc::new(TestShortTermStorage {
-            writes,
-            delay_ms: 0,
-        });
         let lt_writes = Arc::new(AtomicUsize::new(0));
         let last_fencing = Arc::new(Mutex::new(None));
         let vector_store: Arc<dyn VectorStorage> = Arc::new(TestVectorStorage {
             long_term_writes: lt_writes.clone(),
             last_fencing: last_fencing.clone(),
+            short_term_writes: writes,
+            delay_ms: 1_500,
         });
         let llm: Arc<dyn LlmAdapter> = Arc::new(TestLlmAdapter);
         let coordinator = Arc::new(TestCoordinator {
@@ -1286,7 +1234,6 @@ mod tests {
         });
 
         let manager = DefaultMemoryManager::new_with_coordinator_tuning(
-            short_term,
             vector_store,
             llm,
             coordinator,
