@@ -174,10 +174,7 @@ async fn main() -> Result<(), AppError> {
     let security_routes = create_security_routes(security_state);
 
     // Wiki generation routes (v0.12.6)
-    let default_llm_adapter = state
-        .providers
-        .get(&config.llm.default_provider)
-        .cloned();
+    let default_llm_adapter = state.providers.get(&config.llm.default_provider).cloned();
     let wiki_state = WikiState {
         llm_adapter: default_llm_adapter,
         jobs: std::sync::Arc::new(tokio::sync::RwLock::new(Vec::new())),

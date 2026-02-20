@@ -269,9 +269,7 @@ async fn parse_repo(
 
 async fn get_status(State(state): State<WikiState>) -> impl IntoResponse {
     let jobs = state.jobs.read().await;
-    Json(StatusResponse {
-        jobs: jobs.clone(),
-    })
+    Json(StatusResponse { jobs: jobs.clone() })
 }
 
 async fn get_job_status(
