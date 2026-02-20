@@ -1,8 +1,8 @@
 # 工作日志 (Work Log)
 
 **项目**: MemoryOS-Rust  
-**当前版本**: v0.12.1  
-**更新**: 2026-02-20 13:45
+**当前版本**: v0.12.2  
+**更新**: 2026-02-20 14:20
 
 ---
 
@@ -37,6 +37,30 @@
 ---
 
 ## 🚀 当前活跃任务
+
+### [Devin] - v0.12.2 企业级深度加固
+- **开始时间**: 2026-02-20 13:50
+- **完成时间**: 2026-02-20 14:20
+- **当前进度**: 100%
+- **状态**: ✅ 完成
+- **任务描述**: PR #15 review 发现的 5 项关键安全/性能缺口深度加固
+- **成果**:
+  - ✅ Async I/O: std::fs → tokio::fs（rbac/mod.rs、tenant/mod.rs 的 persist 方法）
+  - ✅ 竞态修复: persist 时先持锁快照再释放锁，防止并发变更丢失
+  - ✅ 常量时间比较: admin token 校验使用 subtle::ConstantTimeEq 防时序攻击
+  - ✅ 企业功能测试: RBAC 持久化 round-trip、并发变更存活、tenant 持久化测试
+  - ✅ 数据层租户隔离: MidTermSegment.tenant_id 字段、Qdrant payload 存储/提取、Redis key prefix
+- **相关文件**:
+  - `crates/memoryos-core/src/rbac/mod.rs` — async persist_snapshot() + 测试
+  - `crates/memoryos-core/src/tenant/mod.rs` — async persist_snapshot() + 测试
+  - `crates/memoryos-admin/src/main.rs` — subtle::ConstantTimeEq
+  - `crates/memoryos-admin/Cargo.toml` — subtle = "2.6"
+  - `crates/memoryos-core/src/memory/mod.rs` — tenant_id: Option<String>
+  - `crates/memoryos-adapters/src/memory/qdrant.rs` — tenant_id payload 存储/提取
+  - `crates/memoryos-core/src/security/defense.rs` — Redis key_prefix 租户隔离
+  - 8 个文件的 MidTermSegment 实例化增加 tenant_id: None
+
+---
 
 ### [Devin] - v0.12.1 企业级加固
 - **开始时间**: 2026-02-20 13:35

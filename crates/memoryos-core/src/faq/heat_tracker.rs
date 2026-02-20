@@ -162,6 +162,7 @@ mod tests {
             heat_score: 0.0,
             last_accessed: None,
             memory_type: MemoryType::QA,
+            tenant_id: None,
             version: 1,
             tags: vec![],
             updated_at: None,

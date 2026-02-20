@@ -257,6 +257,7 @@ async fn import_memories(
             embedding: vec![0.0; 1536],
             heat: 0.0,
             created_at: chrono::Utc::now(),
+            tenant_id: None,
             access_count: 0,
             heat_score: 0.0,
             last_accessed: None,
