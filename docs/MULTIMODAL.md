@@ -1,14 +1,14 @@
 # Multi-Modal Support Guide
 
-**版本**: v0.3.0  
+**版本**: v0.9.0  
 **更新**: 2026-02-20  
 **状态**: 🟡 Experimental
 
-> **重要说明**: 当前多模态支持仅包含数据结构定义和基础方法（`extract_text()`, `get_embeddings()`）。
-> 以下功能尚未实现，作为设计参考和实现规划：
-> - MultiModalStorage trait 实现（存储和检索）
-> - HTTP API 端点
-> - CLIP/Whisper 集成
+> **重要说明**: v0.5.0 起已实现多模态存储与检索（QdrantMultiModalStorage）以及 HTTP API（`/v1/multimodal/*`）。
+> 尚未实现：
+> - CLIP/Whisper 实际模型集成（图像 embedding、音频转录）
+> - 跨模态检索（text→image/image→text）
+> - 视频帧提取/摘要
 
 ---
 
@@ -66,19 +66,17 @@ let message = MultiModalMessage {
 };
 ```
 
-### 存储多模态消息（计划中，尚未实现）
+### 存储多模态消息（已实现）
 
 ```rust
 use memoryos_ports::MultiModalStorage;
 
-// 计划接口 - 待实现
 storage.store_multimodal_message(user_id, message).await?;
 ```
 
-### 搜索多模态消息（计划中，尚未实现）
+### 搜索多模态消息（已实现）
 
 ```rust
-// 计划接口 - 待实现
 let results = storage.search_by_text(user_id, "sunset", 10).await?;
 let results = storage.search_by_image(user_id, image_embedding, 10).await?;
 let results = storage.search_by_audio(user_id, audio_embedding, 10).await?;
@@ -166,13 +164,11 @@ impl MultiModalStorage for QdrantStorage {
 
 ## 📊 API 示例
 
-### HTTP API（计划中，尚未实现）
-
-> 以下 API 端点尚未实现，作为设计参考。
+### HTTP API（已实现）
 
 ```bash
-# 添加多模态消息（计划中）
-POST /api/v1/memory/multimodal
+# 存储多模态消息
+POST /v1/multimodal/store
 Content-Type: application/json
 
 {
@@ -193,11 +189,11 @@ Content-Type: application/json
   }
 }
 
-# 搜索多模态消息
-GET /api/v1/memory/multimodal/search?user_id=user123&query=vacation&limit=10
+# 文本检索
+POST /v1/multimodal/search
 
-# 按图像搜索
-POST /api/v1/memory/multimodal/search/image
+# 向量检索（图像/音频 embedding）
+POST /v1/multimodal/search/embedding
 Content-Type: application/json
 
 {
@@ -283,9 +279,9 @@ let message = MultiModalMessage {
 ### Phase 1: 基础支持 ✅
 - ✅ 多模态数据结构 (MultiModalContent enum)
 - ✅ extract_text() 和 get_embeddings() 方法
-- ✅ 12 个单元测试
-- ⚠️ 存储接口 trait 已定义但未实现
-- ⚠️ HTTP 端点未实现
+- ✅ MultiModalStorage trait + QdrantMultiModalStorage 实现
+- ✅ HTTP 端点: /v1/multimodal/store, /v1/multimodal/search, /v1/multimodal/search/embedding, /v1/multimodal/recent
+- ✅ 单元测试覆盖 extract_text/get_embeddings（12 tests）
 
 ### Phase 2: 图像支持 🟡
 - CLIP embedding 集成

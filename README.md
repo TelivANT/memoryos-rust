@@ -29,17 +29,20 @@ MemoryOS-Rust is a high-performance AI Agent memory management system built with
 
 ## ✨ Key Features
 
-- 🚀 **High Performance**: Rust + Tokio async runtime, designed for high concurrency (not yet benchmarked).
+- 🚀 **High Performance**: Rust + Tokio async runtime, designed for high concurrency (end-to-end QPS/latency TBD; Criterion microbenchmarks available).
 - 🧠 **Unified Vector Storage**: All memory tiers (STM/MTM/LTM) use vector databases for persistent storage.
 - 💾 **3 Vector Database Options**: Qdrant (default), Chroma (lightweight), Pinecone (cloud-hosted).
 - ⚡ **FAQ Heat Tracking**: High-frequency Q&A detection with heat score calculation and auto-promotion logic.
 - 🔌 **Universal Gateway**: OpenAI protocol compatible, 10 LLM adapters (OpenAI, Gemini, Claude, Ollama, DeepSeek, OpenRouter, Azure, Groq, Cohere, Mistral).
-- 🕸️ **Graph Memory**: Mermaid text parsing for entity/relation extraction (basic implementation, not a full GraphRAG).
-- 📚 **Knowledge Export**: FAQ export to local Markdown files (S3/Confluence planned).
+- 🕸️ **Graph Memory**: Entity extraction + relation extraction + graph query API (/v1/graph) + DFS path query (v0.4.0).
+- 📚 **Knowledge Export**: FAQ export to Local Markdown + S3 (OpenDAL) + Confluence (REST API) (v0.3.0).
 - 🛡️ **Security Shield**: PII sanitization (email/phone/credit card/SSN/API key), prompt injection defense (17 patterns), IP defense system.
-- 🤖 **3-Tier LLM Router**: Routes requests to different model tiers based on input complexity (heuristic-based).
+- 🤖 **3-Tier LLM Router**: Routes requests to different model tiers based on input complexity (heuristic-based) + Tier 0 FAQ direct hit (v0.3.0).
 - 🔄 **Coordination Layer**: Redis/NATS for distributed coordination (Session, Lock, Cache, Message Queue).
 - 🎯 **6 Performance Optimization Modules**: Bloom Filter, LRU Cache, Batch Processing, Heat Buffer, Similarity Filter, Incremental Summary.
+- 🎨 **Multimodal Memory**: QdrantMultiModalStorage + HTTP API (/v1/multimodal/*) (v0.5.0, experimental).
+- 🏷️ **Memory Versioning & Tags**: Version history + tag management + export/import (v0.6.0).
+- 🔐 **Security Hardening**: AES-256-GCM encryption + persistent audit log (JSONL) + GDPR records (JSON) (v0.8.0~v0.9.0).
 
 ### vs Mem0 Comparison
 
@@ -51,11 +54,11 @@ MemoryOS-Rust is a high-performance AI Agent memory management system built with
 | **Memory Overhead** | TBD (not benchmarked) | ~500MB | Needs testing |
 | **LLM Adapters** | 10 | 10+ | Similar |
 | **Vector DBs** | 3 (Qdrant, Chroma, Pinecone) | 5+ | Good coverage |
-| **Graph Memory** | ⚠️ Mermaid parsing only | ✅ Neo4j | Mem0 has full GraphRAG |
+| **Graph Memory** | ✅ entity/relation extraction + graph query | ✅ Neo4j | Similar capabilities |
 | **Hot Config Reload** | ✅ 5s auto-refresh | ❌ | Unique feature |
-| **Smart Routing** | ⚠️ Length-based heuristic | ⚠️ Basic | Both basic |
+| **Smart Routing** | ✅ Tier 0 FAQ + heuristic tiers | ⚠️ Basic | MemoryOS has Tier 0 |
 | **Cost Savings** | TBD (not measured) | ~50% | Needs testing |
-| **Production Ready** | Early development | ✅ Mature | Mem0 is more mature |
+| **Production Ready** | Release candidate (pre v1.0) | ✅ Mature | Mem0 is more mature |
 
 **When to choose MemoryOS-Rust**:
 - Want a Rust-based memory layer for AI Agents
@@ -136,7 +139,7 @@ graph TD
         Gateway -->|Async Event| Queue[NATS/Redis]
         Queue --> Worker
         Worker -->|Summarize| VectorDB[(Qdrant)]
-        Worker -->|Export| Wiki[Local Markdown]
+        Worker -->|Export| Wiki[Local/S3/Confluence]
     end
 ```
 
@@ -180,20 +183,24 @@ graph TD
 
 ## 📊 Project Status
 
-**Version**: 0.2.0-alpha  
-**Status**: Early Development (MVP)  
+**Version**: 0.9.0  
+**Status**: Release Candidate (pre v1.0)  
+  
 
 | Phase | Module | Status | Notes |
 |-------|--------|--------|-------|
 | Phase 1 | Foundation (Config/Log) | Done | Functional |
 | Phase 2 | Gateway & Adapters | Done | Basic implementation |
 | Phase 3 | Storage (Redis/Qdrant) | Done | Needs production testing |
-| Phase 4 | Intelligence (Router/Shield) | In progress | Security hardening ongoing |
-| Phase 5 | Worker & Async | Done | Basic implementation |
-| Phase 6 | Wiki Export | Scaffolded | Not production tested |
-| Phase 7 | Graph Memory | Scaffolded | Mermaid parsing only, not a full GraphRAG |
+| Phase 4 | Intelligence (Router/Shield) | Done | Tier routing + FAQ Tier 0 |
+| Phase 5 | Worker & Async | Done | Functional |
+| Phase 6 | Wiki Export | Done | Local + S3 + Confluence |
+| Phase 7 | Graph Memory | Done | Entity/relation extraction + graph query |
+| Phase 8 | Multimodal | Done | Qdrant storage + HTTP endpoints (experimental) |
+| Phase 9 | Security | Done | AES-256-GCM + audit + GDPR persistence |
+| Phase 10 | Benchmarks | Done | Criterion microbenchmarks (see docs/PERFORMANCE_REPORT.md) |
 
-> **Note**: Performance claims (QPS, latency) have not been independently benchmarked yet. The architecture is designed for high performance but actual numbers depend on deployment configuration and workload.
+> **Note**: End-to-end performance claims (QPS, latency) have not been independently validated yet. Criterion microbenchmark results are available in `docs/PERFORMANCE_REPORT.md`.
 
 ---
 
@@ -279,4 +286,4 @@ Apache 2.0 License - See [LICENSE](./LICENSE)
 
 ---
 
-**Version**: 0.2.0-alpha (Personal Edition) | **Updated**: 2026-02-20
+**Version**: 0.9.0 (Personal Edition) | **Updated**: 2026-02-20

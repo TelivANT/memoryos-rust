@@ -1,7 +1,7 @@
 # 设计原理与实现细节
 
-**版本**: 0.2.0  
-**更新**: 2026-02-18
+**版本**: 0.9.0  
+**更新**: 2026-02-20
 
 本文档详细说明 MemoryOS-Rust 的设计原理、实现细节和关键决策。
 
@@ -546,8 +546,8 @@ let (stm, mtm, ltm) = tokio::join!(
 
 ---
 
-**更新时间**: 2026-02-18  
-**版本**: 0.2.0
+**更新时间**: 2026-02-20  
+**版本**: 0.9.0
 
 
 ---
@@ -556,11 +556,11 @@ let (stm, mtm, ltm) = tokio::join!(
 
 ### 设计目标
 
-将高频问答自动提升为 FAQ，目标：
-- ⚡ 极速响应（目标 < 50ms，跳过 LLM，待实现 Tier 0 路由）
+将高频问答自动提升为 FAQ：
+- ⚡ 极速响应（Router Tier 0 FAQ 直接命中，跳过 LLM，✅ v0.3.0 已实现）
 - 🎯 精准匹配（相似度阈值可配置）
 - 🔄 自动更新（基于访问频率和热度计算）
-- 📚 知识沉淀（本地 Markdown 导出已实现，S3/Confluence 待实现）
+- 📚 知识沉淀（本地 Markdown + S3 + Confluence 导出，✅ v0.3.0 已实现）
 
 ### 核心组件
 
@@ -888,15 +888,17 @@ FAQ 系统通过三个核心组件实现了从问答到知识库的自动化流�
 2. **AutoPromoter**: 智能提升高频问答
 3. **WikiExporter**: 自动导出为知识库
 
-**当前状态**:
-- 响应速度: 待测试（FAQ 直接命中的 Tier 0 路由尚未在 Router 中实现）
-- 提升准确率: 待验证
-- 导出质量: 本地 Markdown 导出可用，S3/Confluence 为 TODO
+**当前状态** (v0.9.0):
+- 响应速度: FAQ 直接命中绕过 LLM，具体延迟待基准测试
+- 提升准确率: 基于访问次数和热度分数，待生产验证
+- 导出质量: 本地 Markdown + S3 + Confluence 全部可用
 
 **实现状态**:
 - ✅ HeatTracker: 热度计算和追踪已实现
 - ✅ AutoPromoter: 自动提升逻辑已实现
-- ✅ WikiExporter: 本地导出已实现
-- ⚠️ WikiExporter: S3/Confluence 导出为 TODO 桩
-- ⚠️ Router Tier 0: FAQ 直接命中未集成到路由器
+- ✅ WikiExporter: 本地 Markdown 导出已实现
+- ✅ WikiExporter: S3 导出已实现 (OpenDAL S3ExportBackend, v0.3.0)
+- ✅ WikiExporter: Confluence 导出已实现 (REST API ConfluenceExportBackend, v0.3.0)
+- ✅ Router Tier 0: FAQ 直接命中已集成到路由器 (v0.3.0)
+- ✅ FAQ 管理 API: candidates/promote/delete/history/stats (v0.3.0)
 - ✅ 错误处理和后台任务支持
