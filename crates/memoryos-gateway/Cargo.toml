@@ -28,6 +28,7 @@ qdrant-client.workspace = true
 redis.workspace = true
 sha2 = "0.10"
 subtle = "2.6"
+async-trait.workspace = true
 
 [features]
 integration-tests = []
