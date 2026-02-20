@@ -256,6 +256,34 @@ impl VectorStorage for QdrantStorage {
             memoryos_core::MemoryType::Faq => "faq",
         };
         payload.insert("memory_type".to_string(), Value::from(memory_type_str));
+        payload.insert("version".to_string(), Value::from(segment.version as i64));
+        if !segment.tags.is_empty() {
+            let tag_values: Vec<Value> = segment
+                .tags
+                .iter()
+                .map(|t| Value::from(t.clone()))
+                .collect();
+            payload.insert(
+                "tags".to_string(),
+                Value {
+                    kind: Some(Kind::ListValue(qdrant_client::qdrant::ListValue {
+                        values: tag_values,
+                    })),
+                },
+            );
+        }
+        if let Some(updated_at) = segment.updated_at {
+            payload.insert(
+                "updated_at".to_string(),
+                Value::from(updated_at.to_rfc3339()),
+            );
+        }
+        if let Some(prev_id) = segment.previous_version_id {
+            payload.insert(
+                "previous_version_id".to_string(),
+                Value::from(prev_id.to_string()),
+            );
+        }
 
         let point = PointStruct::new(segment.id.to_string(), segment.embedding.clone(), payload);
 
@@ -340,9 +368,30 @@ impl VectorStorage for QdrantStorage {
                         .get("version")
                         .and_then(|v| v.as_integer())
                         .unwrap_or(1) as u32,
-                    tags: vec![],
-                    updated_at: None,
-                    previous_version_id: None,
+                    tags: payload
+                        .get("tags")
+                        .and_then(|v| match v.kind.as_ref()? {
+                            Kind::ListValue(list) => Some(
+                                list.values
+                                    .iter()
+                                    .filter_map(|item| match item.kind.as_ref()? {
+                                        Kind::StringValue(s) => Some(s.clone()),
+                                        _ => None,
+                                    })
+                                    .collect(),
+                            ),
+                            _ => None,
+                        })
+                        .unwrap_or_default(),
+                    updated_at: payload
+                        .get("updated_at")
+                        .and_then(|v| v.as_str())
+                        .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+                        .map(|dt| dt.with_timezone(&chrono::Utc)),
+                    previous_version_id: payload
+                        .get("previous_version_id")
+                        .and_then(|v| v.as_str())
+                        .and_then(|s| uuid::Uuid::parse_str(s).ok()),
                 }
             })
             .collect::<Vec<_>>();

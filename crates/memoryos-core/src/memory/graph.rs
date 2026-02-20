@@ -24,9 +24,13 @@ static RELATION_PATTERNS: Lazy<Vec<(Regex, &'static str)>> = Lazy::new(|| {
             "works_at",
         ),
         (
-            Regex::new(r"(?i)(.+?)\s+(?:lives?\s+in|(?:is|are)\s+from|located\s+in)\s+(.+)")
+            Regex::new(r"(?i)(.+?)\s+(?:lives?\s+in|(?:is|are)\s+from|(?:is|are)\s+located\s+in|located\s+in)\s+(.+)")
                 .unwrap(),
             "located_in",
+        ),
+        (
+            Regex::new(r"(?i)(.+?)\s+(?:is|are)\s+friends?\s+(?:with|of)\s+(.+)").unwrap(),
+            "friends_with",
         ),
         (
             Regex::new(r"(?i)(.+?)\s+(?:(?:is|are)\s+(?:a|an|the)\s+)?(?:friend|partner|colleague|spouse|wife|husband)\s+(?:of|with)\s+(.+)").unwrap(),
@@ -627,5 +631,39 @@ mod tests {
         gm.extract_and_merge("Bob likes Python.");
         let triples = gm.get_all_triples();
         assert!(!triples.is_empty());
+    }
+
+    #[test]
+    fn test_extract_friends_with() {
+        let gm = GraphManager::new();
+        let text = "Bob is friends with Alice.";
+        let triples = gm.extract_relations(text);
+        assert!(!triples.is_empty());
+        assert_eq!(triples[0].predicate, "friends_with");
+        assert_eq!(triples[0].subject, "Bob");
+        assert_eq!(triples[0].object, "Alice");
+    }
+
+    #[test]
+    fn test_extract_is_located_in() {
+        let gm = GraphManager::new();
+        let text = "Google is located in Mountain View.";
+        let triples = gm.extract_relations(text);
+        assert!(!triples.is_empty());
+        assert_eq!(triples[0].predicate, "located_in");
+        assert_eq!(triples[0].subject, "Google");
+        assert_eq!(triples[0].object, "Mountain View");
+    }
+
+    #[test]
+    fn test_extract_friend_singular() {
+        let gm = GraphManager::new();
+        let text = "Charlie is friend of Dave.";
+        let triples = gm.extract_relations(text);
+        assert!(!triples.is_empty());
+        let friend_triple = triples
+            .iter()
+            .find(|t| t.predicate == "friends_with" || t.predicate == "related_to");
+        assert!(friend_triple.is_some());
     }
 }
