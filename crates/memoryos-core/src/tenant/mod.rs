@@ -27,6 +27,7 @@ pub struct TenantContext {
 pub struct TenantManager {
     tenants: Arc<RwLock<HashMap<String, Tenant>>>,
     persist_path: Option<PathBuf>,
+    persist_lock: Arc<tokio::sync::Mutex<()>>,
 }
 
 impl TenantManager {
@@ -34,6 +35,7 @@ impl TenantManager {
         Self {
             tenants: Arc::new(RwLock::new(HashMap::new())),
             persist_path: None,
+            persist_lock: Arc::new(tokio::sync::Mutex::new(())),
         }
     }
 
@@ -66,10 +68,12 @@ impl TenantManager {
         Self {
             tenants: Arc::new(RwLock::new(tenants)),
             persist_path: Some(path),
+            persist_lock: Arc::new(tokio::sync::Mutex::new(())),
         }
     }
 
     async fn persist_snapshot(&self, snapshot: Vec<Tenant>) {
+        let _guard = self.persist_lock.lock().await;
         if let Some(ref path) = self.persist_path {
             if let Ok(data) = serde_json::to_string_pretty(&snapshot) {
                 if let Some(parent) = path.parent() {

@@ -1,8 +1,8 @@
 # 工作日志 (Work Log)
 
 **项目**: MemoryOS-Rust  
-**当前版本**: v0.12.2  
-**更新**: 2026-02-20 14:20
+**当前版本**: v0.12.3  
+**更新**: 2026-02-20 14:40
 
 ---
 
@@ -37,6 +37,25 @@
 ---
 
 ## 🚀 当前活跃任务
+
+### [Devin] - v0.12.3 PR #16 Review 缺口修复
+- **开始时间**: 2026-02-20 14:25
+- **完成时间**: 2026-02-20 14:40
+- **当前进度**: 100%
+- **状态**: ✅ 完成
+- **任务描述**: PR #16 自动 review 发现的 3 项残留缺口修复
+- **成果**:
+  - ✅ Qdrant 搜索时租户过滤: VectorStorage trait 新增 search_segments_for_tenant / search_segments_by_tags_for_tenant，Qdrant 实现添加 tenant_id must filter
+  - ✅ 串行持久化队列: RbacManager / TenantManager 增加 persist_lock (tokio::sync::Mutex) 消除并发写竞态
+  - ✅ 提取 build_mid_term_segment 辅助方法，消除 Qdrant 适配器中的代码重复
+  - ✅ Redis with_tenant() 已就绪（defense 路由未挂载，作为 scaffolding 保留）
+- **相关文件**:
+  - `crates/memoryos-ports/src/memory.rs` — 新增 tenant-scoped trait 方法
+  - `crates/memoryos-adapters/src/memory/qdrant.rs` — tenant filter + build_mid_term_segment helper
+  - `crates/memoryos-core/src/rbac/mod.rs` — persist_lock 串行化
+  - `crates/memoryos-core/src/tenant/mod.rs` — persist_lock 串行化
+
+---
 
 ### [Devin] - v0.12.2 企业级深度加固
 - **开始时间**: 2026-02-20 13:50

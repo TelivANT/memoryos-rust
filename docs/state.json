@@ -1,18 +1,18 @@
 {
   "project_name": "MemoryOS-Rust",
-  "version": "0.12.2",
+  "version": "0.12.3",
   "edition": "Personal/Enterprise Single-Tenant Edition",
   "last_updated": "2026-02-20",
   "status": {
-        "phase": "v0.12.2 Complete - Enterprise Deep Hardening",
+        "phase": "v0.12.3 Complete - PR #16 Review Gap Fixes",
         "progress_percentage": 100,
-        "current_task": "v0.12.2 企业级深度加固已完成",
+        "current_task": "v0.12.3 PR #16 review 缺口修复已完成",
     "is_blocked": false
   },
   "branches": {
     "main": {
       "description": "Personal/Enterprise Single-Tenant Edition",
-      "current_version": "v0.12.2",
+      "current_version": "v0.12.3",
       "target_users": "Individual developers, single enterprise deployments"
     },
     "feature/saas-multi-tenant": {
@@ -107,7 +107,8 @@
       "v0.11.0: All Remaining Issues Fixed (tag search, history, redis, graph LLM, auth, audit/GDPR)",
       "v0.12.0: Enterprise Features (RBAC, multi-tenant, admin service, service separation)",
       "v0.12.1: Enterprise Hardening (persistence, admin auth, fail-closed RBAC, docs alignment)",
-      "v0.12.2: Enterprise Deep Hardening (async I/O, race condition fix, constant-time auth, tenant isolation, tests)"
+      "v0.12.2: Enterprise Deep Hardening (async I/O, race condition fix, constant-time auth, tenant isolation, tests)",
+      "v0.12.3: PR #16 Review Gap Fixes (Qdrant tenant search filter, serial persist queue, build_mid_term_segment helper)"
     ],
         "in_progress": [],
         "todo": [
@@ -124,6 +125,17 @@
     ]
   },
   "recent_changes": [
+    {
+      "date": "2026-02-20",
+      "author": "Devin",
+      "description": "v0.12.3: PR #16 Review Gap Fixes",
+      "changes": [
+        "Qdrant search-time tenant filtering: search_segments_for_tenant / search_segments_by_tags_for_tenant with tenant_id must filter",
+        "Serial persist queue: persist_lock (tokio::sync::Mutex) in RbacManager and TenantManager eliminates concurrent write race",
+        "build_mid_term_segment helper: extracted from duplicated code in Qdrant search methods",
+        "Redis with_tenant() scaffolding ready for when defense routes are enabled"
+      ]
+    },
     {
       "date": "2026-02-20",
       "author": "Devin",
