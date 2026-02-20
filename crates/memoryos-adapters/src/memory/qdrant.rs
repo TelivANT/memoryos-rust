@@ -336,6 +336,13 @@ impl VectorStorage for QdrantStorage {
                             _ => None,
                         })
                         .unwrap_or(memoryos_core::MemoryType::QA),
+                    version: payload
+                        .get("version")
+                        .and_then(|v| v.as_integer())
+                        .unwrap_or(1) as u32,
+                    tags: vec![],
+                    updated_at: None,
+                    previous_version_id: None,
                 }
             })
             .collect::<Vec<_>>();

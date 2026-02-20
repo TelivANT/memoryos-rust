@@ -2,10 +2,14 @@ pub mod admin;
 pub mod chat;
 pub mod defense;
 pub mod faq;
+pub mod graph;
 pub mod health;
 pub mod history;
 pub mod memory;
+pub mod memory_manage;
 pub mod metrics;
+pub mod multimodal;
+pub mod security;
 
 use axum::{http::HeaderValue, response::Response, routing::get, routing::post, Router};
 

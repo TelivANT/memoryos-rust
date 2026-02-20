@@ -4,7 +4,9 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 pub mod graph;
-pub use graph::{GraphEntity, GraphManager, GraphRelation};
+pub use graph::{
+    EntityType, ExtractedTriple, GraphEntity, GraphManager, GraphQueryResult, GraphRelation,
+};
 
 pub mod multimodal;
 pub use multimodal::{MultiModalContent, MultiModalMessage};
@@ -39,7 +41,6 @@ pub struct MidTermSegment {
     pub heat: f32,
     pub created_at: chrono::DateTime<chrono::Utc>,
 
-    // FAQ 热度追踪字段
     #[serde(default)]
     pub access_count: u32,
     #[serde(default)]
@@ -48,6 +49,15 @@ pub struct MidTermSegment {
     pub last_accessed: Option<chrono::DateTime<chrono::Utc>>,
     #[serde(default)]
     pub memory_type: MemoryType,
+
+    #[serde(default)]
+    pub version: u32,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    #[serde(default)]
+    pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default)]
+    pub previous_version_id: Option<Uuid>,
 }
 
 /// Long-term memory (用户画像、知识、图谱)
