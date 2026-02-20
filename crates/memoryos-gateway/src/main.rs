@@ -77,13 +77,13 @@ async fn main() -> Result<(), AppError> {
             loop {
                 interval.tick().await;
                 match config_manager.reload_if_changed() {
-                    Ok(true) => tracing::info!("✅ Config hot-reloaded successfully"),
-                    Ok(false) => {} // 无变化
-                    Err(e) => tracing::warn!("⚠️  Config reload failed: {}", e),
+                    Ok(true) => tracing::info!("Config hot-reloaded successfully"),
+                    Ok(false) => {}
+                    Err(e) => tracing::warn!("Config reload failed: {}", e),
                 }
             }
         });
-        tracing::info!("✅ Config hot-reload enabled (check every 5s)");
+        tracing::info!("Config hot-reload enabled (check every 5s)");
     }
 
     // 5. Setup Router
@@ -172,8 +172,8 @@ async fn main() -> Result<(), AppError> {
     };
     let security_routes = create_security_routes(security_state);
 
-    // 需要认证的路由
-    let protected_routes = Router::new()
+    // All routes that require authentication (including nested sub-routes)
+    let authed_routes = Router::new()
         .route("/v1/chat/completions", post(chat_completions))
         .route("/v1/memory/add", post(routes::memory::add_message))
         .route(
@@ -184,24 +184,24 @@ async fn main() -> Result<(), AppError> {
             "/v1/memory/:memory_id/history",
             get(routes::history::get_memory_history),
         )
+        .with_state(state.clone())
+        .nest("/v1/graph", graph_routes)
+        .nest("/v1/memory/manage", memory_manage_routes)
+        .nest("/v1/multimodal", multimodal_routes)
+        .nest("/v1/security", security_routes)
         .layer(axum::middleware::from_fn_with_state(
             state_arc.clone(),
             middleware::auth_middleware,
         ));
 
-    // 公开路由（健康检查不需要认证）
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/health/status", get(health_status))
         .route("/metrics", get(routes::metrics::metrics_handler))
-        .merge(protected_routes)
-        .merge(admin_routes)
         .with_state(state)
+        .merge(authed_routes)
+        .merge(admin_routes)
         .nest("/v1/admin/faq", faq_routes)
-        .nest("/v1/graph", graph_routes)
-        .nest("/v1/memory/manage", memory_manage_routes)
-        .nest("/v1/multimodal", multimodal_routes)
-        .nest("/v1/security", security_routes)
         .layer(axum::middleware::from_fn_with_state(
             state_arc.clone(),
             middleware::rbac_middleware,

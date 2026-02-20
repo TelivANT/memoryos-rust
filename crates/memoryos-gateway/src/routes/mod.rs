@@ -11,7 +11,35 @@ pub mod metrics;
 pub mod multimodal;
 pub mod security;
 
-use axum::{http::HeaderValue, response::Response, routing::get, routing::post, Router};
+use axum::{
+    http::HeaderMap, http::HeaderValue, response::Response, routing::get, routing::post, Router,
+};
+use memoryos_core::{tenant::TenantManager, AppError};
+use tracing::warn;
+
+pub async fn extract_validated_tenant_id(
+    headers: &HeaderMap,
+    tenant_manager: &Option<TenantManager>,
+) -> Result<Option<String>, AppError> {
+    let raw = headers
+        .get("X-Tenant-ID")
+        .and_then(|h| h.to_str().ok())
+        .map(|s| s.to_string());
+    let tid = match raw {
+        Some(t) => t,
+        None => return Ok(None),
+    };
+    if let Some(mgr) = tenant_manager {
+        if !mgr.is_tenant_enabled(&tid).await {
+            warn!("Rejected request for unknown/disabled tenant: {}", tid);
+            return Err(AppError::BadRequest(format!(
+                "Tenant '{}' does not exist or is disabled",
+                tid
+            )));
+        }
+    }
+    Ok(Some(tid))
+}
 
 pub const DEGRADED_HEADER: &str = "X-MemoryOS-Status";
 pub const DEGRADED_VALUE: &str = "degraded";

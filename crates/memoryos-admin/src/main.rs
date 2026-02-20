@@ -65,10 +65,24 @@ async fn main() {
         admin_token: admin_token.clone(),
     };
 
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+    let allowed_origins = std::env::var("ADMIN_CORS_ORIGINS").unwrap_or_default();
+    let cors = if allowed_origins.is_empty() {
+        CorsLayer::new()
+            .allow_origin(tower_http::cors::AllowOrigin::exact(
+                "http://localhost:3000".parse().unwrap(),
+            ))
+            .allow_methods(Any)
+            .allow_headers(Any)
+    } else {
+        let origins: Vec<axum::http::HeaderValue> = allowed_origins
+            .split(',')
+            .filter_map(|o| o.trim().parse().ok())
+            .collect();
+        CorsLayer::new()
+            .allow_origin(origins)
+            .allow_methods(Any)
+            .allow_headers(Any)
+    };
 
     let protected_routes = Router::new()
         .route("/api/v1/tenants", get(routes::tenants::list_tenants))

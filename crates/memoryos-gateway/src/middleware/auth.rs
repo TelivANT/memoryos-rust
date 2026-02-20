@@ -6,8 +6,31 @@ use axum::{
 };
 use serde_json::json;
 use std::sync::Arc;
+use subtle::ConstantTimeEq;
 
 use crate::AppState;
+
+fn extract_bearer_token(headers: &HeaderMap) -> &str {
+    headers
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("")
+        .strip_prefix("Bearer ")
+        .unwrap_or("")
+}
+
+fn constant_time_contains(haystack: &[String], needle: &str) -> bool {
+    let needle_bytes = needle.as_bytes();
+    let mut found = false;
+    for candidate in haystack {
+        if candidate.len() == needle.len()
+            && bool::from(candidate.as_bytes().ct_eq(needle_bytes))
+        {
+            found = true;
+        }
+    }
+    found
+}
 
 #[allow(dead_code)]
 pub async fn admin_only(
@@ -20,20 +43,9 @@ pub async fn admin_only(
         return Ok(next.run(request).await);
     }
 
-    let auth_header = headers
-        .get("Authorization")
-        .and_then(|h| h.to_str().ok())
-        .unwrap_or("");
+    let token = extract_bearer_token(&headers);
 
-    let token = if auth_header.starts_with("Bearer ") {
-        &auth_header[7..]
-    } else {
-        auth_header
-    };
-
-    let is_admin = state.config.auth.admin_keys.contains(&token.to_string());
-
-    if is_admin {
+    if constant_time_contains(&state.config.auth.admin_keys, token) {
         Ok(next.run(request).await)
     } else {
         Err((
@@ -55,33 +67,16 @@ pub async fn auth_middleware(
     request: Request,
     next: Next,
 ) -> Result<Response, Response> {
-    // 如果未启用认证，直接通过
     if !state.config.auth.enabled {
         return Ok(next.run(request).await);
     }
 
-    // 检查 Authorization header
-    let auth_header = headers
-        .get("Authorization")
-        .and_then(|h| h.to_str().ok())
-        .unwrap_or("");
+    let token = extract_bearer_token(&headers);
 
-    // 支持两种格式：
-    // 1. Bearer <token>
-    // 2. <token>
-    let token = if auth_header.starts_with("Bearer ") {
-        &auth_header[7..]
-    } else {
-        auth_header
-    };
-
-    // 验证 token
     let is_valid = if let Some(store) = &state.api_key_store {
-        // 使用 Redis 存储验证
         store.validate_key(token).await.unwrap_or(false)
     } else {
-        // 使用静态配置验证
-        state.config.auth.api_keys.contains(&token.to_string())
+        constant_time_contains(&state.config.auth.api_keys, token)
     };
 
     if is_valid {

@@ -16,37 +16,40 @@ use tracing::{info, warn};
 
 pub async fn chat_completions(
     State(state): State<AppState>,
-    _headers: HeaderMap,
+    headers: HeaderMap,
     Json(mut request): Json<ChatRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user_id = "default_user"; // TODO: Extract from Auth Header
+    let user_id = headers
+        .get("X-User-ID")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("default_user");
 
-    // 1. Security Shield: Input Validation & PII
     let last_msg = request
         .messages
         .last()
         .map(|m| m.content.clone())
         .unwrap_or_default();
 
-    // Check Compliance
-    match state.shield.check_compliance(&last_msg) {
+    let compliance = state.shield.check_compliance(&last_msg);
+    match &compliance {
         ComplianceResult::Blocked(reason) => {
-            warn!(user_id, reason, "Request blocked by Security Shield");
-            return Err(AppError::BadRequest(reason));
+            warn!(
+                user_id,
+                reason = reason.as_str(),
+                "Request blocked by Security Shield"
+            );
+            return Err(AppError::BadRequest(reason.clone()));
         }
         ComplianceResult::RequiresLocal => {
             info!(user_id, "Compliance enforced: Routing to Local LLM");
-            // Force router decision later or mark context
         }
         ComplianceResult::Safe => {}
     }
 
-    // Sanitize PII (Modify request in place)
     if let Some(msg) = request.messages.last_mut() {
         msg.content = state.shield.sanitize_pii(&msg.content);
     }
 
-    // 2. FAQ Tier 0: Search for FAQ matches before routing
     let memory_mgr = state.memory_manager.read().await.clone();
     let (is_faq_match, global_similarity, faq_answer) =
         match memory_mgr.retrieve_context(user_id, &last_msg).await {
@@ -74,15 +77,13 @@ pub async fn chat_completions(
             }
         };
 
+    let has_sensitive = matches!(compliance, ComplianceResult::RequiresLocal);
     let router_ctx = RouterContext {
         query: last_msg.clone(),
         token_count: last_msg.len() / 4,
         global_similarity,
         is_faq_match,
-        has_sensitive_keywords: matches!(
-            state.shield.check_compliance(&last_msg),
-            ComplianceResult::RequiresLocal
-        ),
+        has_sensitive_keywords: has_sensitive,
         faq_answer,
     };
 

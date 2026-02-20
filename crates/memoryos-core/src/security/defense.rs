@@ -141,7 +141,7 @@ impl IpDefenseSystem {
 
         // 3. 检查临时封禁 -> 直接返回 429
         if self.is_temporarily_banned(ip).await? {
-            return Err(AppError::TooManyRequests(format!("IP {} banned", ip)));
+            return Err(AppError::RateLimited(format!("IP {} banned", ip)));
         }
 
         // 4. 滑动窗口限流
@@ -178,7 +178,7 @@ impl IpDefenseSystem {
         // 超限 -> 封禁
         if count >= threshold {
             self.ban_ip(ip, attack_type).await?;
-            return Err(AppError::TooManyRequests(format!("{:?}", attack_type)));
+            return Err(AppError::RateLimited(format!("{:?}", attack_type)));
         }
 
         // 记录请求

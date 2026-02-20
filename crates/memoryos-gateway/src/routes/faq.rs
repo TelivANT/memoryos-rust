@@ -17,31 +17,7 @@ use std::sync::Arc;
 use tracing::{info, warn};
 use uuid::Uuid;
 
-use memoryos_core::AppError;
-
-async fn extract_validated_tenant_id(
-    headers: &HeaderMap,
-    tenant_manager: &Option<TenantManager>,
-) -> Result<Option<String>, AppError> {
-    let raw = headers
-        .get("X-Tenant-ID")
-        .and_then(|h| h.to_str().ok())
-        .map(|s| s.to_string());
-    let tid = match raw {
-        Some(t) => t,
-        None => return Ok(None),
-    };
-    if let Some(mgr) = tenant_manager {
-        if !mgr.is_tenant_enabled(&tid).await {
-            warn!("Rejected FAQ request for unknown/disabled tenant: {}", tid);
-            return Err(AppError::BadRequest(format!(
-                "Tenant '{}' does not exist or is disabled",
-                tid
-            )));
-        }
-    }
-    Ok(Some(tid))
-}
+use super::extract_validated_tenant_id;
 
 /// FAQ 管理状态
 #[derive(Clone)]

@@ -1,8 +1,8 @@
 # 工作日志 (Work Log)
 
 **项目**: MemoryOS-Rust  
-**当前版本**: v0.12.5  
-**更新**: 2026-02-20 15:10
+**当前版本**: v0.12.6  
+**更新**: 2026-02-20 15:55
 
 ---
 
@@ -37,6 +37,36 @@
 ---
 
 ## 🚀 当前活跃任务
+
+### [Devin] - v0.12.6 综合审计修复
+- **开始时间**: 2026-02-20 15:15
+- **完成时间**: 2026-02-20 15:55
+- **当前进度**: 100%
+- **状态**: ✅ 完成
+- **任务描述**: 全面审计代码库，修复所有安全隐患、架构问题、设计漏洞和逻辑问题
+- **成果**:
+  - ✅ 安全: auth.rs 使用 strip_prefix + subtle::ConstantTimeEq 常量时间比较（防止时序攻击）
+  - ✅ 安全: 嵌套路由（graph/multimodal/memory_manage/security）移入 auth middleware 保护
+  - ✅ 安全: Admin CORS 从 allow_origin(Any) 改为 localhost:3000 默认 + ADMIN_CORS_ORIGINS 环境变量
+  - ✅ 安全: RateLimiter 增加内存泄漏防护（>1000 IP 时清理过期条目）
+  - ✅ 架构: extract_validated_tenant_id 去重到 routes/mod.rs 共享模块（faq.rs + memory_manage.rs 引用）
+  - ✅ 逻辑: handlers.rs 从 X-User-ID header 提取用户ID（不再硬编码 default_user）
+  - ✅ 逻辑: handlers.rs 消除双重 compliance check（缓存首次结果复用）
+  - ✅ 设计: 删除 AppError::TooManyRequests 重复变体（统一为 RateLimited）
+  - ✅ 设计: 日志消息移除 emoji（✅/⚠️ → 纯文本）
+  - ✅ 设计: EmbeddingCache 从 clear-all 改为淘汰半数条目
+- **相关文件**:
+  - `crates/memoryos-gateway/src/middleware/auth.rs` — 常量时间 token 比较
+  - `crates/memoryos-gateway/src/main.rs` — 路由重组 + emoji 清理
+  - `crates/memoryos-gateway/src/routes/mod.rs` — 共享 extract_validated_tenant_id
+  - `crates/memoryos-gateway/src/handlers.rs` — X-User-ID + 单次 compliance check
+  - `crates/memoryos-core/src/error.rs` — 删除 TooManyRequests
+  - `crates/memoryos-core/src/security/defense.rs` — TooManyRequests → RateLimited
+  - `crates/memoryos-admin/src/main.rs` — CORS 限制
+  - `crates/memoryos-gateway/src/middleware/rate_limit.rs` — 内存泄漏修复
+  - `crates/memoryos-adapters/src/memory/manager.rs` — EmbeddingCache 半数淘汰
+
+---
 
 ### [Devin] - v0.12.5 PR #18 Review 安全加固
 - **开始时间**: 2026-02-20 15:00
