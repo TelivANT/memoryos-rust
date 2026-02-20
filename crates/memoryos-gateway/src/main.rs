@@ -100,6 +100,7 @@ async fn main() -> Result<(), AppError> {
             heat_tracker,
         )),
         vector_store: state.vector_store.clone(),
+        tenant_manager: state.tenant_manager.clone(),
     };
 
     // Admin 路由（需要认证 + admin 权限）
@@ -129,6 +130,7 @@ async fn main() -> Result<(), AppError> {
     // Memory management 路由 (v0.6.0)
     let memory_manage_state = MemoryManageState {
         vector_store: state.vector_store.clone(),
+        tenant_manager: state.tenant_manager.clone(),
     };
     let memory_manage_routes = create_memory_manage_routes(memory_manage_state);
 

@@ -1,8 +1,8 @@
 # 工作日志 (Work Log)
 
 **项目**: MemoryOS-Rust  
-**当前版本**: v0.12.4  
-**更新**: 2026-02-20 14:55
+**当前版本**: v0.12.5  
+**更新**: 2026-02-20 15:10
 
 ---
 
@@ -37,6 +37,25 @@
 ---
 
 ## 🚀 当前活跃任务
+
+### [Devin] - v0.12.5 PR #18 Review 安全加固
+- **开始时间**: 2026-02-20 15:00
+- **完成时间**: 2026-02-20 15:10
+- **当前进度**: 100%
+- **状态**: ✅ 完成
+- **任务描述**: 修复 PR #18 review 发现的 4 项问题
+- **成果**:
+  - ✅ X-Tenant-ID 验证: extract_validated_tenant_id() 校验租户存在且已启用，拒绝无效/禁用租户
+  - ✅ FAQ 路由接入 tenant: get_candidates/promote_to_faq/delete_faq 3 个处理器均使用验证后的 tenant 搜索
+  - ✅ 并发测试改用 multi_thread: worker_threads=4 确保真正并发执行
+  - ✅ 新增并发 add+delete 测试: 10 个并发删除 + 5 个并发新增，验证最终一致性和持久化完整性
+- **相关文件**:
+  - `crates/memoryos-gateway/src/routes/memory_manage.rs` — extract_validated_tenant_id + TenantManager 注入
+  - `crates/memoryos-gateway/src/routes/faq.rs` — tenant 验证 + 条件搜索
+  - `crates/memoryos-gateway/src/main.rs` — 传递 tenant_manager 到 FaqState/MemoryManageState
+  - `crates/memoryos-core/src/rbac/mod.rs` — multi_thread 测试 + add+delete 边界测试
+
+---
 
 ### [Devin] - v0.12.4 PR #17 Review 跟进修复
 - **开始时间**: 2026-02-20 14:45
