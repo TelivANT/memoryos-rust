@@ -1,85 +1,64 @@
-//! Metrics middleware (simplified)
+//! Prometheus-backed metrics middleware
+//!
+//! Instruments every HTTP request with `memoryos_http_requests_total` (counter)
+//! and `memoryos_http_request_duration_seconds` (histogram) from the
+//! `memoryos-metrics` crate. The `/metrics` path itself is excluded to avoid
+//! polluting the scraped data.
 
-use axum::{
-    extract::Request,
-    middleware::Next,
-    response::Response,
-};
-use std::sync::atomic::{AtomicU64, Ordering};
+use axum::{extract::Request, middleware::Next, response::Response};
+use memoryos_metrics::{HTTP_REQUESTS_TOTAL, HTTP_REQUEST_DURATION};
 use std::time::Instant;
 use tracing::info;
 
-/// Global metrics
-pub struct Metrics {
-    pub requests_total: AtomicU64,
-    pub requests_success: AtomicU64,
-    pub requests_error: AtomicU64,
+/// Normalize request path to avoid high-cardinality labels.
+/// Replaces UUIDs and numeric IDs with placeholders.
+fn normalize_path(path: &str) -> String {
+    let segments: Vec<&str> = path.split('/').collect();
+    let normalized: Vec<String> = segments
+        .iter()
+        .map(|seg| {
+            if seg.len() >= 32 && seg.chars().all(|c| c.is_ascii_hexdigit() || c == '-') {
+                ":id".to_string()
+            } else if seg.chars().all(|c| c.is_ascii_digit()) && !seg.is_empty() {
+                ":id".to_string()
+            } else {
+                seg.to_string()
+            }
+        })
+        .collect();
+    normalized.join("/")
 }
 
-impl Metrics {
-    pub const fn new() -> Self {
-        Self {
-            requests_total: AtomicU64::new(0),
-            requests_success: AtomicU64::new(0),
-            requests_error: AtomicU64::new(0),
-        }
-    }
-}
-
-/// Global metrics instance
-pub static METRICS: Metrics = Metrics::new();
-
-/// Metrics middleware
+/// Axum middleware that records Prometheus HTTP metrics for every request.
 pub async fn metrics_middleware(req: Request, next: Next) -> Response {
     let start = Instant::now();
-    let method = req.method().clone();
-    let path = req.uri().path().to_string();
+    let method = req.method().to_string();
+    let raw_path = req.uri().path().to_string();
 
-    // Increment total requests
-    METRICS.requests_total.fetch_add(1, Ordering::Relaxed);
-
-    // Process request
     let response = next.run(req).await;
 
-    // Record metrics
-    let duration = start.elapsed();
-    let status = response.status();
-
-    if status.is_success() {
-        METRICS.requests_success.fetch_add(1, Ordering::Relaxed);
-    } else if status.is_server_error() || status.is_client_error() {
-        METRICS.requests_error.fetch_add(1, Ordering::Relaxed);
+    if raw_path == "/metrics" {
+        return response;
     }
+
+    let duration = start.elapsed().as_secs_f64();
+    let status = response.status().as_u16().to_string();
+    let path = normalize_path(&raw_path);
+
+    HTTP_REQUESTS_TOTAL
+        .with_label_values(&[&method, &path, &status])
+        .inc();
+    HTTP_REQUEST_DURATION
+        .with_label_values(&[&method, &path])
+        .observe(duration);
 
     info!(
         method = %method,
-        path = %path,
-        status = %status.as_u16(),
-        duration_ms = %duration.as_millis(),
+        path = %raw_path,
+        status = %status,
+        duration_ms = %format!("{:.1}", duration * 1000.0),
         "Request completed"
     );
 
     response
-}
-
-/// Get metrics as text (Prometheus format)
-pub fn get_metrics_text() -> String {
-    let total = METRICS.requests_total.load(Ordering::Relaxed);
-    let success = METRICS.requests_success.load(Ordering::Relaxed);
-    let error = METRICS.requests_error.load(Ordering::Relaxed);
-
-    format!(
-        "# HELP http_requests_total Total number of HTTP requests\n\
-         # TYPE http_requests_total counter\n\
-         http_requests_total {}\n\
-         \n\
-         # HELP http_requests_success Number of successful HTTP requests\n\
-         # TYPE http_requests_success counter\n\
-         http_requests_success {}\n\
-         \n\
-         # HELP http_requests_error Number of failed HTTP requests\n\
-         # TYPE http_requests_error counter\n\
-         http_requests_error {}\n",
-        total, success, error
-    )
 }

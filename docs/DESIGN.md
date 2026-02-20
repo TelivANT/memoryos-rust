@@ -901,4 +901,5 @@ FAQ 系统通过三个核心组件实现了从问答到知识库的自动化流�
 - ✅ WikiExporter: Confluence 导出已实现 (REST API ConfluenceExportBackend, v0.3.0)
 - ✅ Router Tier 0: FAQ 直接命中已集成到路由器 (v0.3.0)
 - ✅ FAQ 管理 API: candidates/promote/delete/history/stats (v0.3.0)
+- ✅ LLM FAQ 分类: LlmFaqClassifier + /v1/admin/faq/classify API (v0.10.0)
 - ✅ 错误处理和后台任务支持

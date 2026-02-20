@@ -38,6 +38,22 @@
 
 ## 🚀 当前活跃任务
 
+### [Devin] - v0.10.0 Prometheus 可观测性 + LLM FAQ 分类
+- **开始时间**: 2026-02-20 06:30
+- **完成时间**: 2026-02-20 06:50
+- **当前进度**: 100%
+- **状态**: ✅ 完成
+- **任务描述**: 实现 Prometheus/OpenTelemetry 可观测性集成 + LLM FAQ 自动分类
+- **相关文件**:
+  - `crates/memoryos-metrics/src/lib.rs` — 新增 Router/FAQ/LLM 指标
+  - `crates/memoryos-gateway/src/middleware/metrics.rs` — Prometheus 中间件
+  - `crates/memoryos-gateway/src/routes/metrics.rs` — /metrics 端点
+  - `crates/memoryos-core/src/faq/llm_classifier.rs` — LLM FAQ 分类器
+  - `crates/memoryos-gateway/src/routes/faq.rs` — /v1/admin/faq/classify API
+- **备注**: 未实现功能已补充到文档备选方案（CLIP/Whisper、跨模态检索、多语言 FAQ 等）
+
+---
+
 ### [Devin] - 文档回真同步至 v0.9.0
 - **开始时间**: 2026-02-20 06:20
 - **预计完成**: 2026-02-20 06:50

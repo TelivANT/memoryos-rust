@@ -7,7 +7,10 @@ use axum::{
     routing::{delete, get, post},
     Json, Router,
 };
-use memoryos_core::{AutoPromoter, HeatTracker, MemoryType, MidTermSegment, PromotionRecord};
+use memoryos_core::{
+    AutoPromoter, FaqClassification, HeatTracker, LlmClassifierConfig, MemoryType, MidTermSegment,
+    PromotionRecord,
+};
 use memoryos_ports::VectorStorage;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -79,6 +82,7 @@ pub fn create_faq_routes(faq_state: FaqState) -> Router {
     Router::new()
         .route("/candidates", get(get_candidates))
         .route("/promote", post(promote_to_faq))
+        .route("/classify", post(classify_faq))
         .route("/:id", delete(delete_faq))
         .route("/history", get(get_promotion_history))
         .route("/stats", get(get_stats))
@@ -258,4 +262,69 @@ async fn get_promotion_history(State(state): State<FaqState>) -> impl IntoRespon
 async fn get_stats(State(state): State<FaqState>) -> impl IntoResponse {
     let stats = state.auto_promoter.get_stats().await;
     Json(stats)
+}
+
+/// POST /admin/faq/classify - LLM FAQ classification (offline / dry-run)
+///
+/// Accepts a question + answer pair and returns the classification result.
+/// This does NOT call an actual LLM — it builds the prompt and returns it
+/// together with the classifier config so callers can feed it to any LLM.
+/// If a `response_text` field is provided (i.e. caller already obtained an
+/// LLM response), it will be parsed into a structured classification.
+#[derive(Debug, Deserialize)]
+struct ClassifyRequest {
+    question: String,
+    answer: String,
+    response_text: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct ClassifyResponse {
+    classification: Option<FaqClassification>,
+    prompt: Option<Vec<memoryos_core::faq::PromptMessage>>,
+    error: Option<String>,
+}
+
+async fn classify_faq(Json(req): Json<ClassifyRequest>) -> impl IntoResponse {
+    let config = LlmClassifierConfig::default();
+
+    if let Some(ref response_text) = req.response_text {
+        match memoryos_core::faq::parse_classification_response(response_text, &config) {
+            Ok(classification) => {
+                info!(
+                    question = %req.question,
+                    category = %classification.category,
+                    confidence = %classification.confidence,
+                    "FAQ classified"
+                );
+                (
+                    StatusCode::OK,
+                    Json(ClassifyResponse {
+                        classification: Some(classification),
+                        prompt: None,
+                        error: None,
+                    }),
+                )
+            }
+            Err(e) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                Json(ClassifyResponse {
+                    classification: None,
+                    prompt: None,
+                    error: Some(e),
+                }),
+            ),
+        }
+    } else {
+        let prompt =
+            memoryos_core::faq::build_classification_prompt(&config, &req.question, &req.answer);
+        (
+            StatusCode::OK,
+            Json(ClassifyResponse {
+                classification: None,
+                prompt: Some(prompt),
+                error: None,
+            }),
+        )
+    }
 }

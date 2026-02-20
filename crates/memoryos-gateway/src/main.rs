@@ -191,6 +191,7 @@ async fn main() -> Result<(), AppError> {
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/health/status", get(health_status))
+        .route("/metrics", get(routes::metrics::metrics_handler))
         .merge(protected_routes)
         .merge(admin_routes)
         .with_state(state)
@@ -198,7 +199,8 @@ async fn main() -> Result<(), AppError> {
         .nest("/v1/graph", graph_routes)
         .nest("/v1/memory/manage", memory_manage_routes)
         .nest("/v1/multimodal", multimodal_routes)
-        .nest("/v1/security", security_routes);
+        .nest("/v1/security", security_routes)
+        .layer(axum::middleware::from_fn(middleware::metrics_middleware));
 
     if config.auth.enabled {
         tracing::info!("🔒 API Key authentication enabled");
