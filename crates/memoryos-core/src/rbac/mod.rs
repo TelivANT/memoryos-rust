@@ -461,7 +461,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
     async fn test_concurrent_persist_no_data_loss() {
         let dir = std::env::temp_dir().join(format!("rbac_conc_{}", uuid::Uuid::now_v7()));
         let path = dir.join("rbac_users.json");
@@ -483,6 +483,44 @@ mod tests {
 
         let mgr2 = RbacManager::with_persistence(&path);
         assert_eq!(mgr2.user_count().await, 20);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn test_concurrent_add_delete_persist() {
+        let dir = std::env::temp_dir().join(format!("rbac_addel_{}", uuid::Uuid::now_v7()));
+        let path = dir.join("rbac_users.json");
+        let mgr = std::sync::Arc::new(RbacManager::with_persistence(&path));
+
+        for i in 0..10 {
+            let id = format!("u_{}", i);
+            mgr.add_user(make_user(&id, "t1", Role::User)).await;
+        }
+        assert_eq!(mgr.user_count().await, 10);
+
+        let mut handles = Vec::new();
+        for i in 0..5 {
+            let mgr = mgr.clone();
+            handles.push(tokio::spawn(async move {
+                mgr.remove_user(&format!("u_{}", i)).await;
+            }));
+        }
+        for i in 10..15 {
+            let mgr = mgr.clone();
+            handles.push(tokio::spawn(async move {
+                let id = format!("u_{}", i);
+                mgr.add_user(make_user(&id, "t1", Role::User)).await;
+            }));
+        }
+        for h in handles {
+            h.await.unwrap();
+        }
+
+        assert_eq!(mgr.user_count().await, 10);
+
+        let mgr2 = RbacManager::with_persistence(&path);
+        assert_eq!(mgr2.user_count().await, 10);
 
         let _ = std::fs::remove_dir_all(&dir);
     }

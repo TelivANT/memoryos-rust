@@ -1,21 +1,39 @@
 use axum::{extract::State, http::HeaderMap, response::IntoResponse, routing::post, Json, Router};
-use memoryos_core::{AppError, MemoryType, MidTermSegment};
+use memoryos_core::{tenant::TenantManager, AppError, MemoryType, MidTermSegment};
 use memoryos_ports::VectorStorage;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tracing::info;
+use tracing::{info, warn};
 use uuid::Uuid;
 
-fn extract_tenant_id(headers: &HeaderMap) -> Option<String> {
-    headers
+async fn extract_validated_tenant_id(
+    headers: &HeaderMap,
+    tenant_manager: &Option<TenantManager>,
+) -> Result<Option<String>, AppError> {
+    let raw = headers
         .get("X-Tenant-ID")
         .and_then(|h| h.to_str().ok())
-        .map(|s| s.to_string())
+        .map(|s| s.to_string());
+    let tid = match raw {
+        Some(t) => t,
+        None => return Ok(None),
+    };
+    if let Some(mgr) = tenant_manager {
+        if !mgr.is_tenant_enabled(&tid).await {
+            warn!("Rejected request for unknown/disabled tenant: {}", tid);
+            return Err(AppError::BadRequest(format!(
+                "Tenant '{}' does not exist or is disabled",
+                tid
+            )));
+        }
+    }
+    Ok(Some(tid))
 }
 
 #[derive(Clone)]
 pub struct MemoryManageState {
     pub vector_store: Arc<dyn VectorStorage>,
+    pub tenant_manager: Option<TenantManager>,
 }
 
 #[derive(Deserialize)]
@@ -113,7 +131,7 @@ async fn add_tags(
     );
 
     let dummy_embedding = vec![0.0_f32; 1536];
-    let tenant_id = extract_tenant_id(&headers);
+    let tenant_id = extract_validated_tenant_id(&headers, &state.tenant_manager).await?;
     let segments = if let Some(ref tid) = tenant_id {
         state
             .vector_store
@@ -160,7 +178,7 @@ async fn search_by_tags(
     headers: HeaderMap,
     Json(req): Json<SearchByTagRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let tenant_id = extract_tenant_id(&headers);
+    let tenant_id = extract_validated_tenant_id(&headers, &state.tenant_manager).await?;
     let segments = if let Some(ref tid) = tenant_id {
         state
             .vector_store
@@ -202,7 +220,7 @@ async fn export_memories(
     info!("Exporting memories for user: {}", req.user_id);
 
     let dummy_embedding = vec![0.0_f32; 1536];
-    let tenant_id = extract_tenant_id(&headers);
+    let tenant_id = extract_validated_tenant_id(&headers, &state.tenant_manager).await?;
     let segments = if let Some(ref tid) = tenant_id {
         state
             .vector_store
@@ -318,7 +336,7 @@ async fn get_version_history(
     Json(req): Json<VersionHistoryRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let dummy_embedding = vec![0.0_f32; 1536];
-    let tenant_id = extract_tenant_id(&headers);
+    let tenant_id = extract_validated_tenant_id(&headers, &state.tenant_manager).await?;
     let segments = if let Some(ref tid) = tenant_id {
         state
             .vector_store

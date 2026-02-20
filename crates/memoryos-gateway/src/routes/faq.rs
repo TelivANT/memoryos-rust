@@ -2,14 +2,14 @@
 
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
     routing::{delete, get, post},
     Json, Router,
 };
 use memoryos_core::{
-    AutoPromoter, FaqClassification, HeatTracker, LlmClassifierConfig, MemoryType, MidTermSegment,
-    PromotionRecord,
+    tenant::TenantManager, AutoPromoter, FaqClassification, HeatTracker, LlmClassifierConfig,
+    MemoryType, MidTermSegment, PromotionRecord,
 };
 use memoryos_ports::VectorStorage;
 use serde::{Deserialize, Serialize};
@@ -17,12 +17,39 @@ use std::sync::Arc;
 use tracing::{info, warn};
 use uuid::Uuid;
 
+use memoryos_core::AppError;
+
+async fn extract_validated_tenant_id(
+    headers: &HeaderMap,
+    tenant_manager: &Option<TenantManager>,
+) -> Result<Option<String>, AppError> {
+    let raw = headers
+        .get("X-Tenant-ID")
+        .and_then(|h| h.to_str().ok())
+        .map(|s| s.to_string());
+    let tid = match raw {
+        Some(t) => t,
+        None => return Ok(None),
+    };
+    if let Some(mgr) = tenant_manager {
+        if !mgr.is_tenant_enabled(&tid).await {
+            warn!("Rejected FAQ request for unknown/disabled tenant: {}", tid);
+            return Err(AppError::BadRequest(format!(
+                "Tenant '{}' does not exist or is disabled",
+                tid
+            )));
+        }
+    }
+    Ok(Some(tid))
+}
+
 /// FAQ 管理状态
 #[derive(Clone)]
 pub struct FaqState {
     pub heat_tracker: Arc<HeatTracker>,
     pub auto_promoter: Arc<AutoPromoter>,
     pub vector_store: Arc<dyn VectorStorage>,
+    pub tenant_manager: Option<TenantManager>,
 }
 
 /// FAQ 候选响应
@@ -90,13 +117,23 @@ pub fn create_faq_routes(faq_state: FaqState) -> Router {
 }
 
 /// GET /admin/faq/candidates - 获取候选 FAQ
-async fn get_candidates(State(state): State<FaqState>) -> impl IntoResponse {
+async fn get_candidates(State(state): State<FaqState>, headers: HeaderMap) -> impl IntoResponse {
     let dummy_embedding = vec![0.0_f32; 1536];
-    let segments = match state
-        .vector_store
-        .search_segments("__global__", dummy_embedding, 50)
+    let tenant_id = extract_validated_tenant_id(&headers, &state.tenant_manager)
         .await
-    {
+        .ok()
+        .flatten();
+    let segments = match if let Some(ref tid) = tenant_id {
+        state
+            .vector_store
+            .search_segments_for_tenant("__global__", tid, dummy_embedding, 50)
+            .await
+    } else {
+        state
+            .vector_store
+            .search_segments("__global__", dummy_embedding, 50)
+            .await
+    } {
         Ok(segs) => segs,
         Err(e) => {
             warn!("Failed to fetch FAQ candidates: {}", e);
@@ -119,16 +156,27 @@ async fn get_candidates(State(state): State<FaqState>) -> impl IntoResponse {
 /// POST /admin/faq/promote - 手动提升为 FAQ
 async fn promote_to_faq(
     State(state): State<FaqState>,
+    headers: HeaderMap,
     Json(req): Json<PromoteRequest>,
 ) -> impl IntoResponse {
     info!("Promoting memory {} to FAQ", req.memory_id);
 
     let dummy_embedding = vec![0.0_f32; 1536];
-    let segments = match state
-        .vector_store
-        .search_segments("__global__", dummy_embedding, 100)
+    let tenant_id = extract_validated_tenant_id(&headers, &state.tenant_manager)
         .await
-    {
+        .ok()
+        .flatten();
+    let segments = match if let Some(ref tid) = tenant_id {
+        state
+            .vector_store
+            .search_segments_for_tenant("__global__", tid, dummy_embedding, 100)
+            .await
+    } else {
+        state
+            .vector_store
+            .search_segments("__global__", dummy_embedding, 100)
+            .await
+    } {
         Ok(segs) => segs,
         Err(e) => {
             warn!("Failed to search segments for promotion: {}", e);
@@ -194,15 +242,29 @@ async fn promote_to_faq(
 }
 
 /// DELETE /admin/faq/:id - 删除 FAQ (demote back to QA)
-async fn delete_faq(State(state): State<FaqState>, Path(id): Path<Uuid>) -> impl IntoResponse {
+async fn delete_faq(
+    State(state): State<FaqState>,
+    headers: HeaderMap,
+    Path(id): Path<Uuid>,
+) -> impl IntoResponse {
     info!("Demoting FAQ {} back to QA", id);
 
     let dummy_embedding = vec![0.0_f32; 1536];
-    let segments = match state
-        .vector_store
-        .search_segments("__global__", dummy_embedding, 100)
+    let tenant_id = extract_validated_tenant_id(&headers, &state.tenant_manager)
         .await
-    {
+        .ok()
+        .flatten();
+    let segments = match if let Some(ref tid) = tenant_id {
+        state
+            .vector_store
+            .search_segments_for_tenant("__global__", tid, dummy_embedding, 100)
+            .await
+    } else {
+        state
+            .vector_store
+            .search_segments("__global__", dummy_embedding, 100)
+            .await
+    } {
         Ok(segs) => segs,
         Err(e) => {
             return (
