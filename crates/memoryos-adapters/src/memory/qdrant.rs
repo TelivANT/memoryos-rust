@@ -118,6 +118,84 @@ impl QdrantStorage {
             .map_err(|e| AppError::ExternalService(format!("Qdrant health check failed: {}", e)))?;
         Ok(())
     }
+
+    fn build_mid_term_segment(
+        &self,
+        user_id: &str,
+        payload: HashMap<String, Value>,
+        point_id: Option<PointId>,
+        vectors: Option<VectorsOutput>,
+    ) -> MidTermSegment {
+        let summary = payload_string(&payload, "summary").unwrap_or_default();
+        let heat = payload_f64(&payload, "heat").unwrap_or(0.0) as f32;
+        let created_at = payload_string(&payload, "created_at")
+            .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
+            .map(|dt| dt.with_timezone(&chrono::Utc))
+            .unwrap_or_else(chrono::Utc::now);
+
+        MidTermSegment {
+            id: point_id
+                .and_then(point_id_to_uuid)
+                .unwrap_or_else(uuid::Uuid::now_v7),
+            user_id: user_id.to_string(),
+            summary,
+            embedding: vectors.map(convert_vectors).unwrap_or_default(),
+            heat,
+            created_at,
+            tenant_id: payload_string(&payload, "tenant_id"),
+            access_count: payload
+                .get("access_count")
+                .and_then(|v| v.as_integer())
+                .unwrap_or(0) as u32,
+            heat_score: payload
+                .get("heat_score")
+                .and_then(|v| v.as_double())
+                .unwrap_or(0.0) as f32,
+            last_accessed: payload
+                .get("last_accessed")
+                .and_then(|v| v.as_str())
+                .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+                .map(|dt| dt.with_timezone(&chrono::Utc)),
+            memory_type: payload
+                .get("memory_type")
+                .and_then(|v| v.as_str())
+                .and_then(|s| match s.as_ref() {
+                    "qa" => Some(memoryos_core::MemoryType::QA),
+                    "faq_candidate" => Some(memoryos_core::MemoryType::FaqCandidate),
+                    "faq" => Some(memoryos_core::MemoryType::Faq),
+                    _ => None,
+                })
+                .unwrap_or(memoryos_core::MemoryType::QA),
+            version: payload
+                .get("version")
+                .and_then(|v| v.as_integer())
+                .unwrap_or(1) as u32,
+            tags: payload
+                .get("tags")
+                .and_then(|v| match v.kind.as_ref()? {
+                    Kind::ListValue(list) => Some(
+                        list.values
+                            .iter()
+                            .filter_map(|item| match item.kind.as_ref()? {
+                                Kind::StringValue(s) => Some(s.clone()),
+                                _ => None,
+                            })
+                            .collect(),
+                    ),
+                    _ => None,
+                })
+                .unwrap_or_default(),
+            updated_at: payload
+                .get("updated_at")
+                .and_then(|v| v.as_str())
+                .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+                .map(|dt| dt.with_timezone(&chrono::Utc)),
+            previous_version_id: payload
+                .get("previous_version_id")
+                .and_then(|v| v.as_str())
+                .and_then(|s| uuid::Uuid::parse_str(s).ok()),
+        }
+    }
 }
 
 fn long_term_point_id(user_id: &str) -> String {
@@ -299,6 +377,85 @@ impl VectorStorage for QdrantStorage {
 
         debug!("Stored mid-term segment: {}", segment.id);
         Ok(())
+    }
+
+    async fn search_segments_for_tenant(
+        &self,
+        user_id: &str,
+        tenant_id: &str,
+        query_embedding: Vec<f32>,
+        limit: usize,
+    ) -> Result<Vec<MidTermSegment>, AppError> {
+        let filter = Filter::must([
+            Condition::matches("user_id", user_id.to_string()),
+            Condition::matches("tenant_id", tenant_id.to_string()),
+        ]);
+
+        let search_result = self
+            .client
+            .search_points(
+                SearchPointsBuilder::new(&self.segment_collection, query_embedding, limit as u64)
+                    .with_payload(true)
+                    .with_vectors(true)
+                    .filter(filter),
+            )
+            .await
+            .map_err(|e| AppError::ExternalService(format!("Qdrant search failed: {}", e)))?;
+
+        let segments = search_result
+            .result
+            .into_iter()
+            .map(|point| {
+                let payload = point.payload;
+                self.build_mid_term_segment(user_id, payload, point.id, point.vectors)
+            })
+            .collect::<Vec<_>>();
+
+        Ok(segments)
+    }
+
+    async fn search_segments_by_tags_for_tenant(
+        &self,
+        user_id: &str,
+        tenant_id: &str,
+        tags: &[String],
+        limit: usize,
+    ) -> Result<Vec<MidTermSegment>, AppError> {
+        use qdrant_client::qdrant::ScrollPointsBuilder;
+
+        let mut must_conditions = vec![
+            Condition::matches("user_id", user_id.to_string()),
+            Condition::matches("tenant_id", tenant_id.to_string()),
+        ];
+        for tag in tags {
+            must_conditions.push(Condition::matches("tags", tag.clone()));
+        }
+        let filter = Filter::must(must_conditions);
+
+        let scroll_result = self
+            .client
+            .scroll(
+                ScrollPointsBuilder::new(&self.segment_collection)
+                    .filter(filter)
+                    .limit(limit as u32)
+                    .with_payload(true)
+                    .with_vectors(true),
+            )
+            .await
+            .map_err(|e| {
+                AppError::ExternalService(format!("Qdrant scroll by tags failed: {}", e))
+            })?;
+
+        let segments = scroll_result
+            .result
+            .into_iter()
+            .map(|point| {
+                let payload = point.payload;
+                self.build_mid_term_segment(user_id, payload, point.id, point.vectors)
+            })
+            .collect::<Vec<_>>();
+
+        Ok(segments)
     }
 
     async fn search_segments(

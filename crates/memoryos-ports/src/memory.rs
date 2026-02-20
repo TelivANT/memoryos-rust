@@ -57,6 +57,28 @@ pub trait VectorStorage: Send + Sync {
         limit: usize,
     ) -> Result<Vec<MidTermSegment>, AppError>;
 
+    /// Tenant-scoped segment search. Default falls back to user-only search.
+    async fn search_segments_for_tenant(
+        &self,
+        user_id: &str,
+        _tenant_id: &str,
+        query_embedding: Vec<f32>,
+        limit: usize,
+    ) -> Result<Vec<MidTermSegment>, AppError> {
+        self.search_segments(user_id, query_embedding, limit).await
+    }
+
+    /// Tenant-scoped tag search. Default falls back to user-only search.
+    async fn search_segments_by_tags_for_tenant(
+        &self,
+        user_id: &str,
+        _tenant_id: &str,
+        tags: &[String],
+        limit: usize,
+    ) -> Result<Vec<MidTermSegment>, AppError> {
+        self.search_segments_by_tags(user_id, tags, limit).await
+    }
+
     // ========== Long-Term Memory ==========
 
     /// 存储 long-term memory

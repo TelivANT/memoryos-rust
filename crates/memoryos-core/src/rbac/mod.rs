@@ -119,6 +119,7 @@ pub struct UserRecord {
 pub struct RbacManager {
     users: Arc<RwLock<HashMap<String, UserRecord>>>,
     persist_path: Option<PathBuf>,
+    persist_lock: Arc<tokio::sync::Mutex<()>>,
 }
 
 impl RbacManager {
@@ -126,6 +127,7 @@ impl RbacManager {
         Self {
             users: Arc::new(RwLock::new(HashMap::new())),
             persist_path: None,
+            persist_lock: Arc::new(tokio::sync::Mutex::new(())),
         }
     }
 
@@ -158,10 +160,12 @@ impl RbacManager {
         Self {
             users: Arc::new(RwLock::new(users)),
             persist_path: Some(path),
+            persist_lock: Arc::new(tokio::sync::Mutex::new(())),
         }
     }
 
     async fn persist_snapshot(&self, snapshot: Vec<UserRecord>) {
+        let _guard = self.persist_lock.lock().await;
         if let Some(ref path) = self.persist_path {
             if let Ok(data) = serde_json::to_string_pretty(&snapshot) {
                 if let Some(parent) = path.parent() {
