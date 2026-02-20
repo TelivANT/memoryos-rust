@@ -4,6 +4,16 @@ use crate::memory::{MemoryType, MidTermSegment};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::Arc;
+
+/// Backend trait for remote wiki exports (S3, Confluence, etc.)
+/// Implemented in memoryos-adapters to keep core dependency-free.
+#[async_trait::async_trait]
+pub trait WikiExportBackend: Send + Sync {
+    async fn write_content(&self, path: &str, content: &[u8]) -> Result<ExportResult, String>;
+
+    fn backend_name(&self) -> &str;
+}
 
 /// Wiki 导出配置
 #[derive(Debug, Clone)]
@@ -54,11 +64,20 @@ pub enum ExportTarget {
 /// Wiki 导出器
 pub struct WikiExporter {
     config: WikiExportConfig,
+    backend: Option<Arc<dyn WikiExportBackend>>,
 }
 
 impl WikiExporter {
     pub fn new(config: WikiExportConfig) -> Self {
-        Self { config }
+        Self {
+            config,
+            backend: None,
+        }
+    }
+
+    pub fn with_backend(mut self, backend: Arc<dyn WikiExportBackend>) -> Self {
+        self.backend = Some(backend);
+        self
     }
 
     /// 筛选可导出的 FAQ
@@ -210,28 +229,37 @@ impl WikiExporter {
         })
     }
 
-    /// 导出到 S3/OSS
+    /// 导出到 S3/OSS (delegates to WikiExportBackend)
     async fn export_to_s3(
         &self,
         _bucket: &str,
-        _prefix: &str,
+        prefix: &str,
         _endpoint: Option<&str>,
-        _markdown: String,
+        markdown: String,
     ) -> Result<ExportResult, String> {
-        // TODO: 实现 S3 上传
-        Err("S3 导出功能待实现".to_string())
+        let backend = self
+            .backend
+            .as_ref()
+            .ok_or_else(|| "S3 export backend not configured. Use WikiExporter::with_backend() to set an S3 backend.".to_string())?;
+        let filename = format!("faq_{}.md", Utc::now().format("%Y%m%d_%H%M%S"));
+        let path = format!("{}{}", prefix, filename);
+        backend.write_content(&path, markdown.as_bytes()).await
     }
 
-    /// 导出到 Confluence
+    /// 导出到 Confluence (delegates to WikiExportBackend)
     async fn export_to_confluence(
         &self,
         _base_url: &str,
         _space_key: &str,
         _parent_page_id: Option<&str>,
-        _markdown: String,
+        markdown: String,
     ) -> Result<ExportResult, String> {
-        // TODO: 实现 Confluence API 调用
-        Err("Confluence 导出功能待实现".to_string())
+        let backend = self
+            .backend
+            .as_ref()
+            .ok_or_else(|| "Confluence export backend not configured. Use WikiExporter::with_backend() to set a Confluence backend.".to_string())?;
+        let title = format!("FAQ_{}", Utc::now().format("%Y%m%d_%H%M%S"));
+        backend.write_content(&title, markdown.as_bytes()).await
     }
 
     /// 启动后台导出任务

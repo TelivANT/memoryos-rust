@@ -14,7 +14,8 @@ pub use config::{AppConfig, ConfigManager};
 pub use error::AppError;
 pub use faq::{
     AutoPromoter, AutoPromotionConfig, ExportResult, ExportTarget, HeatConfig, HeatStats,
-    HeatTracker, PromotionRecord, PromotionResult, PromotionStats, WikiExportConfig, WikiExporter,
+    HeatTracker, PromotionRecord, PromotionResult, PromotionStats, WikiExportBackend,
+    WikiExportConfig, WikiExporter,
 };
 pub use health::{DependencyState, HealthMode, HealthStatus};
 pub use history::{HistoryEventType, MemoryHistoryEntry};

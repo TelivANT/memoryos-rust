@@ -5,7 +5,7 @@ use axum::{
 use memoryos_core::{llm::RouterContext, AppError};
 use memoryos_ports::ChatRequest;
 use serde::{Deserialize, Serialize};
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::routes::apply_degraded_header;
 use crate::AppState;
@@ -49,21 +49,49 @@ pub async fn chat_completions(
         request.stream
     );
 
-    // 简化：构造路由上下文
     let query = request
         .messages
         .last()
         .map(|m| m.content.clone())
         .unwrap_or_default();
 
+    // FAQ Tier 0: Search for FAQ matches before routing
+    let memory_mgr = state.memory_manager.read().await.clone();
+    let (is_faq_match, global_similarity, faq_answer) =
+        match memory_mgr.retrieve_context("default_user", &query).await {
+            Ok(ctx) => {
+                let faq_match = ctx
+                    .mid_term
+                    .iter()
+                    .enumerate()
+                    .find(|(_, seg)| seg.memory_type == memoryos_core::MemoryType::Faq);
+                match faq_match {
+                    Some((pos, seg)) => {
+                        let estimated_similarity = match pos {
+                            0 => 0.98_f32,
+                            1 => 0.93,
+                            _ => 0.80,
+                        };
+                        (true, estimated_similarity, Some(seg.summary.clone()))
+                    }
+                    None => (false, 0.0, None),
+                }
+            }
+            Err(e) => {
+                warn!(error = %e, "FAQ lookup failed, proceeding without FAQ match");
+                (false, 0.0, None)
+            }
+        };
+
     let decision = state
         .router
         .route(&RouterContext {
             query: query.clone(),
-            token_count: query.len() / 4, // 粗略估算
-            global_similarity: 0.0,
-            is_faq_match: false,
+            token_count: query.len() / 4,
+            global_similarity,
+            is_faq_match,
             has_sensitive_keywords: false,
+            faq_answer,
         })
         .await?;
 

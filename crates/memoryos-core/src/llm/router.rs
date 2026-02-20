@@ -29,6 +29,8 @@ pub struct RouterContext {
     pub global_similarity: f32, // Max similarity score from Global Memory
     pub is_faq_match: bool,     // Is the top match an FAQ?
     pub has_sensitive_keywords: bool,
+    /// Pre-fetched FAQ answer content (populated by chat handler when FAQ match found)
+    pub faq_answer: Option<String>,
 }
 
 #[async_trait]
@@ -111,7 +113,10 @@ impl ModelRouter for TieredRouter {
                 endpoint: None,
                 model: "none".to_string(),
                 reason: format!("Direct Hit (Score: {:.2})", ctx.global_similarity),
-                direct_response: Some("FAQ Content Placeholder".to_string()), // In real logic, this comes from DB
+                direct_response: ctx
+                    .faq_answer
+                    .clone()
+                    .or_else(|| Some("FAQ Content Placeholder".to_string())),
             });
         }
 

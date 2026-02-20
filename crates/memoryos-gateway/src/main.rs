@@ -14,6 +14,7 @@ mod state;
 mod worker_monitor;
 
 use handlers::{chat_completions, health_check, health_status};
+use routes::faq::{create_faq_routes, FaqState};
 use state::AppState;
 use worker_monitor::spawn_worker_monitor;
 
@@ -84,18 +85,34 @@ async fn main() -> Result<(), AppError> {
     // 5. Setup Router
     let state_arc = Arc::new(state.clone());
 
+    // FAQ 管理路由
+    let heat_tracker = Arc::new(memoryos_core::HeatTracker::new(
+        memoryos_core::HeatConfig::default(),
+    ));
+    let faq_state = FaqState {
+        heat_tracker: heat_tracker.clone(),
+        auto_promoter: Arc::new(memoryos_core::AutoPromoter::new(
+            memoryos_core::AutoPromotionConfig::default(),
+            heat_tracker,
+        )),
+        vector_store: state.vector_store.clone(),
+    };
+
     // Admin 路由（需要认证 + admin 权限）
     let admin_routes = Router::new()
         .route("/v1/admin/keys", post(routes::admin::create_api_key))
         .route(
             "/v1/admin/keys/:key",
             axum::routing::delete(routes::admin::delete_api_key),
-        ) // 改用 DELETE
+        )
         .layer(axum::middleware::from_fn_with_state(
             state_arc.clone(),
-            middleware::admin_only, // 使用 admin_only 中间件
+            middleware::admin_only,
         ))
         .with_state(state_arc.clone());
+
+    // FAQ 管理路由（独立 state，嵌套到 admin 路径下）
+    let faq_routes = create_faq_routes(faq_state);
 
     // 需要认证的路由
     let protected_routes = Router::new()
@@ -120,7 +137,8 @@ async fn main() -> Result<(), AppError> {
         .route("/health/status", get(health_status))
         .merge(protected_routes)
         .merge(admin_routes)
-        .with_state(state);
+        .with_state(state)
+        .nest("/v1/admin/faq", faq_routes);
 
     if config.auth.enabled {
         tracing::info!("🔒 API Key authentication enabled");

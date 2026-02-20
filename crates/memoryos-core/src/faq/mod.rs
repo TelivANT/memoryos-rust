@@ -8,4 +8,6 @@ pub use auto_promoter::{
     AutoPromoter, AutoPromotionConfig, PromotionRecord, PromotionResult, PromotionStats,
 };
 pub use heat_tracker::{HeatConfig, HeatStats, HeatTracker};
-pub use wiki_exporter::{ExportResult, ExportTarget, WikiExportConfig, WikiExporter};
+pub use wiki_exporter::{
+    ExportResult, ExportTarget, WikiExportBackend, WikiExportConfig, WikiExporter,
+};
