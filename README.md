@@ -4,8 +4,7 @@ High-Performance AI Agent Memory Management System - Rust Implementation
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Rust](https://img.shields.io/badge/Rust-1.93+-orange.svg)](https://www.rust-lang.org/)
-[![Status](https://img.shields.io/badge/Status-Production_Ready-brightgreen.svg)](./CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/Tests-15/15_Passing-brightgreen.svg)](./CHANGELOG.md)
+[![Status](https://img.shields.io/badge/Status-Early_Development-yellow.svg)](./CHANGELOG.md)
 [![GitHub stars](https://img.shields.io/github/stars/TelivANT/memoryos-rust?style=social)](https://github.com/TelivANT/memoryos-rust/stargazers)
 [![GitHub release](https://img.shields.io/github/v/release/TelivANT/memoryos-rust)](https://github.com/TelivANT/memoryos-rust/releases)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/TelivANT/memoryos-rust/ci.yml?branch=main)](https://github.com/TelivANT/memoryos-rust/actions)
@@ -47,22 +46,22 @@ MemoryOS-Rust is a high-performance AI Agent memory management system built with
 | Feature | MemoryOS-Rust | Mem0 | Advantage |
 |---------|--------------|------|-----------|
 | **Language** | Rust 🦀 | Python 🐍 | 5-10x faster |
-| **Performance** | 10K+ QPS | ~1K QPS | 10x throughput |
-| **FAQ Response** | <10ms | ~100ms | 10x faster |
-| **Memory Overhead** | ~50MB | ~500MB | 10x lighter |
+| **Performance** | TBD (not benchmarked) | ~1K QPS | Needs testing |
+| **FAQ Response** | TBD (not benchmarked) | ~100ms | Needs testing |
+| **Memory Overhead** | TBD (not benchmarked) | ~500MB | Needs testing |
 | **LLM Adapters** | 10 | 10+ | Similar |
 | **Vector DBs** | 3 (Qdrant, Chroma, Pinecone) | 5+ | Good coverage |
 | **Graph Memory** | ✅ Qdrant-native | ✅ Neo4j | Different approach |
 | **Hot Config Reload** | ✅ 5s auto-refresh | ❌ | Unique feature |
 | **Smart Routing** | ✅ 3-tier (FAQ/Local/Cloud) | ⚠️ Basic | Advanced |
 | **Cost Savings** | 85-90% (local routing) | ~50% | Better optimization |
-| **Production Ready** | ✅ 100% | ✅ Mature | Both ready |
+| **Production Ready** | Early development | ✅ Mature | Mem0 is more mature |
 
 **When to choose MemoryOS-Rust**:
-- Need high throughput (10K+ QPS)
-- Cost-sensitive (85-90% savings)
-- Low latency requirements (<10ms FAQ)
-- Resource-constrained environments
+- Want a Rust-based memory layer for AI Agents
+- Need tight resource control and low overhead
+- Prefer compiled language performance characteristics
+- Building in the Rust ecosystem
 
 **When to choose Mem0**:
 - Python ecosystem preference
@@ -84,20 +83,7 @@ MemoryOS-Rust is a high-performance AI Agent memory management system built with
 
 ## 🚀 Quick Start
 
-### Performance Benchmarks
-
-| Scenario | Response Time | Throughput | Cost Savings | Use Case |
-|----------|--------------|------------|--------------|----------|
-| **FAQ Direct Hit** | <10ms | 50K QPS | 95% | Common questions |
-| **Local LLM (Llama)** | 50-200ms | 10K QPS | 90% | Hot topics, privacy |
-| **Cloud GPT-4** | 500-2000ms | 1K QPS | 0% | Complex reasoning |
-| **Hybrid Routing** | 100ms avg | 15K QPS | 85% | Production workload |
-
-*Tested on: 4 vCPU, 16GB RAM, Redis + Qdrant local*
-
----
-
-### 1. Start Dependencies
+### 1.Start Dependencies
 
 ```bash
 docker-compose up -d
@@ -194,19 +180,20 @@ graph TD
 
 ## 📊 Project Status
 
-**Version**: 0.2.0  
-**Status**: ✅ Production Ready  
-**Completion**: 100%  
+**Version**: 0.2.0-alpha  
+**Status**: Early Development (MVP)  
 
-| Phase | Module | Status |
-|-------|--------|--------|
-| Phase 1 | Foundation (Config/Log) | ✅ |
-| Phase 2 | Gateway & Adapters | ✅ |
-| Phase 3 | Storage (Redis/Qdrant) | ✅ |
-| Phase 4 | Intelligence (Router/Shield) | ✅ |
-| Phase 5 | Worker & Async | ✅ |
-| Phase 6 | Wiki Export | ✅ |
-| Phase 7 | Graph Memory | ✅ |
+| Phase | Module | Status | Notes |
+|-------|--------|--------|-------|
+| Phase 1 | Foundation (Config/Log) | Done | Functional |
+| Phase 2 | Gateway & Adapters | Done | Basic implementation |
+| Phase 3 | Storage (Redis/Qdrant) | Done | Needs production testing |
+| Phase 4 | Intelligence (Router/Shield) | In progress | Security hardening ongoing |
+| Phase 5 | Worker & Async | Done | Basic implementation |
+| Phase 6 | Wiki Export | Scaffolded | Not production tested |
+| Phase 7 | Graph Memory | Scaffolded | Mermaid parsing only, not a full GraphRAG |
+
+> **Note**: Performance claims (QPS, latency) have not been independently benchmarked yet. The architecture is designed for high performance but actual numbers depend on deployment configuration and workload.
 
 ---
 
@@ -248,9 +235,9 @@ Contributions are welcome! Please follow this workflow:
 
 ## 🔧 Maintenance Status
 
-**Current Status**: ✅ Production Ready & Actively Maintained
+**Current Status**: Active Development
 
-This project is **feature-complete** (100%) and in maintenance mode. We focus on:
+This project is in early development. We are actively working on:
 - 🐛 Bug fixes and security updates
 - 📚 Documentation improvements
 - 💡 Community-driven enhancements
@@ -292,4 +279,4 @@ Apache 2.0 License - See [LICENSE](./LICENSE)
 
 ---
 
-**Version**: 0.3.0 (Personal Edition) | **Updated**: 2026-02-19
+**Version**: 0.2.0-alpha (Personal Edition) | **Updated**: 2026-02-20
