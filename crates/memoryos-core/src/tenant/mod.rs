@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -25,12 +26,61 @@ pub struct TenantContext {
 #[derive(Clone)]
 pub struct TenantManager {
     tenants: Arc<RwLock<HashMap<String, Tenant>>>,
+    persist_path: Option<PathBuf>,
 }
 
 impl TenantManager {
     pub fn new() -> Self {
         Self {
             tenants: Arc::new(RwLock::new(HashMap::new())),
+            persist_path: None,
+        }
+    }
+
+    pub fn with_persistence(persist_path: impl AsRef<Path>) -> Self {
+        let path = persist_path.as_ref().to_path_buf();
+        let tenants = if path.exists() {
+            match std::fs::read_to_string(&path) {
+                Ok(data) => match serde_json::from_str::<Vec<Tenant>>(&data) {
+                    Ok(records) => {
+                        let mut map = HashMap::new();
+                        for t in records {
+                            map.insert(t.id.clone(), t);
+                        }
+                        tracing::info!("Loaded {} tenants from {}", map.len(), path.display());
+                        map
+                    }
+                    Err(e) => {
+                        tracing::warn!("Failed to parse tenant data: {}", e);
+                        HashMap::new()
+                    }
+                },
+                Err(e) => {
+                    tracing::warn!("Failed to read tenant file: {}", e);
+                    HashMap::new()
+                }
+            }
+        } else {
+            HashMap::new()
+        };
+        Self {
+            tenants: Arc::new(RwLock::new(tenants)),
+            persist_path: Some(path),
+        }
+    }
+
+    async fn persist(&self) {
+        if let Some(ref path) = self.persist_path {
+            let tenants = self.tenants.read().await;
+            let records: Vec<&Tenant> = tenants.values().collect();
+            if let Ok(data) = serde_json::to_string_pretty(&records) {
+                if let Some(parent) = path.parent() {
+                    let _ = std::fs::create_dir_all(parent);
+                }
+                if let Err(e) = std::fs::write(path, data) {
+                    tracing::error!("Failed to persist tenant data: {}", e);
+                }
+            }
         }
     }
 
@@ -40,6 +90,8 @@ impl TenantManager {
             return Err(format!("Tenant '{}' already exists", tenant.id));
         }
         tenants.insert(tenant.id.clone(), tenant);
+        drop(tenants);
+        self.persist().await;
         Ok(())
     }
 
@@ -79,6 +131,8 @@ impl TenantManager {
                 tenant.enabled = e;
             }
             tenant.updated_at = chrono::Utc::now().to_rfc3339();
+            drop(tenants);
+            self.persist().await;
             true
         } else {
             false
@@ -87,7 +141,12 @@ impl TenantManager {
 
     pub async fn delete_tenant(&self, tenant_id: &str) -> bool {
         let mut tenants = self.tenants.write().await;
-        tenants.remove(tenant_id).is_some()
+        let removed = tenants.remove(tenant_id).is_some();
+        drop(tenants);
+        if removed {
+            self.persist().await;
+        }
+        removed
     }
 
     pub async fn list_tenants(&self) -> Vec<Tenant> {

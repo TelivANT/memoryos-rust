@@ -68,25 +68,36 @@ pub async fn rbac_middleware(
     };
 
     if let Some(permission) = required_permission {
-        let has_permission = rbac.check_permission(token, permission).await;
+        let is_admin_key = state.config.auth.admin_keys.contains(&token.to_string());
+        if is_admin_key {
+            return Ok(next.run(request).await);
+        }
 
+        let has_permission = rbac.check_permission(token, permission).await;
         if !has_permission {
-            let is_admin_key = state.config.auth.admin_keys.contains(&token.to_string());
-            if !is_admin_key {
-                let user_exists = rbac.get_user(token).await.is_some();
-                if user_exists {
-                    return Err((
-                        StatusCode::FORBIDDEN,
-                        axum::Json(json!({
-                            "error": {
-                                "code": "forbidden",
-                                "message": format!("Permission '{}' required", permission)
-                            }
-                        })),
-                    )
-                        .into_response());
-                }
+            let user_exists = rbac.get_user(token).await.is_some();
+            if user_exists {
+                return Err((
+                    StatusCode::FORBIDDEN,
+                    axum::Json(json!({
+                        "error": {
+                            "code": "forbidden",
+                            "message": format!("Permission '{}' required", permission)
+                        }
+                    })),
+                )
+                    .into_response());
             }
+            return Err((
+                StatusCode::FORBIDDEN,
+                axum::Json(json!({
+                    "error": {
+                        "code": "forbidden",
+                        "message": "Unknown user. Register via admin service first."
+                    }
+                })),
+            )
+                .into_response());
         }
     }
 

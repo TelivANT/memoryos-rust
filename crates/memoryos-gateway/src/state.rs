@@ -136,8 +136,18 @@ impl AppState {
             None
         };
 
-        let rbac_manager = Some(RbacManager::new());
-        let tenant_manager = Some(TenantManager::new());
+        let data_dir = std::env::var_os("HOME")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|| std::path::PathBuf::from("."))
+            .join(".memoryos");
+        let _ = std::fs::create_dir_all(&data_dir);
+
+        let rbac_manager = Some(RbacManager::with_persistence(
+            data_dir.join("rbac_users.json"),
+        ));
+        let tenant_manager = Some(TenantManager::with_persistence(
+            data_dir.join("tenants.json"),
+        ));
 
         Self {
             config: Arc::new(config),

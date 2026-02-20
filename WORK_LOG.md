@@ -1,8 +1,8 @@
 # 工作日志 (Work Log)
 
 **项目**: MemoryOS-Rust  
-**当前版本**: v0.12.0  
-**更新**: 2026-02-20 13:30
+**当前版本**: v0.12.1  
+**更新**: 2026-02-20 13:45
 
 ---
 
@@ -37,6 +37,32 @@
 ---
 
 ## 🚀 当前活跃任务
+
+### [Devin] - v0.12.1 企业级加固
+- **开始时间**: 2026-02-20 13:35
+- **完成时间**: 2026-02-20 13:45
+- **当前进度**: 100%
+- **状态**: ✅ 完成
+- **任务描述**: PR #14 review 发现的 5 项关键缺口加固
+- **成果**:
+  - ✅ RBAC 持久化: RbacManager.with_persistence() — JSON 文件存储，启动加载，变更自动保存
+  - ✅ 租户持久化: TenantManager.with_persistence() — JSON 文件存储，启动加载，变更自动保存
+  - ✅ Admin 服务认证: ADMIN_TOKEN 环境变量守卫，Bearer token 校验，/health 免认证
+  - ✅ RBAC 中间件 fail-closed: 未知用户返回 403 "Register via admin service first"
+  - ✅ Gateway 共享持久化: 读取 ~/.memoryos/rbac_users.json + tenants.json
+  - ✅ 文档标注: 数据层租户隔离（Qdrant tenant_id filter、Redis key prefix）标记为计划中
+  - ✅ Clippy 修复: metrics.rs if_same_then_else 合并
+- **相关文件**:
+  - `crates/memoryos-core/src/rbac/mod.rs` — with_persistence() + persist()
+  - `crates/memoryos-core/src/tenant/mod.rs` — with_persistence() + persist()
+  - `crates/memoryos-admin/src/main.rs` — ADMIN_TOKEN 认证中间件
+  - `crates/memoryos-gateway/src/middleware/rbac.rs` — fail-closed 行为
+  - `crates/memoryos-gateway/src/state.rs` — 持久化路径初始化
+  - `crates/memoryos-gateway/src/middleware/metrics.rs` — clippy 修复
+  - `docs/DESIGN.md` — 数据层隔离标记为计划中
+  - `docs/ARCHITECTURE.md` — 数据层隔离标记为计划中
+
+---
 
 ### [Devin] - v0.12.0 企业级功能
 - **开始时间**: 2026-02-20 13:15

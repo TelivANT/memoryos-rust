@@ -1,4 +1,8 @@
 use axum::{
+    extract::Request,
+    http::{HeaderMap, StatusCode},
+    middleware::Next,
+    response::{IntoResponse, Response},
     routing::{delete, get, post, put},
     Router,
 };
@@ -18,6 +22,7 @@ pub struct AdminState {
     pub rbac_manager: RbacManager,
     pub tenant_manager: TenantManager,
     pub audit_logger: Arc<AuditLogger>,
+    pub admin_token: String,
 }
 
 #[tokio::main]
@@ -41,10 +46,22 @@ async fn main() {
         ..AuditConfig::default()
     }));
 
+    let rbac_path = data_dir.join("rbac_users.json");
+    let tenant_path = data_dir.join("tenants.json");
+
+    let admin_token = std::env::var("ADMIN_TOKEN").unwrap_or_default();
+    if admin_token.is_empty() {
+        tracing::warn!("==================================================");
+        tracing::warn!("  ADMIN_TOKEN not set! Admin API is UNPROTECTED!");
+        tracing::warn!("  Set ADMIN_TOKEN env var for production use.");
+        tracing::warn!("==================================================");
+    }
+
     let state = AdminState {
-        rbac_manager: RbacManager::new(),
-        tenant_manager: TenantManager::new(),
+        rbac_manager: RbacManager::with_persistence(&rbac_path),
+        tenant_manager: TenantManager::with_persistence(&tenant_path),
         audit_logger,
+        admin_token: admin_token.clone(),
     };
 
     let cors = CorsLayer::new()
@@ -52,8 +69,7 @@ async fn main() {
         .allow_methods(Any)
         .allow_headers(Any);
 
-    let app = Router::new()
-        .route("/health", get(routes::system::health_check))
+    let protected_routes = Router::new()
         .route("/api/v1/tenants", get(routes::tenants::list_tenants))
         .route("/api/v1/tenants", post(routes::tenants::create_tenant))
         .route("/api/v1/tenants/:id", get(routes::tenants::get_tenant))
@@ -70,7 +86,39 @@ async fn main() {
         .route("/api/v1/users/:id/roles", put(routes::users::assign_role))
         .route("/api/v1/audit/logs", get(routes::audit::list_audit_logs))
         .route("/api/v1/system/stats", get(routes::system::system_stats))
-        .with_state(state)
+        .with_state(state.clone())
+        .layer(axum::middleware::from_fn(
+            move |headers: HeaderMap, req: Request, next: Next| {
+                let token = admin_token.clone();
+                async move {
+                    if token.is_empty() {
+                        return Ok::<Response, Response>(next.run(req).await);
+                    }
+                    let provided = headers
+                        .get("Authorization")
+                        .and_then(|h| h.to_str().ok())
+                        .and_then(|h: &str| h.strip_prefix("Bearer "))
+                        .unwrap_or("");
+                    if provided != token {
+                        return Err((
+                            StatusCode::UNAUTHORIZED,
+                            axum::Json(serde_json::json!({
+                                "error": {
+                                    "code": "unauthorized",
+                                    "message": "Valid ADMIN_TOKEN required"
+                                }
+                            })),
+                        )
+                            .into_response());
+                    }
+                    Ok(next.run(req).await)
+                }
+            },
+        ));
+
+    let app = Router::new()
+        .route("/health", get(routes::system::health_check))
+        .merge(protected_routes)
         .layer(cors);
 
     let host = std::env::var("ADMIN_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());

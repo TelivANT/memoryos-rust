@@ -615,8 +615,11 @@ pub struct Tenant {
 
 #### 数据隔离策略
 
-- **Qdrant**: 所有查询添加 `tenant_id` payload filter
-- **Redis**: key 前缀 `{tenant_id}:{key}`
+> **注意**: 以下为计划中的数据层隔离方案，当前版本 (v0.12.1) 已实现租户管理和 RBAC 权限控制，
+> 数据层自动过滤将在后续版本实现。
+
+- **Qdrant** (计划): 所有查询添加 `tenant_id` payload filter
+- **Redis** (计划): key 前缀 `{tenant_id}:{key}`
 - **审计日志**: 每条记录标记 `tenant_id`
 
 ### 3. 服务分离设计
