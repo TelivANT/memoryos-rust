@@ -143,7 +143,12 @@ impl ApiKeyStore {
         let filter = Filter::must([Condition::matches("key_hash", key_hash)]);
         let search_result = self
             .qdrant
-            .scroll(ScrollPointsBuilder::new(API_KEY_COLLECTION).filter(filter).limit(1).build())
+            .scroll(
+                ScrollPointsBuilder::new(API_KEY_COLLECTION)
+                    .filter(filter)
+                    .limit(1)
+                    .build(),
+            )
             .await
             .map_err(|e| AppError::ExternalService(format!("Qdrant error: {}", e)))?;
 
