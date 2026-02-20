@@ -227,6 +227,10 @@ mod tests {
             heat_score: 0.0,
             last_accessed: None,
             memory_type: MemoryType::QA,
+            version: 1,
+            tags: vec![],
+            updated_at: None,
+            previous_version_id: None,
         };
 
         let tracker = HeatTracker::new(HeatConfig::default());

@@ -15,6 +15,9 @@ mod worker_monitor;
 
 use handlers::{chat_completions, health_check, health_status};
 use routes::faq::{create_faq_routes, FaqState};
+use routes::graph::{create_graph_routes, GraphState};
+use routes::memory_manage::{create_memory_manage_routes, MemoryManageState};
+use routes::security::{create_security_routes, SecurityState};
 use state::AppState;
 use worker_monitor::spawn_worker_monitor;
 
@@ -114,6 +117,31 @@ async fn main() -> Result<(), AppError> {
     // FAQ 管理路由（独立 state，嵌套到 admin 路径下）
     let faq_routes = create_faq_routes(faq_state);
 
+    // Graph 路由 (v0.4.0)
+    let graph_state = GraphState {
+        graph_manager: std::sync::Arc::new(tokio::sync::RwLock::new(
+            memoryos_core::GraphManager::new(),
+        )),
+    };
+    let graph_routes = create_graph_routes(graph_state);
+
+    // Memory management 路由 (v0.6.0)
+    let memory_manage_state = MemoryManageState {
+        vector_store: state.vector_store.clone(),
+    };
+    let memory_manage_routes = create_memory_manage_routes(memory_manage_state);
+
+    // Security 路由 (v0.8.0)
+    let security_state = SecurityState {
+        audit_logger: std::sync::Arc::new(memoryos_core::AuditLogger::new(
+            memoryos_core::AuditConfig::default(),
+        )),
+        gdpr_manager: std::sync::Arc::new(tokio::sync::RwLock::new(
+            memoryos_core::GdprManager::new(),
+        )),
+    };
+    let security_routes = create_security_routes(security_state);
+
     // 需要认证的路由
     let protected_routes = Router::new()
         .route("/v1/chat/completions", post(chat_completions))
@@ -138,7 +166,10 @@ async fn main() -> Result<(), AppError> {
         .merge(protected_routes)
         .merge(admin_routes)
         .with_state(state)
-        .nest("/v1/admin/faq", faq_routes);
+        .nest("/v1/admin/faq", faq_routes)
+        .nest("/v1/graph", graph_routes)
+        .nest("/v1/memory/manage", memory_manage_routes)
+        .nest("/v1/security", security_routes);
 
     if config.auth.enabled {
         tracing::info!("🔒 API Key authentication enabled");

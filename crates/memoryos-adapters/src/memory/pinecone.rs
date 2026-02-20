@@ -332,6 +332,10 @@ impl VectorStorage for PineconeStorage {
                     heat_score: metadata.get("heat_score")?.as_f64()? as f32,
                     last_accessed: None,
                     memory_type: memoryos_core::MemoryType::QA,
+                    version: 1,
+                    tags: vec![],
+                    updated_at: None,
+                    previous_version_id: None,
                 })
             })
             .collect();

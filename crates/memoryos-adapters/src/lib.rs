@@ -2,6 +2,7 @@ pub mod eventbus;
 pub mod history;
 pub mod llm;
 pub mod memory;
+pub mod multimodal;
 pub mod wiki;
 
 use async_trait::async_trait;

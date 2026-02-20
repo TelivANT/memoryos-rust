@@ -333,6 +333,10 @@ mod tests {
             heat_score: 50.0,
             last_accessed: Some(Utc::now()),
             memory_type: MemoryType::Faq,
+            version: 1,
+            tags: vec![],
+            updated_at: None,
+            previous_version_id: None,
         }
     }
 

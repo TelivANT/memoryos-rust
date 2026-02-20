@@ -25,3 +25,7 @@ pub use optimization::{
     BatchEmbedder, BloomFilter, EmbeddingCache, HeatBuffer, IncrementalSummarizer,
     OptimizedFaqMatcher, OptimizedRetriever, SimilarityFilter,
 };
+pub use security::{
+    AuditConfig, AuditEvent, AuditEventType, AuditLogger, AuditOutcome, DataEncryptor,
+    EncryptedPayload, EncryptionConfig, GdprManager,
+};

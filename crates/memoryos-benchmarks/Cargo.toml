@@ -7,6 +7,18 @@ edition.workspace = true
 name = "vector_storage_benchmark"
 harness = false
 
+[[bench]]
+name = "optimization_benchmark"
+harness = false
+
+[[bench]]
+name = "graph_benchmark"
+harness = false
+
+[[bench]]
+name = "security_benchmark"
+harness = false
+
 [dependencies]
 memoryos-adapters = { path = "../memoryos-adapters" }
 memoryos-core = { path = "../memoryos-core" }

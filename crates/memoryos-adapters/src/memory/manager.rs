@@ -382,6 +382,10 @@ impl DefaultMemoryManager {
                 heat_score: 0.0,
                 last_accessed: None,
                 memory_type: memoryos_core::MemoryType::QA,
+                version: 1,
+                tags: vec![],
+                updated_at: None,
+                previous_version_id: None,
             };
             if let Err(err) = self.vector_store.store_segment(segment).await {
                 warn!(
@@ -774,6 +778,10 @@ impl DefaultMemoryManager {
             heat_score: 0.0,
             last_accessed: None,
             memory_type: memoryos_core::MemoryType::QA,
+            version: 1,
+            tags: vec![],
+            updated_at: None,
+            previous_version_id: None,
         };
 
         // 4. 存储到向量数据库
