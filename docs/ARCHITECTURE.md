@@ -452,8 +452,15 @@ MemoryOS-Rust 采用 **Hexagonal Architecture** 设计，通过 **Ports & Adapte
 - ✅ 安全防御体系（PII 脱敏 + 注入检测 + IP 防御）
 - ✅ K8s/Docker 部署方案
 
+**已完善 (v0.3.0~v0.9.0)**:
+- ✅ Graph Memory: 实体自动提取 + 关系提取(10种模式) + 图查询 API + DFS 路径查询 (v0.4.0)
+- ✅ Wiki 导出: 本地 Markdown + S3 (OpenDAL) + Confluence (REST API) (v0.3.0)
+- ✅ 多模态: QdrantMultiModalStorage + HTTP 端点 /v1/multimodal (v0.5.0)
+- ✅ 记忆增强: 版本控制 + 标签分类 + 搜索/导出/导入 (v0.6.0)
+- ✅ 安全增强: AES-256-GCM 加密 + 审计日志持久化 + GDPR 合规 (v0.8.0~v0.9.0)
+- ✅ 性能基准测试: 3 套 Criterion 基准 (optimization/graph/security) (v0.7.0)
+
 **待完善**:
-- ⚠️ Graph Memory 仅 Mermaid 解析，非 GraphRAG
-- ⚠️ Wiki 导出仅本地文件，S3/Confluence 待实现
-- ⚠️ 多模态仅数据结构，无存储/API 实现
-- ⚠️ 性能数字未经基准测试验证
+- ⚠️ CLIP/Whisper 实际模型集成（当前多模态使用 embedding 向量输入）
+- ⚠️ Prometheus/OpenTelemetry 可观测性集成
+- ⚠️ 端到端性能数字（QPS/延迟）待生产验证
