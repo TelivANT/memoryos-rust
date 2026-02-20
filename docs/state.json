@@ -1,18 +1,18 @@
 {
   "project_name": "MemoryOS-Rust",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "edition": "Personal/Enterprise Single-Tenant Edition",
   "last_updated": "2026-02-20",
   "status": {
-        "phase": "v0.10.0 Complete - Prometheus + LLM FAQ Classification",
+        "phase": "v0.11.0 Complete - All Remaining Issues Fixed",
         "progress_percentage": 99,
-        "current_task": "v0.10.0 已完成，待合并 PR",
+        "current_task": "v0.11.0 已完成，待合并 PR",
     "is_blocked": false
   },
   "branches": {
     "main": {
       "description": "Personal/Enterprise Single-Tenant Edition",
-      "current_version": "v0.10.0",
+      "current_version": "v0.11.0",
       "target_users": "Individual developers, single enterprise deployments"
     },
     "feature/saas-multi-tenant": {
@@ -102,7 +102,9 @@
       "v0.6.0: Memory Enhancement (versioning, tags, export/import)",
       "v0.7.0: Performance Benchmarks (3 Criterion suites)",
       "v0.8.0: Security Enhancements (encryption, audit, GDPR)",
-      "v0.9.0: Technical Debt (AES-256-GCM, persistence, benchmark fixes, docs)"
+      "v0.9.0: Technical Debt (AES-256-GCM, persistence, benchmark fixes, docs)",
+      "v0.10.0: Prometheus Observability + LLM FAQ Classification",
+      "v0.11.0: All Remaining Issues Fixed (tag search, history, redis, graph LLM, auth, audit/GDPR)"
     ],
         "in_progress": [],
         "todo": [
@@ -119,6 +121,21 @@
     ]
   },
   "recent_changes": [
+    {
+      "date": "2026-02-20",
+      "author": "Devin",
+      "description": "v0.11.0: All Remaining Issues Fixed",
+      "changes": [
+        "Tag search: Qdrant native payload filter via search_segments_by_tags (replaces zero-vector + in-memory filter)",
+        "Memory history: QdrantHistoryStorage wired into gateway AppState initialization",
+        "Redis upgrade: 0.24 -> 0.32 (defense.rs query_async API migration, workspace-unified)",
+        "Graph extraction: LLM-based entity/relation extraction (build_llm_extraction_prompt + parse_llm_extraction_response)",
+        "Graph API: /v1/graph/extract/llm-prompt and /v1/graph/extract/llm-parse endpoints",
+        "Auth warning: prominent multi-line warning when auth.enabled = false",
+        "Audit storage: AuditStorageBackend trait + FileAuditBackend + AuditLogger.with_backend()",
+        "GDPR storage: GdprStorageBackend trait + FileGdprBackend + GdprManager.with_backend()"
+      ]
+    },
     {
       "date": "2026-02-20",
       "author": "Devin",
@@ -212,11 +229,13 @@
           "GET /metrics"
         ],
     "graph": [
-      "POST /v1/graph/ingest",
-      "GET /v1/graph/entities",
-      "GET /v1/graph/entities/:label",
-      "GET /v1/graph/relations",
-      "POST /v1/graph/path"
+      "POST /v1/graph/extract",
+      "POST /v1/graph/extract/llm-prompt",
+      "POST /v1/graph/extract/llm-parse",
+      "POST /v1/graph/query",
+      "POST /v1/graph/path",
+      "GET /v1/graph/triples",
+      "GET /v1/graph/stats"
     ],
     "multimodal": [
       "POST /v1/multimodal/store",

@@ -203,9 +203,13 @@ async fn main() -> Result<(), AppError> {
         .layer(axum::middleware::from_fn(middleware::metrics_middleware));
 
     if config.auth.enabled {
-        tracing::info!("🔒 API Key authentication enabled");
+        tracing::info!("API Key authentication enabled");
     } else {
-        tracing::warn!("⚠️  API Key authentication DISABLED - service is publicly accessible!");
+        tracing::warn!("========================================================");
+        tracing::warn!("  WARNING: API Key authentication is DISABLED!");
+        tracing::warn!("  The service is publicly accessible without any auth.");
+        tracing::warn!("  Set `auth.enabled = true` in config.toml for production.");
+        tracing::warn!("========================================================");
     }
 
     // 6. Start Server

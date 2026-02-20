@@ -1015,6 +1015,15 @@ mod tests {
             Ok(vec![])
         }
 
+        async fn search_segments_by_tags(
+            &self,
+            _user_id: &str,
+            _tags: &[String],
+            _limit: usize,
+        ) -> Result<Vec<MidTermSegment>, AppError> {
+            Ok(vec![])
+        }
+
         async fn store_long_term(&self, _memory: LongTermMemory) -> Result<(), AppError> {
             self.long_term_writes.fetch_add(1, Ordering::SeqCst);
             Ok(())

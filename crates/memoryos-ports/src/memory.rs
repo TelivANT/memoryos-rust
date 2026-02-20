@@ -49,6 +49,14 @@ pub trait VectorStorage: Send + Sync {
         limit: usize,
     ) -> Result<Vec<MidTermSegment>, AppError>;
 
+    /// Search segments by tags using native payload filter (no embedding needed)
+    async fn search_segments_by_tags(
+        &self,
+        user_id: &str,
+        tags: &[String],
+        limit: usize,
+    ) -> Result<Vec<MidTermSegment>, AppError>;
+
     // ========== Long-Term Memory ==========
 
     /// 存储 long-term memory

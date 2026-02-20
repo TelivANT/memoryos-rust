@@ -98,7 +98,27 @@ impl AppState {
                 redis_storage,
             ));
 
-        // 5. Init Worker Monitor
+        // 5. Init History Storage (uses same Qdrant client)
+        let history_storage: Option<Arc<dyn HistoryStorage>> =
+            match memoryos_adapters::history::QdrantHistoryStorage::new(
+                vector_store.client().clone(),
+                "memory_history".to_string(),
+            )
+            .await
+            {
+                Ok(hs) => {
+                    tracing::info!(
+                        "History storage initialized (Qdrant collection: memory_history)"
+                    );
+                    Some(Arc::new(hs))
+                }
+                Err(e) => {
+                    tracing::warn!("History storage init failed, feature disabled: {}", e);
+                    None
+                }
+            };
+
+        // 6. Init Worker Monitor
         let worker_monitor = Arc::new(RwLock::new(WorkerMonitorSnapshot::from_env(false)));
 
         // 6. Init API Key Store (if using Qdrant)
@@ -120,7 +140,7 @@ impl AppState {
             vector_store,
             providers,
             memory_manager: Arc::new(RwLock::new(memory_manager)),
-            history_storage: None, // Optional feature
+            history_storage,
             worker_monitor,
             api_key_store,
             async_memory_pipeline: false, // Default to sync mode

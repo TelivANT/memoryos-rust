@@ -478,6 +478,125 @@ impl GraphManager {
         }
         mermaid
     }
+
+    pub fn build_llm_extraction_prompt(text: &str) -> String {
+        format!(
+            "Extract entities and relationships from the following text.\n\
+             Return ONLY a JSON object with this exact format:\n\
+             {{\"entities\": [{{\"label\": \"...\", \"type\": \"person|organization|location|concept\"}}], \
+             \"relations\": [{{\"subject\": \"...\", \"predicate\": \"...\", \"object\": \"...\"}}]}}\n\n\
+             Text: {}\n\nJSON:",
+            text
+        )
+    }
+
+    pub fn parse_llm_extraction_response(
+        &mut self,
+        response: &str,
+    ) -> (Vec<GraphEntity>, Vec<ExtractedTriple>) {
+        let json_str = response
+            .find('{')
+            .and_then(|start| response.rfind('}').map(|end| &response[start..=end]))
+            .unwrap_or(response);
+
+        #[derive(Deserialize)]
+        struct LlmEntity {
+            label: String,
+            #[serde(default, rename = "type")]
+            entity_type: String,
+        }
+
+        #[derive(Deserialize)]
+        struct LlmRelation {
+            subject: String,
+            predicate: String,
+            object: String,
+        }
+
+        #[derive(Deserialize)]
+        struct LlmResponse {
+            #[serde(default)]
+            entities: Vec<LlmEntity>,
+            #[serde(default)]
+            relations: Vec<LlmRelation>,
+        }
+
+        let parsed: LlmResponse = match serde_json::from_str(json_str) {
+            Ok(r) => r,
+            Err(_) => return (vec![], vec![]),
+        };
+
+        let mut graph_entities = Vec::new();
+        for e in &parsed.entities {
+            let id = Self::normalize_id(&e.label);
+            let entity_type = match e.entity_type.to_lowercase().as_str() {
+                "person" => EntityType::Person,
+                "organization" | "org" | "company" => EntityType::Organization,
+                "location" | "place" => EntityType::Location,
+                "concept" => EntityType::Concept,
+                _ => EntityType::Unknown,
+            };
+            let entity = GraphEntity {
+                id: id.clone(),
+                label: e.label.clone(),
+                entity_type,
+                relations: vec![],
+            };
+            self.entities.entry(id).or_insert(entity.clone());
+            graph_entities.push(entity);
+        }
+
+        let mut triples = Vec::new();
+        for r in &parsed.relations {
+            if r.subject.len() < 2 || r.object.len() < 2 {
+                continue;
+            }
+            let triple = ExtractedTriple {
+                subject: r.subject.clone(),
+                predicate: r.predicate.clone(),
+                object: r.object.clone(),
+            };
+
+            let subject_id = Self::normalize_id(&r.subject);
+            let object_id = Self::normalize_id(&r.object);
+
+            self.entities
+                .entry(subject_id.clone())
+                .or_insert_with(|| GraphEntity {
+                    id: subject_id.clone(),
+                    label: r.subject.clone(),
+                    entity_type: EntityType::Unknown,
+                    relations: vec![],
+                });
+
+            self.entities
+                .entry(object_id.clone())
+                .or_insert_with(|| GraphEntity {
+                    id: object_id.clone(),
+                    label: r.object.clone(),
+                    entity_type: EntityType::Unknown,
+                    relations: vec![],
+                });
+
+            if let Some(entity) = self.entities.get_mut(&subject_id) {
+                let exists = entity
+                    .relations
+                    .iter()
+                    .any(|rel| rel.predicate == r.predicate && rel.target_id == object_id);
+                if !exists {
+                    entity.relations.push(GraphRelation {
+                        predicate: r.predicate.clone(),
+                        target_id: object_id,
+                        target_label: r.object.clone(),
+                    });
+                }
+            }
+
+            triples.push(triple);
+        }
+
+        (graph_entities, triples)
+    }
 }
 
 impl Default for GraphManager {
@@ -665,5 +784,44 @@ mod tests {
             .iter()
             .find(|t| t.predicate == "friends_with" || t.predicate == "related_to");
         assert!(friend_triple.is_some());
+    }
+
+    #[test]
+    fn test_llm_extraction_prompt_format() {
+        let prompt = GraphManager::build_llm_extraction_prompt("Alice works at Google");
+        assert!(prompt.contains("Alice works at Google"));
+        assert!(prompt.contains("entities"));
+        assert!(prompt.contains("relations"));
+    }
+
+    #[test]
+    fn test_llm_extraction_parse_valid_response() {
+        let mut gm = GraphManager::new();
+        let response = r#"{"entities": [{"label": "Alice", "type": "person"}, {"label": "Google", "type": "organization"}], "relations": [{"subject": "Alice", "predicate": "works_at", "object": "Google"}]}"#;
+        let (entities, triples) = gm.parse_llm_extraction_response(response);
+        assert_eq!(entities.len(), 2);
+        assert_eq!(triples.len(), 1);
+        assert_eq!(triples[0].subject, "Alice");
+        assert_eq!(triples[0].predicate, "works_at");
+        assert_eq!(triples[0].object, "Google");
+        assert_eq!(entities[0].entity_type, EntityType::Person);
+        assert_eq!(entities[1].entity_type, EntityType::Organization);
+    }
+
+    #[test]
+    fn test_llm_extraction_parse_invalid_json() {
+        let mut gm = GraphManager::new();
+        let (entities, triples) = gm.parse_llm_extraction_response("not json at all");
+        assert!(entities.is_empty());
+        assert!(triples.is_empty());
+    }
+
+    #[test]
+    fn test_llm_extraction_parse_with_surrounding_text() {
+        let mut gm = GraphManager::new();
+        let response = r#"Here is the result: {"entities": [{"label": "Bob", "type": "person"}], "relations": []} some trailing text"#;
+        let (entities, _) = gm.parse_llm_extraction_response(response);
+        assert_eq!(entities.len(), 1);
+        assert_eq!(entities[0].label, "Bob");
     }
 }

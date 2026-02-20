@@ -5,6 +5,60 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use tracing::info;
 
+pub trait AuditStorageBackend: Send + Sync {
+    fn append(&self, event: &AuditEvent);
+    fn load_recent(&self, limit: usize) -> Vec<AuditEvent>;
+}
+
+pub struct FileAuditBackend {
+    path: PathBuf,
+    writer: Mutex<Option<std::fs::File>>,
+}
+
+impl FileAuditBackend {
+    pub fn new(path: &str) -> Self {
+        let path = PathBuf::from(path);
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let writer = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&path)
+            .ok();
+        Self {
+            path,
+            writer: Mutex::new(writer),
+        }
+    }
+}
+
+impl AuditStorageBackend for FileAuditBackend {
+    fn append(&self, event: &AuditEvent) {
+        if let Ok(mut writer) = self.writer.lock() {
+            if let Some(ref mut file) = *writer {
+                if let Ok(json) = serde_json::to_string(event) {
+                    let _ = writeln!(file, "{}", json);
+                    let _ = file.flush();
+                }
+            }
+        }
+    }
+
+    fn load_recent(&self, limit: usize) -> Vec<AuditEvent> {
+        std::fs::read_to_string(&self.path)
+            .ok()
+            .map(|data| {
+                let all: Vec<AuditEvent> = data
+                    .lines()
+                    .filter_map(|line| serde_json::from_str(line).ok())
+                    .collect();
+                all.into_iter().rev().take(limit).collect()
+            })
+            .unwrap_or_default()
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditEvent {
     pub timestamp: chrono::DateTime<chrono::Utc>,
@@ -60,41 +114,39 @@ impl Default for AuditConfig {
 pub struct AuditLogger {
     config: AuditConfig,
     buffer: Mutex<VecDeque<AuditEvent>>,
-    file_writer: Mutex<Option<std::fs::File>>,
+    backend: Option<Box<dyn AuditStorageBackend>>,
 }
 
 impl AuditLogger {
     pub fn new(config: AuditConfig) -> Self {
-        let file_writer = config.persist_path.as_ref().and_then(|path| {
-            let path = PathBuf::from(path);
-            if let Some(parent) = path.parent() {
-                let _ = std::fs::create_dir_all(parent);
-            }
-            std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(&path)
-                .ok()
-        });
+        let backend: Option<Box<dyn AuditStorageBackend>> = config
+            .persist_path
+            .as_ref()
+            .map(|path| Box::new(FileAuditBackend::new(path)) as Box<dyn AuditStorageBackend>);
 
         let mut buffer = VecDeque::new();
-        if let Some(ref path) = config.persist_path {
-            if let Ok(data) = std::fs::read_to_string(path) {
-                for line in data.lines() {
-                    if let Ok(event) = serde_json::from_str::<AuditEvent>(line) {
-                        buffer.push_back(event);
-                    }
-                }
-                while buffer.len() > config.max_buffer_size {
-                    buffer.pop_front();
-                }
+        if let Some(ref b) = backend {
+            for event in b.load_recent(config.max_buffer_size) {
+                buffer.push_front(event);
             }
         }
 
         Self {
             config,
             buffer: Mutex::new(buffer),
-            file_writer: Mutex::new(file_writer),
+            backend,
+        }
+    }
+
+    pub fn with_backend(config: AuditConfig, backend: Box<dyn AuditStorageBackend>) -> Self {
+        let mut buffer = VecDeque::new();
+        for event in backend.load_recent(config.max_buffer_size) {
+            buffer.push_front(event);
+        }
+        Self {
+            config,
+            buffer: Mutex::new(buffer),
+            backend: Some(backend),
         }
     }
 
@@ -115,13 +167,8 @@ impl AuditLogger {
             event.outcome
         );
 
-        if let Ok(mut writer) = self.file_writer.lock() {
-            if let Some(ref mut file) = *writer {
-                if let Ok(json) = serde_json::to_string(&event) {
-                    let _ = writeln!(file, "{}", json);
-                    let _ = file.flush();
-                }
-            }
+        if let Some(ref backend) = self.backend {
+            backend.append(&event);
         }
 
         if let Ok(mut buffer) = self.buffer.lock() {

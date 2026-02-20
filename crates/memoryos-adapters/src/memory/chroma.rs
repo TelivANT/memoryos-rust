@@ -328,6 +328,23 @@ impl VectorStorage for ChromaStorage {
         Ok(segments)
     }
 
+    async fn search_segments_by_tags(
+        &self,
+        user_id: &str,
+        tags: &[String],
+        limit: usize,
+    ) -> Result<Vec<MidTermSegment>, AppError> {
+        let segments = self
+            .search_segments(user_id, vec![0.0; 1536], limit * 2)
+            .await?;
+        let filtered = segments
+            .into_iter()
+            .filter(|s| tags.iter().any(|t| s.tags.contains(t)))
+            .take(limit)
+            .collect();
+        Ok(filtered)
+    }
+
     async fn store_long_term(&self, memory: LongTermMemory) -> Result<(), AppError> {
         let mut metadata = HashMap::new();
         metadata.insert("user_id".to_string(), json!(memory.user_id));

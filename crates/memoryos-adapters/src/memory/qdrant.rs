@@ -399,6 +399,119 @@ impl VectorStorage for QdrantStorage {
         Ok(segments)
     }
 
+    async fn search_segments_by_tags(
+        &self,
+        user_id: &str,
+        tags: &[String],
+        limit: usize,
+    ) -> Result<Vec<MidTermSegment>, AppError> {
+        use qdrant_client::qdrant::ScrollPointsBuilder;
+
+        let mut must_conditions = vec![Condition::matches("user_id", user_id.to_string())];
+        for tag in tags {
+            must_conditions.push(Condition::matches("tags", tag.clone()));
+        }
+        let filter = Filter::must(must_conditions);
+
+        let scroll_result = self
+            .client
+            .scroll(
+                ScrollPointsBuilder::new(&self.segment_collection)
+                    .filter(filter)
+                    .limit(limit as u32)
+                    .with_payload(true)
+                    .with_vectors(true),
+            )
+            .await
+            .map_err(|e| {
+                AppError::ExternalService(format!("Qdrant scroll by tags failed: {}", e))
+            })?;
+
+        let segments = scroll_result
+            .result
+            .into_iter()
+            .map(|point| {
+                let payload = point.payload;
+                let summary = payload_string(&payload, "summary").unwrap_or_default();
+                let heat = payload_f64(&payload, "heat").unwrap_or(0.0) as f32;
+                let created_at = payload_string(&payload, "created_at")
+                    .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
+                    .map(|dt| dt.with_timezone(&chrono::Utc))
+                    .unwrap_or_else(chrono::Utc::now);
+
+                MidTermSegment {
+                    id: point
+                        .id
+                        .and_then(point_id_to_uuid)
+                        .unwrap_or_else(uuid::Uuid::now_v7),
+                    user_id: user_id.to_string(),
+                    summary,
+                    embedding: point.vectors.map(convert_vectors).unwrap_or_default(),
+                    heat,
+                    created_at,
+                    access_count: payload
+                        .get("access_count")
+                        .and_then(|v| v.as_integer())
+                        .unwrap_or(0) as u32,
+                    heat_score: payload
+                        .get("heat_score")
+                        .and_then(|v| v.as_double())
+                        .unwrap_or(0.0) as f32,
+                    last_accessed: payload
+                        .get("last_accessed")
+                        .and_then(|v| v.as_str())
+                        .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+                        .map(|dt| dt.with_timezone(&chrono::Utc)),
+                    memory_type: payload
+                        .get("memory_type")
+                        .and_then(|v| v.as_str())
+                        .and_then(|s| match s.as_ref() {
+                            "qa" => Some(memoryos_core::MemoryType::QA),
+                            "faq_candidate" => Some(memoryos_core::MemoryType::FaqCandidate),
+                            "faq" => Some(memoryos_core::MemoryType::Faq),
+                            _ => None,
+                        })
+                        .unwrap_or(memoryos_core::MemoryType::QA),
+                    version: payload
+                        .get("version")
+                        .and_then(|v| v.as_integer())
+                        .unwrap_or(1) as u32,
+                    tags: payload
+                        .get("tags")
+                        .and_then(|v| match v.kind.as_ref()? {
+                            Kind::ListValue(list) => Some(
+                                list.values
+                                    .iter()
+                                    .filter_map(|item| match item.kind.as_ref()? {
+                                        Kind::StringValue(s) => Some(s.clone()),
+                                        _ => None,
+                                    })
+                                    .collect(),
+                            ),
+                            _ => None,
+                        })
+                        .unwrap_or_default(),
+                    updated_at: payload
+                        .get("updated_at")
+                        .and_then(|v| v.as_str())
+                        .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+                        .map(|dt| dt.with_timezone(&chrono::Utc)),
+                    previous_version_id: payload
+                        .get("previous_version_id")
+                        .and_then(|v| v.as_str())
+                        .and_then(|s| uuid::Uuid::parse_str(s).ok()),
+                }
+            })
+            .collect::<Vec<_>>();
+
+        debug!(
+            "Found {} segments by tags for user: {}",
+            segments.len(),
+            user_id
+        );
+        Ok(segments)
+    }
+
     async fn store_long_term(&self, memory: LongTermMemory) -> Result<(), AppError> {
         self.store_long_term_with_fencing(memory, None).await
     }
