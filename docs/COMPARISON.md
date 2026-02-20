@@ -1,7 +1,7 @@
 # MemoryOS-Rust vs Mem0 功能对比
 
-**日期**: 2026-02-17  
-**版本**: MemoryOS-Rust 0.2.0 vs Mem0 latest
+**日期**: 2026-02-20  
+**版本**: MemoryOS-Rust 0.2.0-alpha vs Mem0 latest
 
 ---
 
@@ -14,11 +14,11 @@
 | **长期记忆 (LTM)** | ✅ Qdrant | ✅ Qdrant/Chroma | 相同 |
 | **用户画像** | ✅ 结构化提取 | ✅ LLM 提取 | 实现方式不同 |
 | **记忆历史追踪** | ✅ Redis | ✅ Redis | **已实现** (90%) |
-| **知识图谱** | ❌ 未实现 | ✅ 支持 | **缺失** |
+| **知识图谱** | ⚠️ Mermaid 解析（非 GraphRAG） | ✅ 支持 | **基础实现** |
 | **自动合并** | ✅ STM→MTM | ✅ 完整 | 相同 |
 | **向量检索** | ✅ Qdrant | ✅ 多后端 | 相同 |
 | **Embedding** | ✅ OpenAI API | ✅ 多提供商 | 相同 |
-| **LLM 支持** | ✅ 7 种 | ✅ 10+ 种 | Mem0 更多 |
+| **LLM 支持** | ✅ 10 种 | ✅ 10+ 种 | 基本持平 |
 | **流式响应** | ✅ SSE | ✅ SSE | 相同 |
 | **并发控制** | ✅ Fencing Lock | ✅ 分布式锁 | 相同 |
 | **事件去重** | ✅ Dedup Set | ✅ 去重 | 相同 |
@@ -47,10 +47,11 @@
 │   ├── VectorStorage (向量存储接口)
 │   └── ConcurrencyControl (并发控制接口)
 ├── Adapters (适配器层)
-│   ├── LLM Adapters (OpenAI, Gemini, Claude, Ollama...)
+│   ├── LLM Adapters (10 种: OpenAI, Gemini, Claude, Ollama, DeepSeek, OpenRouter, Azure, Groq, Cohere, Mistral)
 │   ├── Memory Manager (DefaultMemoryManager, DegradedMemoryManager)
+│   ├── Vector Storage (Qdrant, Chroma, Pinecone)
 │   ├── Redis Adapter (RedisStorage)
-│   └── Qdrant Adapter (QdrantStorage)
+│   └── NATS Adapter (NatsStorage)
 └── Gateway (网关层)
     ├── HTTP Server (Axum)
     ├── Routes (健康检查, 聊天, 记忆)
@@ -123,10 +124,10 @@
 |------|---------------|------|
 | **用户画像** | 结构化规则提取 | LLM 提取 |
 | **知识存储** | Qdrant 向量 | Qdrant + Mermaid |
-| **知识图谱** | ✅ Mermaid | ✅ Mermaid |
+| **知识图谱** | ⚠️ Mermaid 解析（仅文本解析，185 行） | ✅ Mermaid |
 | **关系推理** | ❌ 未实现 | ✅ 图查询 |
 
-**实现差异**: **Mem0 支持知识图谱，MemoryOS-Rust 未实现**
+**实现差异**: MemoryOS-Rust 仅实现了 Mermaid 文本正则解析（节点/边提取），不是真正的知识图谱或 GraphRAG
 
 ### 4. 用户画像提取
 
@@ -235,11 +236,11 @@ User --[WORKS_AT]--> Company
 Product --[BELONGS_TO]--> Category
 ```
 
-**MemoryOS-Rust**: ❌ 未实现
+**MemoryOS-Rust**: ⚠️ 仅 Mermaid 文本解析（graph.rs, 185 行），支持正则提取节点和边，但无实体自动提取、无图查询、无关系推理
 
-**影响**: 无法进行复杂的关系推理和知识发现
+**影响**: 无法进行复杂的关系推理和知识发现。需要实现真正的 GraphRAG（计划中）
 
-### 2. 更多 LLM 提供商
+### 2. LLM 提供商
 
 **Mem0 支持**:
 - OpenAI ✅
@@ -253,7 +254,7 @@ Product --[BELONGS_TO]--> Category
 - Cohere ✅
 - Mistral ✅
 
-**MemoryOS-Rust 支持**:
+**MemoryOS-Rust 支持** (10 种):
 - OpenAI ✅
 - Gemini ✅
 - Claude ✅
@@ -261,10 +262,13 @@ Product --[BELONGS_TO]--> Category
 - DeepSeek ✅
 - OpenRouter ✅
 - Azure OpenAI ✅
+- Groq ✅
+- Cohere ✅
+- Mistral ✅
 
-**差异**: Mem0 支持更多提供商
+**差异**: 基本持平。Mem0 多 Together AI 和 AWS Bedrock，MemoryOS-Rust 多 DeepSeek 和 OpenRouter
 
-### 3. 更多向量数据库
+### 3. 向量数据库
 
 **Mem0 支持**:
 - Qdrant ✅
@@ -273,15 +277,17 @@ Product --[BELONGS_TO]--> Category
 - Weaviate ✅
 - Milvus ✅
 
-**MemoryOS-Rust 支持**:
-- Qdrant ✅
+**MemoryOS-Rust 支持** (3 种):
+- Qdrant ✅ (默认)
+- Chroma ✅
+- Pinecone ✅
 
-**差异**: Mem0 支持更多向量数据库
+**差异**: Mem0 多 Weaviate 和 Milvus
 
 ### 4. Python SDK
 
-**Mem0**: ✅ 完整的 Python SDK  
-**MemoryOS-Rust**: ❌ 仅 HTTP API
+**Mem0**: ✅ 完整的 Python SDK（异步、类型提示、丰富的功能）  
+**MemoryOS-Rust**: ✅ 基础 Python SDK（同步 HTTP 封装、自动重试、SSE 流式、Bearer token 认证）
 
 ### 5. 记忆版本控制
 
@@ -328,14 +334,14 @@ Product --[BELONGS_TO]--> Category
 
 | 类别 | MemoryOS-Rust | Mem0 |
 |------|---------------|------|
-| **核心记忆功能** | 90% | 100% |
-| **LLM 集成** | 85% | 95% |
-| **存储后端** | 60% | 90% |
-| **API 功能** | 70% | 90% |
-| **运维特性** | 95% | 70% |
-| **性能** | 95% (预期) | 70% |
-| **文档** | 85% | 90% |
-| **总体** | **83%** | **88%** |
+| **核心记忆功能** | 75% | 100% |
+| **LLM 集成** | 90% | 95% |
+| **存储后端** | 70% | 90% |
+| **API 功能** | 60% | 90% |
+| **运维特性** | 85% | 70% |
+| **性能** | TBD (未测试) | 70% |
+| **文档** | 70% | 90% |
+| **总体** | **~72%** | **88%** |
 
 ---
 
@@ -343,12 +349,14 @@ Product --[BELONGS_TO]--> Category
 
 ### 主要差距
 
-1. **知识图谱** - Mem0 有，MemoryOS-Rust 无
-2. **LLM 提供商** - Mem0 10+，MemoryOS-Rust 7
-3. **向量数据库** - Mem0 5+，MemoryOS-Rust 1
-4. **Python SDK** - Mem0 有，MemoryOS-Rust 无
+1. **知识图谱** - Mem0 有完整 GraphRAG，MemoryOS-Rust 仅 Mermaid 解析
+2. **LLM 提供商** - 基本持平（各 10 种，略有不同）
+3. **向量数据库** - Mem0 5+，MemoryOS-Rust 3
+4. **Python SDK** - Mem0 完整 SDK，MemoryOS-Rust 基础 SDK
 5. **记忆版本控制** - Mem0 有，MemoryOS-Rust 无
 6. **记忆分类标签** - Mem0 有，MemoryOS-Rust 无
+7. **FAQ 路由直接命中** - 文档描述但路由器未实现 Tier 0
+8. **Wiki S3/Confluence 导出** - 代码中为 TODO 桩，仅本地导出可用
 
 ### 优势
 
@@ -364,17 +372,13 @@ Product --[BELONGS_TO]--> Category
 
 ### 短期 (1-2 周)
 
-1. **添加更多 LLM 提供商**
-   - Together AI
-   - Groq
-   - AWS Bedrock
-   - Cohere
-   - Mistral
+1. **FAQ 路由直接命中 (Tier 0)**
+   - 在 LLM Router 中实现 FAQ 直接命中逻辑
+   - 高热度 FAQ 绕过 LLM，直接返回
 
-2. **添加更多向量数据库**
-   - Chroma
-   - Pinecone
-   - Weaviate
+2. **Wiki S3/Confluence 导出**
+   - 完成 wiki_exporter.rs 中的 S3 导出实现
+   - 完成 Confluence 导出实现
 
 3. **改进用户画像提取**
    - 从规则提取改为 LLM 提取
@@ -382,10 +386,10 @@ Product --[BELONGS_TO]--> Category
 
 ### 中期 (1-2 月)
 
-4. **实现知识图谱**
-   - 使用 Mermaid 可视化
-   - 实体和关系提取
-   - 图查询和推理
+4. **知识图谱 (GraphRAG)**
+   - 从 Mermaid 解析升级为真正的实体/关系自动提取
+   - 图查询和推理能力
+   - 集成到记忆检索流程
 
 5. **记忆版本控制**
    - 记忆历史追踪
@@ -395,36 +399,43 @@ Product --[BELONGS_TO]--> Category
    - 自动分类
    - 标签管理
 
+7. **多模态存储实现**
+   - 实现 MultiModalStorage trait
+   - 添加 HTTP 端点 (/api/v1/memory/multimodal)
+   - CLIP/Whisper 集成
+
 ### 长期 (3-6 月)
 
-7. **Python SDK**
-   - 完整的 Python 客户端
+8. **Python SDK 增强**
+   - 异步支持
+   - 完整类型提示
    - 与 Mem0 API 兼容
 
-8. **性能优化**
-   - 批量操作
-   - 缓存优化
-   - 连接池优化
+9. **性能基准测试**
+   - QPS 测试
+   - 延迟测试
+   - 内存占用测试
+   - 发布基准报告
 
-9. **监控和可观测性**
-   - Prometheus 指标
-   - Grafana 仪表板
-   - 分布式追踪
+10. **监控和可观测性**
+    - Prometheus 指标
+    - Grafana 仪表板
+    - 分布式追踪
 
 ---
 
 ## 📈 功能路线图
 
 ```
-当前 (v0.2.0) - 85% 功能完整度 ✅ 记忆历史追踪 90% 完成
+当前 (v0.2.0-alpha) - ~72% 功能完整度
     ↓
-v0.3.0 (1 周) - 完成记忆历史 + 修复编译 → 87%
+v0.3.0 (2-3 周) - FAQ 直接命中 + S3/Confluence 导出 → ~78%
     ↓
-v0.4.0 (1-2 月) - 知识图谱 → 92%
+v0.4.0 (1-2 月) - 知识图谱 (GraphRAG) + 多模态存储 → ~85%
     ↓
-v0.5.0 (3-6 月) - 多语言 SDK + 性能优化 → 95%
+v0.5.0 (3-6 月) - SDK 增强 + 性能基准测试 → ~92%
     ↓
-v1.0.0 (6-12 月) - 功能对等 Mem0 → 100%
+v1.0.0 (6-12 月) - 功能对等 Mem0 + 生产验证 → 100%
 ```
 
 ---
@@ -433,32 +444,35 @@ v1.0.0 (6-12 月) - 功能对等 Mem0 → 100%
 
 ### 当前状态
 
-- **MemoryOS-Rust**: 85% 功能完整度，记忆历史追踪 100% 完成
+- **MemoryOS-Rust**: ~72% 功能完整度（早期开发阶段）
 - **Mem0**: 88% 功能完整度（参考基准）
 
 ### 主要差距
 
-- 知识图谱（最大差距）
-- 历史存储优化（可选：迁移到 Qdrant）
-- LLM 提供商数量
-- 向量数据库支持
-- 多语言 SDK
+1. 知识图谱（最大差距：仅 Mermaid 解析 vs 完整 GraphRAG）
+2. FAQ 路由直接命中（Tier 0 未实现）
+3. Wiki S3/Confluence 导出（TODO 桩）
+4. 多模态存储（仅数据结构，无 HTTP 端点和存储实现）
+5. 记忆版本控制
+6. 性能基准测试（所有性能数字未验证）
 
 ### 主要优势
 
 - 配置热更新
 - 实时健康检查
 - 优雅降级
-- 性能（预期）
+- 性能（预期，Rust vs Python）
+- 10 种 LLM 适配器
+- 3 种向量数据库
 - **UUID v7 时间排序**
 
 ### 建议
 
-**短期**: 保持 Redis 历史存储（简单够用）  
-**中期**: 可选迁移到 Qdrant（复用基础设施，功能更强）  
-**长期**: 实现知识图谱（+7% → 92%）
+**短期**: FAQ 直接命中 + S3 导出实现  
+**中期**: 知识图谱升级 + 多模态存储  
+**长期**: 性能基准测试 + 生产验证
 
 ---
 
-**更新时间**: 2026-02-18 03:04  
-**版本**: MemoryOS-Rust 0.2.0 + 记忆历史追踪 (100%)
+**更新时间**: 2026-02-20  
+**版本**: MemoryOS-Rust 0.2.0-alpha

@@ -1,8 +1,14 @@
 # Multi-Modal Support Guide
 
 **版本**: v0.3.0  
-**更新**: 2026-02-19  
+**更新**: 2026-02-20  
 **状态**: 🟡 Experimental
+
+> **重要说明**: 当前多模态支持仅包含数据结构定义和基础方法（`extract_text()`, `get_embeddings()`）。
+> 以下功能尚未实现，作为设计参考和实现规划：
+> - MultiModalStorage trait 实现（存储和检索）
+> - HTTP API 端点
+> - CLIP/Whisper 集成
 
 ---
 
@@ -60,30 +66,22 @@ let message = MultiModalMessage {
 };
 ```
 
-### 存储多模态消息
+### 存储多模态消息（计划中，尚未实现）
 
 ```rust
 use memoryos_ports::MultiModalStorage;
 
-// 存储消息
+// 计划接口 - 待实现
 storage.store_multimodal_message(user_id, message).await?;
 ```
 
-### 搜索多模态消息
+### 搜索多模态消息（计划中，尚未实现）
 
 ```rust
-// 按文本搜索
+// 计划接口 - 待实现
 let results = storage.search_by_text(user_id, "sunset", 10).await?;
-
-// 按图像搜索
-let image_embedding = vec![0.1, 0.2, 0.3, /* ... */];
 let results = storage.search_by_image(user_id, image_embedding, 10).await?;
-
-// 按音频搜索
-let audio_embedding = vec![0.4, 0.5, 0.6, /* ... */];
 let results = storage.search_by_audio(user_id, audio_embedding, 10).await?;
-
-// 获取最近的多模态消息
 let recent = storage.get_recent_multimodal(user_id, 20).await?;
 ```
 
@@ -168,10 +166,12 @@ impl MultiModalStorage for QdrantStorage {
 
 ## 📊 API 示例
 
-### HTTP API
+### HTTP API（计划中，尚未实现）
+
+> 以下 API 端点尚未实现，作为设计参考。
 
 ```bash
-# 添加多模态消息
+# 添加多模态消息（计划中）
 POST /api/v1/memory/multimodal
 Content-Type: application/json
 
@@ -281,9 +281,11 @@ let message = MultiModalMessage {
 ## 🔮 未来计划
 
 ### Phase 1: 基础支持 ✅
-- 多模态数据结构
-- 存储接口定义
-- 基础文档
+- ✅ 多模态数据结构 (MultiModalContent enum)
+- ✅ extract_text() 和 get_embeddings() 方法
+- ✅ 12 个单元测试
+- ⚠️ 存储接口 trait 已定义但未实现
+- ⚠️ HTTP 端点未实现
 
 ### Phase 2: 图像支持 🟡
 - CLIP embedding 集成
