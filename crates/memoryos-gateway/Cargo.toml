@@ -22,6 +22,7 @@ uuid.workspace = true
 memoryos-core = { path = "../memoryos-core" }
 memoryos-ports = { path = "../memoryos-ports" }
 memoryos-adapters = { path = "../memoryos-adapters" }
+memoryos-metrics = { path = "../memoryos-metrics" }
 qdrant-client.workspace = true
 redis.workspace = true
 sha2 = "0.10"

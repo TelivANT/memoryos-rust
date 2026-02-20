@@ -43,6 +43,8 @@ MemoryOS-Rust is a high-performance AI Agent memory management system built with
 - 🎨 **Multimodal Memory**: QdrantMultiModalStorage + HTTP API (/v1/multimodal/*) (v0.5.0, experimental).
 - 🏷️ **Memory Versioning & Tags**: Version history + tag management + export/import (v0.6.0).
 - 🔐 **Security Hardening**: AES-256-GCM encryption + persistent audit log (JSONL) + GDPR records (JSON) (v0.8.0~v0.9.0).
+- 📊 **Prometheus Observability**: /metrics endpoint + HTTP/Router/FAQ/LLM full-chain metrics (v0.10.0).
+- 🧠 **LLM FAQ Classification**: Automatic FAQ categorization via LLM + /v1/admin/faq/classify API (v0.10.0).
 
 ### vs Mem0 Comparison
 
@@ -199,6 +201,8 @@ graph TD
 | Phase 8 | Multimodal | Done | Qdrant storage + HTTP endpoints (experimental) |
 | Phase 9 | Security | Done | AES-256-GCM + audit + GDPR persistence |
 | Phase 10 | Benchmarks | Done | Criterion microbenchmarks (see docs/PERFORMANCE_REPORT.md) |
+| Phase 11 | Observability | Done | Prometheus /metrics + full-chain instrumentation |
+| Phase 12 | LLM FAQ | Done | LLM-based FAQ classification + /v1/admin/faq/classify |
 
 > **Note**: End-to-end performance claims (QPS, latency) have not been independently validated yet. Criterion microbenchmark results are available in `docs/PERFORMANCE_REPORT.md`.
 
@@ -286,4 +290,4 @@ Apache 2.0 License - See [LICENSE](./LICENSE)
 
 ---
 
-**Version**: 0.9.0 (Personal Edition) | **Updated**: 2026-02-20
+**Version**: 0.10.0 (Personal Edition) | **Updated**: 2026-02-20

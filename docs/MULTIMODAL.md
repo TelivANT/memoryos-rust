@@ -303,6 +303,9 @@ let message = MultiModalMessage {
 - 图像查询文本
 - 音频查询视频
 
+> **备选功能 (Backlog)**: Phase 2-5 属于长期规划，当前多模态已支持 embedding 向量输入，
+> 用户可在外部完成 CLIP/Whisper 推理后传入 embedding。详见 [ROADMAP.md](./ROADMAP.md) v2.0+ 规划。
+
 ---
 
 ## 📚 相关资源

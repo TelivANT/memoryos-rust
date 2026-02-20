@@ -1,18 +1,18 @@
 {
   "project_name": "MemoryOS-Rust",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "edition": "Personal/Enterprise Single-Tenant Edition",
   "last_updated": "2026-02-20",
   "status": {
-    "phase": "v0.9.0 Merged - Syncing docs to code",
-    "progress_percentage": 98,
-    "current_task": "同步 README/DESIGN/ARCHITECTURE/COMPARISON/MULTIMODAL 与 v0.9.0 代码一致",
+        "phase": "v0.10.0 Complete - Prometheus + LLM FAQ Classification",
+        "progress_percentage": 99,
+        "current_task": "v0.10.0 已完成，待合并 PR",
     "is_blocked": false
   },
   "branches": {
     "main": {
       "description": "Personal/Enterprise Single-Tenant Edition",
-      "current_version": "v0.9.0",
+      "current_version": "v0.10.0",
       "target_users": "Individual developers, single enterprise deployments"
     },
     "feature/saas-multi-tenant": {
@@ -104,19 +104,35 @@
       "v0.8.0: Security Enhancements (encryption, audit, GDPR)",
       "v0.9.0: Technical Debt (AES-256-GCM, persistence, benchmark fixes, docs)"
     ],
-    "in_progress": [
-      "Docs: sync README + design/architecture docs to v0.9.0"
-    ],
-    "todo": [
-      "v1.0.0: Production release (user cases, production validation)",
-      "CLIP/Whisper integration for multimodal (experimental)"
-    ],
+        "in_progress": [],
+        "todo": [
+          "v1.0.0: Production release (user cases, production validation)",
+          "CLIP/Whisper integration for multimodal (P2 backlog)",
+          "OpenTelemetry distributed tracing (P2 backlog)",
+          "Cross-modal retrieval (P2 backlog)",
+          "Multi-language FAQ translation (P2 backlog)",
+          "FAQ A/B testing (P2 backlog)"
+        ],
     "saas_branch_only": [
       "SaaS Billing Integration (feature/saas-multi-tenant branch)",
       "Multi-Tenant Architecture (feature/saas-multi-tenant branch)"
     ]
   },
   "recent_changes": [
+    {
+      "date": "2026-02-20",
+      "author": "Devin",
+      "description": "v0.10.0: Prometheus Observability + LLM FAQ Classification",
+      "changes": [
+        "Prometheus metrics: HTTP_REQUESTS_TOTAL, HTTP_REQUEST_DURATION, ROUTER_DECISIONS, FAQ_DIRECT_HITS, FAQ_PROMOTIONS, FAQ_CLASSIFICATIONS, LLM_REQUESTS, LLM_REQUEST_DURATION, LLM_TOKENS",
+        "Metrics middleware: instruments all HTTP requests with path normalization",
+        "/metrics endpoint: Prometheus text exposition format",
+        "LLM FAQ classifier: FaqClassification struct, LlmClassifierConfig, build_classification_prompt, parse_classification_response",
+        "/v1/admin/faq/classify API endpoint (dry-run prompt builder + response parser)",
+        "8 unit tests for LLM classifier, 4 unit tests for metrics",
+        "Docs: backlog items added (CLIP/Whisper, cross-modal, video, multi-lang FAQ, A/B testing)"
+      ]
+    },
     {
       "date": "2026-02-20",
       "author": "Devin",
@@ -189,8 +205,12 @@
       "POST /v1/admin/faq/promote",
       "DELETE /v1/admin/faq/:id",
       "GET /v1/admin/faq/history",
-      "GET /v1/admin/faq/stats"
-    ],
+          "GET /v1/admin/faq/stats",
+          "POST /v1/admin/faq/classify"
+        ],
+        "metrics": [
+          "GET /metrics"
+        ],
     "graph": [
       "POST /v1/graph/ingest",
       "GET /v1/graph/entities",

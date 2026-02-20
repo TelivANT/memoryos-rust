@@ -460,7 +460,18 @@ MemoryOS-Rust 采用 **Hexagonal Architecture** 设计，通过 **Ports & Adapte
 - ✅ 安全增强: AES-256-GCM 加密 + 审计日志持久化 + GDPR 合规 (v0.8.0~v0.9.0)
 - ✅ 性能基准测试: 3 套 Criterion 基准 (optimization/graph/security) (v0.7.0)
 
+- ✅ Prometheus 可观测性: /metrics 端点 + HTTP/Router/FAQ/LLM 全链路指标 (v0.10.0)
+- ✅ LLM FAQ 分类: LlmFaqClassifier + /v1/admin/faq/classify API (v0.10.0)
+
 **待完善**:
 - ⚠️ CLIP/Whisper 实际模型集成（当前多模态使用 embedding 向量输入）
-- ⚠️ Prometheus/OpenTelemetry 可观测性集成
+- ⚠️ OpenTelemetry 分布式链路追踪（当前仅 Prometheus 指标）
 - ⚠️ 端到端性能数字（QPS/延迟）待生产验证
+
+**备选功能 (Backlog)**:
+- 📋 跨模态检索（text→image / image→text，依赖 CLIP）
+- 📋 视频帧提取与摘要
+- 📋 多语言 FAQ 自动翻译
+- 📋 FAQ 提升阈值 A/B 测试
+- 📋 分布式增强（多区域、数据同步、灾难恢复）
+- 📋 企业功能（多租户、权限管理、计费、SLA）

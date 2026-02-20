@@ -1,13 +1,12 @@
-//! Metrics routes
+//! Metrics routes – serves Prometheus text exposition format
 
 use axum::{http::StatusCode, response::IntoResponse};
 
-/// GET /metrics
-#[allow(dead_code)]
+/// GET /metrics – Prometheus scrape endpoint
 pub async fn metrics_handler() -> impl IntoResponse {
     (
         StatusCode::OK,
-        [("Content-Type", "text/plain; version=0.0.4")],
-        "# No metrics available\n",
+        [("Content-Type", "text/plain; version=0.0.4; charset=utf-8")],
+        memoryos_metrics::gather_metrics(),
     )
 }
