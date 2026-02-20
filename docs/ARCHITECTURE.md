@@ -481,6 +481,111 @@ MemoryOS-Rust 采用 **Hexagonal Architecture** 设计，通过 **Ports & Adapte
 - 📋 FAQ 提升阈值 A/B 测试
 - 📋 分布式增强（多区域、数据同步、灾难恢复）
 
+## Wiki 生成系统 (memoryos-wiki-gen)
+
+> 详细设计见 [Wiki Generation Spec](specs/wiki_gen_spec.md)
+
+### 系统定位
+
+独立 crate `memoryos-wiki-gen`，支持 CLI 工具 + Gateway API 双路访问。从多语言代码仓库自动生成结构化 Markdown Wiki，同时整合 FAQ 知识库导出。
+
+### Pipeline 架构
+
+```
+Code Repository
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Phase 0: Repo Intake                                        │
+│  • ignore::WalkBuilder (.gitignore 感知)                     │
+│  • 语言检测 (扩展名映射)                                     │
+│  • rayon 并行解析                                            │
+│  • indicatif 进度条                                          │
+└─────────────────────────────────────────────────────────────┘
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Phase 1: Multi-Language Parsing (Tree-sitter)               │
+│  • V1 语言: Rust / Python / Java / Vue (TS + HTML)          │
+│  • 输出: Symbol-centric RepoIR                               │
+│  • SymbolId = file_path + span + kind (稳定跨语言ID)         │
+│  • 降级策略: 解析失败 → token scan fallback                   │
+└─────────────────────────────────────────────────────────────┘
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Phase 1.5: API Endpoint Extraction                          │
+│  • 优先级: OpenAPI/Swagger/Proto > 代码路由 > LLM           │
+│  • 框架: Axum / FastAPI / Spring / Express                   │
+│  • Auth 信号提取 (80% 规则: 输出信号不输出结论)              │
+└─────────────────────────────────────────────────────────────┘
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Phase 2: Code Graph (petgraph)                              │
+│  三层图:                                                     │
+│  • FileGraph — 文件 import 关系 (粗粒度)                     │
+│  • SymbolGraph — 符号级 implements/extends/uses (细粒度)     │
+│  • RuntimeGraph — endpoint→handler→service (API 级)          │
+└─────────────────────────────────────────────────────────────┘
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Phase 3: LLM Documentation Generation                       │
+│  • 复用 LlmAdapter trait (10 adapters)                       │
+│  • Evidence Pack: 签名 + doc + 源码片段 + graph 邻居         │
+│  • 增量缓存: prompt_hash → 跳过未变更符号                    │
+│  • 并发控制: tokio::sync::Semaphore (默认 5)                 │
+└─────────────────────────────────────────────────────────────┘
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Phase 4: Mermaid Diagram Generation                         │
+│  • 模块依赖图 (FileGraph 聚合)                               │
+│  • API Router Flow (RuntimeGraph 子图)                       │
+│  • Class/Trait 关系图 (SymbolGraph 子图)                     │
+│  • Crate 依赖图 (ManifestExtractor)                          │
+└─────────────────────────────────────────────────────────────┘
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Phase 5: Page Assembly (tera 模板)                          │
+│  • index.md / architecture.md / api.md / modules/*.md       │
+│  • FAQ 整合: faq/*.md (LlmClassifier 替代硬编码分类)         │
+│  • wiki_index.json 证据索引 (文档→源码可追溯)               │
+└─────────────────────────────────────────────────────────────┘
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Phase 6: Export (WikiExportBackend)                          │
+│  • Local FS / S3 (OpenDAL) / Confluence (REST)              │
+│  • 增量导出: content hash 跳过未变更页面                     │
+│  • V2 计划: GitHub Wiki backend                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 技术栈 (Wiki Gen)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Wiki Gen Tech Stack                                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Parsing:    tree-sitter + language grammars (Rust/Py/Java/TS/HTML)
+│  Dependency: cargo_metadata (Rust) / quick-xml (Maven) /    │
+│              serde_json (npm) / toml (Python)               │
+│  Graph:      petgraph (3-layer DiGraph)                     │
+│  LLM:        LlmAdapter trait (10 providers, reused)        │
+│  Template:   tera (Jinja2-style)                            │
+│  CLI:        clap + indicatif                               │
+│  File Walk:  ignore (gitignore-aware)                       │
+│  Parallel:   rayon (file-level CPU parallelism)             │
+│  Cache:      sha2 (content/prompt hashing)                  │
+│  Export:     WikiExportBackend (S3/Confluence/Local, reused) │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ## 企业级架构 (v0.12.0)
 
 ### 服务分离架构

@@ -4,9 +4,9 @@
   "edition": "Personal/Enterprise Single-Tenant Edition",
   "last_updated": "2026-02-20",
   "status": {
-        "phase": "v0.12.6 Complete - Comprehensive Audit Fixes",
-        "progress_percentage": 100,
-        "current_task": "v0.12.6 综合审计修复已完成",
+        "phase": "Wiki Generation System - Design Complete, Implementation Pending",
+        "progress_percentage": 10,
+        "current_task": "memoryos-wiki-gen 设计文档已完成，待实现",
     "is_blocked": false
   },
   "branches": {
@@ -35,7 +35,8 @@
         "redis": "Session, Lock, Cache, IP Defense",
         "nats": "Message Queue, Pub/Sub, Service Discovery"
       },
-      "wiki": ["S3", "Confluence", "Local FS"]
+      "wiki": ["S3", "Confluence", "Local FS"],
+      "wiki_gen": "memoryos-wiki-gen (Tree-sitter + LLM hybrid, CLI + API dual-path)"
     },
     "format_constraints": {
       "file_naming": "snake_case (strictly functional naming)",
@@ -113,7 +114,9 @@
       "v0.12.5: PR #18 Review Security Hardening (tenant ID validation, FAQ tenant wiring, multi_thread tests, add+delete edge test)",
       "v0.12.6: Comprehensive Audit Fixes (constant-time auth, nested route auth, CORS restriction, rate limiter leak fix, dedup tenant util, user ID from header, cache eviction)"
     ],
-        "in_progress": [],
+        "in_progress": [
+          "Wiki Generation System: memoryos-wiki-gen crate (Tree-sitter + LLM hybrid, multi-language code parsing, Mermaid diagrams, CLI + API)"
+        ],
         "todo": [
           "v1.0.0: Production release (user cases, production validation)",
           "CLIP/Whisper integration for multimodal (P2 backlog)",
@@ -128,6 +131,25 @@
     ]
   },
   "recent_changes": [
+    {
+      "date": "2026-02-20",
+      "author": "Devin",
+      "description": "Wiki Generation System: Design Phase Complete",
+      "changes": [
+        "Created comprehensive design spec: docs/specs/wiki_gen_spec.md (19 sections, Mermaid diagrams)",
+        "Architecture: Tree-sitter + LLM hybrid pipeline (Phase 0-6)",
+        "IR design: Symbol-centric with stable SymbolId (file_path + span + kind)",
+        "3-layer Code Graph: FileGraph / SymbolGraph / RuntimeGraph (petgraph)",
+        "API Endpoint extraction: OpenAPI/Proto priority > code route > LLM inference",
+        "Auth signal extraction: 80% rule (output signals, not conclusions)",
+        "Evidence-backed LLM generation: EvidencePack + wiki_index.json traceability",
+        "V1 languages: Rust + Python + Java + Vue (TS + HTML)",
+        "Dual-path access: CLI (clap) + Gateway API (/v1/wiki/*)",
+        "Incremental cache: SHA256 content/prompt hashing",
+        "Old Wiki System A marked for deletion (WikiAdapter trait + old S3)",
+        "Updated ARCHITECTURE.md, STATUS.md, roadmap, state.json"
+      ]
+    },
     {
       "date": "2026-02-20",
       "author": "Devin",

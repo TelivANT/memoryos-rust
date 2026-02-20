@@ -21,6 +21,7 @@
 | **基础架构** | ✅ 已完成 | 100% | [roadmap/features/foundation.md](./features/foundation.md) |
 | **LLM 集成** | ✅ 已完成 | 100% | [roadmap/features/llm-integration.md](./features/llm-integration.md) |
 | **记忆系统** | ✅ 已完成 | 100% | [roadmap/features/memory-system.md](./features/memory-system.md) |
+| **Wiki 生成** | 🚧 设计完成 | 10% | [roadmap/features/wiki-generation.md](./features/wiki-generation.md) |
 | **记忆压缩** | 📋 规划中 | 0% | [roadmap/enhancements/memory-compression.md](./enhancements/memory-compression.md) |
 | **多模态支持** | 📋 规划中 | 0% | [roadmap/enhancements/multimodal.md](./enhancements/multimodal.md) |
 | **高级检索** | 📋 规划中 | 0% | [roadmap/enhancements/advanced-retrieval.md](./enhancements/advanced-retrieval.md) |
