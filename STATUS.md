@@ -2,11 +2,11 @@
 
 | Metric | Value |
 | :--- | :--- |
-| **Version** | v0.11.0 |
+| **Version** | v0.12.6 |
 | **Build Status** | Passing |
-| **Overall Completion** | ~99% |
+| **Overall Completion** | ~99% (core), Wiki Gen 10% (design complete) |
 | **Documentation** | Aligned with code |
-| **Security Audit** | Passed (v0.11.0 - pluggable storage backends, redis 0.32) |
+| **Security Audit** | Passed (v0.12.6 - constant-time auth, nested route auth, CORS) |
 
 ## Component Health
 
@@ -18,6 +18,7 @@
 | **Qdrant** | 🟢 Stable | Vector search + multimodal storage active |
 | **Router** | 🟢 Active | Tier 0 FAQ direct hit implemented |
 | **Wiki Export** | 🟢 Active | Local + S3 + Confluence backends |
+| **Wiki Gen** | 🚧 Design Complete | memoryos-wiki-gen: Tree-sitter + LLM hybrid, multi-lang (Rust/Py/Java/Vue) |
 | **FAQ System** | 🟢 Active | HeatTracker + AutoPromoter + Management API |
 | **Knowledge Graph** | 🟢 Active | Entity/relation extraction, LLM extraction, graph query API |
 | **Multimodal** | 🟢 Active | Qdrant-backed storage, HTTP endpoints |
@@ -79,7 +80,20 @@
 - Auth warning: prominent multi-line warning when auth disabled
 - Audit/GDPR: pluggable storage backend traits (AuditStorageBackend, GdprStorageBackend)
 
+### Wiki Generation System (Design Complete)
+- Tree-sitter + LLM hybrid pipeline for multi-language code parsing
+- V1 languages: Rust, Python, Java, Vue
+- Symbol-centric IR with stable SymbolId (file_path + span + kind)
+- 3-layer Code Graph: FileGraph / SymbolGraph / RuntimeGraph
+- API Endpoint extraction (OpenAPI/Proto > code routes > LLM)
+- Mermaid diagram generation (module dep / API flow / class diagrams)
+- CLI tool (clap) + Gateway API (/v1/wiki/*) dual-path
+- Incremental cache (SHA256 content/prompt hashing)
+- Design spec: [docs/specs/wiki_gen_spec.md](docs/specs/wiki_gen_spec.md)
+
 ## Recent Activity
+- **2026-02-20**: Wiki Generation System design complete. Spec published at docs/specs/wiki_gen_spec.md.
+- **2026-02-20**: Released v0.12.0-v0.12.6. Enterprise features (RBAC, multi-tenant, admin service) + security hardening.
 - **2026-02-20**: Released v0.11.0. All remaining issues fixed (tag search, history, redis, graph LLM, auth, audit/GDPR).
 - **2026-02-20**: Released v0.10.0. Prometheus observability + LLM FAQ classification.
 - **2026-02-20**: Released v0.9.0. Technical debt cleanup, AES-256-GCM encryption, persistence for audit/GDPR.

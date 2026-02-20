@@ -38,6 +38,36 @@
 
 ## 🚀 当前活跃任务
 
+### [Devin] - Wiki 生成系统设计文档
+- **开始时间**: 2026-02-20 16:30
+- **完成时间**: 2026-02-20 17:05
+- **当前进度**: 100%
+- **状态**: ✅ 完成
+- **任务描述**: 设计 memoryos-wiki-gen 系统架构，编写完整设计文档（含 Mermaid 图），更新项目所有相关文档
+- **成果**:
+  - ✅ 设计文档: docs/specs/wiki_gen_spec.md (19 个章节，完整 Mermaid 架构图)
+  - ✅ 架构: Tree-sitter + LLM 混合管线 (Phase 0-6)
+  - ✅ IR 设计: Symbol-centric 统一 IR，SymbolId = file_path + span + kind
+  - ✅ 三层 Code Graph: FileGraph / SymbolGraph / RuntimeGraph (petgraph)
+  - ✅ API Endpoint 提取: OpenAPI/Proto 优先级 > 代码路由 > LLM 推断
+  - ✅ Auth 信号提取: 80% 规则（输出信号不输出结论）
+  - ✅ Evidence-backed LLM 生成: EvidencePack + wiki_index.json 可追溯
+  - ✅ V1 语言: Rust + Python + Java + Vue (TS + HTML)
+  - ✅ 双路访问: CLI (clap) + Gateway API (/v1/wiki/*)
+  - ✅ 增量缓存: SHA256 content/prompt hashing
+  - ✅ 旧 Wiki System A 标记删除 (WikiAdapter trait + 旧 S3)
+  - ✅ 更新: ARCHITECTURE.md, STATUS.md, state.json, roadmap/README.md
+- **相关文件**:
+  - `docs/specs/wiki_gen_spec.md` — 完整设计文档 (新建)
+  - `docs/ARCHITECTURE.md` — 新增 Wiki 生成系统章节
+  - `docs/state.json` — 更新状态、任务队列、最近变更
+  - `STATUS.md` — 更新版本、组件状态、Wiki Gen 章节
+  - `roadmap/README.md` — 新增 Wiki 生成行
+  - `roadmap/features/wiki-generation.md` — 路线图功能文档 (新建)
+  - `WORK_LOG.md` — 本条记录
+
+---
+
 ### [Devin] - v0.12.6 综合审计修复
 - **开始时间**: 2026-02-20 15:15
 - **完成时间**: 2026-02-20 15:55
