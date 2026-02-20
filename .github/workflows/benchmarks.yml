@@ -7,8 +7,8 @@ on:
       - 'crates/**'
       - 'Cargo.toml'
       - '.github/workflows/benchmarks.yml'
-  pull_request:
-    branches: [main]
+  # pull_request:
+  #   branches: [main]
   schedule:
     # Run weekly on Monday at 00:00 UTC
     - cron: '0 0 * * 1'
