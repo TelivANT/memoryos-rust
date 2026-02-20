@@ -7,7 +7,9 @@ pub mod identity;
 pub mod llm;
 pub mod memory;
 pub mod optimization;
+pub mod rbac;
 pub mod security;
+pub mod tenant;
 pub mod wiki;
 
 pub use config::{AppConfig, ConfigManager};
@@ -25,7 +27,9 @@ pub use optimization::{
     BatchEmbedder, BloomFilter, EmbeddingCache, HeatBuffer, IncrementalSummarizer,
     OptimizedFaqMatcher, OptimizedRetriever, SimilarityFilter,
 };
+pub use rbac::{Permission, RbacManager, Role, UserRecord};
 pub use security::{
     AuditConfig, AuditEvent, AuditEventType, AuditLogger, AuditOutcome, DataEncryptor,
     EncryptedPayload, EncryptionConfig, GdprManager,
 };
+pub use tenant::{Tenant, TenantContext, TenantManager};

@@ -1,8 +1,8 @@
 # 工作日志 (Work Log)
 
 **项目**: MemoryOS-Rust  
-**当前版本**: v0.11.0  
-**更新**: 2026-02-20 13:05
+**当前版本**: v0.12.0  
+**更新**: 2026-02-20 13:30
 
 ---
 
@@ -37,6 +37,38 @@
 ---
 
 ## 🚀 当前活跃任务
+
+### [Devin] - v0.12.0 企业级功能
+- **开始时间**: 2026-02-20 13:15
+- **完成时间**: 2026-02-20 13:30
+- **当前进度**: 100%
+- **状态**: ✅ 完成
+- **任务描述**: 实现企业级功能，支持多团队/全公司级别部署
+- **成果**:
+  - ✅ RBAC 权限模型: Role（SuperAdmin/Admin/User/ReadOnly）+ Permission（ReadMemory/WriteMemory/ManageUsers/ManageTenants/ViewAudit/ManageConfig）
+  - ✅ 多租户隔离: Tenant/TenantContext/TenantManager，租户启用/禁用/配额管理
+  - ✅ memoryos-admin 独立服务: 端口 9090，内网/VPN 部署，用户/租户/RBAC/审计/系统管理 API
+  - ✅ Gateway RBAC 中间件: 按路径+方法检查权限，403 拒绝无权限请求
+  - ✅ Gateway 租户上下文: X-Tenant-ID 请求头提取，禁用租户返回 403
+  - ✅ 服务分离架构: gateway（8080，业务 API）+ admin（9090，管理 API）
+- **相关文件**:
+  - `crates/memoryos-core/src/rbac/mod.rs` — RBAC 核心模块（Role/Permission/RbacManager/UserRecord）
+  - `crates/memoryos-core/src/tenant/mod.rs` — 多租户核心模块（Tenant/TenantContext/TenantManager）
+  - `crates/memoryos-core/src/lib.rs` — 导出 rbac + tenant 模块
+  - `crates/memoryos-admin/` — 独立管理服务 crate
+  - `crates/memoryos-admin/src/main.rs` — Admin 服务入口（Axum, port 9090）
+  - `crates/memoryos-admin/src/routes/users.rs` — 用户管理 API
+  - `crates/memoryos-admin/src/routes/tenants.rs` — 租户管理 API
+  - `crates/memoryos-admin/src/routes/audit.rs` — 审计日志查询 API
+  - `crates/memoryos-admin/src/routes/system.rs` — 系统状态/健康检查 API
+  - `crates/memoryos-gateway/src/middleware/rbac.rs` — Gateway RBAC 中间件
+  - `crates/memoryos-gateway/src/state.rs` — AppState 增加 RbacManager/TenantManager
+  - `crates/memoryos-gateway/src/main.rs` — RBAC 中间件注册
+  - `docs/ARCHITECTURE.md` — 企业架构章节
+  - `docs/DESIGN.md` — 企业设计模式
+  - `docs/ROADMAP.md` — v0.12.0 版本计划
+
+---
 
 ### [Devin] - v0.11.0 剩余问题全面修复
 - **开始时间**: 2026-02-20 12:00
