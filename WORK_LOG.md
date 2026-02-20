@@ -2,7 +2,7 @@
 
 **项目**: MemoryOS-Rust  
 **当前版本**: v0.9.0  
-**更新**: 2026-02-20 05:00
+**更新**: 2026-02-20 06:07
 
 ---
 
@@ -38,11 +38,11 @@
 
 ## 🚀 当前活跃任务
 
-### [Devin] - v0.9.0 技术债修复 & v1.0 准备
+### [Devin] - v0.9.0 技术债修复 & v1.0 准备 (PR #7, 已合并)
 - **开始时间**: 2026-02-20 04:30
-- **完成时间**: 2026-02-20 05:00
+- **完成时间**: 2026-02-20 06:00
 - **当前进度**: 100%
-- **状态**: ✅ 完成
+- **状态**: ✅ 完成 (PR #7 已合并到 main)
 - **任务描述**: 修复所有剩余技术债，为 v1.0.0 做准备
 - **成果**:
   - ✅ 加密升级: XOR → AES-256-GCM（aes-gcm crate，随机 nonce，AEAD 认证）
@@ -55,20 +55,27 @@
   - ✅ 安全审计报告更新: SECURITY_AUDIT.md 更新至 v0.9.0
   - ✅ 未使用 import 警告清理
   - ✅ Gateway 启用审计/GDPR 持久化路径 (~/.memoryos/)
+  - ✅ CI 修复: benchmark workflow 限定 Criterion targets，增加 PR write 权限
+  - ✅ Gateway integration-tests feature 声明（消除 cfg 警告）
+  - ✅ Qdrant benchmark 端口修复（6333 REST → 6334 gRPC）
 - **相关文件**:
   - `crates/memoryos-core/src/security/encryption.rs` (AES-256-GCM 重写)
   - `crates/memoryos-core/src/security/audit.rs` (JSONL 持久化)
   - `crates/memoryos-core/src/security/gdpr.rs` (JSON 持久化)
   - `crates/memoryos-core/Cargo.toml` (aes-gcm + rand 依赖)
+  - `crates/memoryos-gateway/Cargo.toml` (integration-tests feature)
   - `crates/memoryos-gateway/src/main.rs` (multimodal 路由 + 持久化配置)
-  - `crates/memoryos-benchmarks/benches/vector_storage_benchmark.rs` (graceful skip)
+  - `crates/memoryos-benchmarks/benches/vector_storage_benchmark.rs` (graceful skip + QDRANT_URL)
   - `crates/memoryos-benchmarks/benches/security_benchmark.rs` (persist_path 字段)
+  - `.github/workflows/benchmarks.yml` (CI 修复: 逐个 bench target + permissions)
   - `docs/ROADMAP.md` (对比表更新)
   - `docs/PERFORMANCE_REPORT.md` (新增: 基准报告)
   - `SECURITY_AUDIT.md` (更新至 v0.9.0)
   - `STATUS.md` (更新至 v0.9.0)
   - `docs/state.json` (更新至 v0.9.0)
-- **备注**: 所有技术债修复完毕，cargo build/test/fmt 全部通过
+- **CI 状态**: 4/4 全部通过（Test, Security Audit, Docker Build, Performance Benchmarks）
+- **已知遗留**: redis 0.24 future-incompat 警告（升级到 0.32+ 需重写 defense.rs，48 个 API 变更）
+- **备注**: 所有技术债修复完毕，CI 全绿，PR #7 已合并
 
 ---
 

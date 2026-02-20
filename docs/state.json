@@ -4,9 +4,9 @@
   "edition": "Personal/Enterprise Single-Tenant Edition",
   "last_updated": "2026-02-20",
   "status": {
-    "phase": "v0.9.0 Technical Debt & v1.0 Preparation",
-    "progress_percentage": 98,
-    "current_task": "v0.9.0 技术债修复完成，准备 v1.0.0 发布",
+        "phase": "v0.9.0 Merged - Preparing v1.0.0",
+        "progress_percentage": 98,
+        "current_task": "v0.9.0 已合并 (PR #7)，准备 v1.0.0 发布",
     "is_blocked": false
   },
   "branches": {
@@ -83,8 +83,14 @@
         "ROADMAP comparison table updated",
         "Performance benchmark report (docs/PERFORMANCE_REPORT.md)",
         "Security audit report updated",
-        "Unused import cleanup"
-      ]
+        "Unused import cleanup",
+        "CI fix: benchmark workflow scoped to Criterion targets",
+        "CI fix: added pull-requests write permission",
+        "Gateway: integration-tests feature declared in Cargo.toml",
+        "Qdrant benchmark: port fixed to 6334 gRPC"
+      ],
+      "pr": "#7 (merged)",
+      "ci_status": "4/4 passed (Test, Security Audit, Docker Build, Performance Benchmarks)"
     }
   },
   "task_queue": {
