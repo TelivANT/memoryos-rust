@@ -4,8 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::ir::Language;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct WikiGenConfig {
     #[serde(default)]
     pub repo: RepoConfig,
@@ -20,7 +19,6 @@ pub struct WikiGenConfig {
     #[serde(default)]
     pub export: ExportConfig,
 }
-
 
 impl WikiGenConfig {
     pub fn from_file(path: &Path) -> Result<Self, crate::error::WikiGenError> {
