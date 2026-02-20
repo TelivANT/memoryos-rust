@@ -1,6 +1,6 @@
 # 设计原理与实现细节
 
-**版本**: 0.9.0  
+**版本**: 0.12.0  
 **更新**: 2026-02-20
 
 本文档详细说明 MemoryOS-Rust 的设计原理、实现细节和关键决策。
@@ -547,8 +547,98 @@ let (stm, mtm, ltm) = tokio::join!(
 ---
 
 **更新时间**: 2026-02-20  
-**版本**: 0.9.0
+**版本**: 0.12.0
 
+
+---
+
+## 🏢 企业级功能设计 (v0.12.0)
+
+### 设计原则
+
+**服务分离**: 业务 API (gateway) 和管理 API (admin) 物理隔离，部署在不同网络区域。
+
+**最小权限**: RBAC 模型确保每个用户只能访问其角色允许的资源。
+
+**租户隔离**: 所有数据操作自动按 tenant_id 过滤，防止跨租户数据泄漏。
+
+### 1. RBAC 设计
+
+#### 角色定义
+
+```rust
+pub enum Role {
+    SuperAdmin,  // 全局管理: 租户CRUD + 所有权限
+    Admin,       // 租户管理: 用户管理 + 数据读写 + 审计
+    User,        // 普通用户: 数据读写
+    ReadOnly,    // 只读用户: 仅读取
+}
+```
+
+#### 权限定义
+
+```rust
+pub enum Permission {
+    ReadMemory,     // 读取记忆数据
+    WriteMemory,    // 写入记忆数据
+    ManageUsers,    // 管理用户（分配角色）
+    ManageTenants,  // 管理租户（CRUD）
+    ViewAudit,      // 查看审计日志
+    ManageConfig,   // 修改系统配置
+}
+```
+
+#### 权限检查流程
+
+```
+Request → Auth Middleware → 提取 API Key
+    → 查询 RbacManager → 获取 Role
+    → 检查 Permission → 允许/拒绝
+```
+
+### 2. 多租户设计
+
+#### 租户模型
+
+```rust
+pub struct Tenant {
+    pub id: String,           // UUID
+    pub name: String,
+    pub description: String,
+    pub max_users: u32,       // 最大用户数
+    pub storage_quota_mb: u64, // 存储配额
+    pub api_rate_limit: u32,  // API 调用限制/分钟
+    pub enabled: bool,
+    pub created_at: DateTime<Utc>,
+}
+```
+
+#### 数据隔离策略
+
+- **Qdrant**: 所有查询添加 `tenant_id` payload filter
+- **Redis**: key 前缀 `{tenant_id}:{key}`
+- **审计日志**: 每条记录标记 `tenant_id`
+
+### 3. 服务分离设计
+
+#### 为什么分离？
+
+- **安全**: 管理 API 不暴露到公网
+- **独立认证**: 管理员可用不同认证方式（LDAP/SSO）
+- **审计清晰**: 管理操作和业务操作日志分离
+- **独立部署**: 管理服务可以独立升级/重启
+
+#### memoryos-admin API
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/api/v1/tenants` | GET/POST | 租户列表/创建 |
+| `/api/v1/tenants/:id` | GET/PUT/DELETE | 租户详情/更新/删除 |
+| `/api/v1/users` | GET/POST | 用户列表/创建 |
+| `/api/v1/users/:id` | GET/PUT/DELETE | 用户详情/更新/删除 |
+| `/api/v1/users/:id/roles` | PUT | 分配角色 |
+| `/api/v1/audit/logs` | GET | 审计日志查询 |
+| `/api/v1/system/stats` | GET | 系统统计 |
 
 ---
 

@@ -5,7 +5,9 @@ use memoryos_adapters::{
 use memoryos_core::{
     config::AppConfig,
     llm::{ContextInjector, ModelRouter, RouterConfig, StandardInjector, TieredRouter},
+    rbac::RbacManager,
     security::{SecurityConfig, SecurityShield},
+    tenant::TenantManager,
 };
 use memoryos_ports::{HistoryStorage, LlmAdapter, MemoryManager, VectorStorage};
 use std::{collections::HashMap, sync::Arc};
@@ -29,6 +31,8 @@ pub struct AppState {
     pub worker_monitor: Arc<RwLock<WorkerMonitorSnapshot>>,
     pub api_key_store: Option<Arc<ApiKeyStore>>,
     pub async_memory_pipeline: bool,
+    pub rbac_manager: Option<RbacManager>,
+    pub tenant_manager: Option<TenantManager>,
 }
 
 impl AppState {
@@ -132,6 +136,9 @@ impl AppState {
             None
         };
 
+        let rbac_manager = Some(RbacManager::new());
+        let tenant_manager = Some(TenantManager::new());
+
         Self {
             config: Arc::new(config),
             router,
@@ -143,7 +150,9 @@ impl AppState {
             history_storage,
             worker_monitor,
             api_key_store,
-            async_memory_pipeline: false, // Default to sync mode
+            async_memory_pipeline: false,
+            rbac_manager,
+            tenant_manager,
         }
     }
 

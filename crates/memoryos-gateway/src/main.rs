@@ -200,6 +200,10 @@ async fn main() -> Result<(), AppError> {
         .nest("/v1/memory/manage", memory_manage_routes)
         .nest("/v1/multimodal", multimodal_routes)
         .nest("/v1/security", security_routes)
+        .layer(axum::middleware::from_fn_with_state(
+            state_arc.clone(),
+            middleware::rbac_middleware,
+        ))
         .layer(axum::middleware::from_fn(middleware::metrics_middleware));
 
     if config.auth.enabled {
