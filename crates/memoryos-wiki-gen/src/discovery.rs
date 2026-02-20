@@ -1,7 +1,7 @@
 use std::path::Path;
 
+use ignore::WalkBuilder;
 use tracing::debug;
-use walkdir::WalkDir;
 
 use crate::config::WikiGenConfig;
 use crate::error::WikiGenResult;
@@ -21,18 +21,26 @@ impl FileDiscovery {
         let max_size = self.config.parse.max_file_size_kb * 1024;
         let exclude = &self.config.repo.exclude_patterns;
 
-        for entry in WalkDir::new(repo_root)
+        let walker = WalkBuilder::new(repo_root)
+            .hidden(true)
+            .git_global(true)
+            .git_ignore(true)
+            .git_exclude(true)
             .follow_links(false)
-            .into_iter()
-            .filter_entry(|e| !is_hidden(e) && !is_excluded_dir(e, repo_root, exclude))
-            .flatten()
-        {
+            .build();
+
+        for entry in walker.flatten() {
             let path = entry.path();
             if !path.is_file() {
                 continue;
             }
 
             let relative = path.strip_prefix(repo_root).unwrap_or(path);
+            let rel_str = relative.to_string_lossy();
+
+            if is_extra_excluded(&rel_str, exclude) {
+                continue;
+            }
 
             if let Ok(meta) = path.metadata() {
                 if meta.len() as usize > max_size {
@@ -63,39 +71,7 @@ impl FileDiscovery {
     }
 }
 
-fn is_hidden(entry: &walkdir::DirEntry) -> bool {
-    entry
-        .file_name()
-        .to_str()
-        .map(|s| s.starts_with('.') && s != ".")
-        .unwrap_or(false)
-}
-
-fn is_excluded_dir(entry: &walkdir::DirEntry, repo_root: &Path, patterns: &[String]) -> bool {
-    if !entry.file_type().is_dir() {
-        return false;
-    }
-
-    let name = entry.file_name().to_string_lossy();
-
-    let always_skip = [
-        "node_modules",
-        "target",
-        "__pycache__",
-        ".git",
-        "vendor",
-        "dist",
-        "build",
-        ".venv",
-        "venv",
-    ];
-    if always_skip.contains(&name.as_ref()) {
-        return true;
-    }
-
-    let relative = entry.path().strip_prefix(repo_root).unwrap_or(entry.path());
-    let rel_str = relative.to_string_lossy();
-
+fn is_extra_excluded(rel_str: &str, patterns: &[String]) -> bool {
     for pattern in patterns {
         let trimmed = pattern
             .trim_start_matches("**/")
@@ -105,6 +81,5 @@ fn is_excluded_dir(entry: &walkdir::DirEntry, repo_root: &Path, patterns: &[Stri
             return true;
         }
     }
-
     false
 }

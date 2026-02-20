@@ -9,6 +9,7 @@ pub mod export;
 pub mod graph;
 pub mod ir;
 pub mod lang;
+pub mod llm_adapter;
 pub mod llm_gen;
 pub mod manifest;
 pub mod page_builder;
@@ -17,6 +18,7 @@ pub mod wiki_index;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
@@ -37,13 +39,26 @@ use page_builder::PageBuilder;
 use parser::{create_parser, ParseOutput};
 use wiki_index::WikiIndex;
 
+pub use llm_adapter::WikiLlmAdapter;
+
 pub struct WikiGenerator {
     config: WikiGenConfig,
+    llm_adapter: Option<Arc<dyn WikiLlmAdapter>>,
 }
 
 impl WikiGenerator {
     pub fn new(config: WikiGenConfig) -> Self {
-        Self { config }
+        Self {
+            config,
+            llm_adapter: None,
+        }
+    }
+
+    pub fn with_llm_adapter(config: WikiGenConfig, adapter: Arc<dyn WikiLlmAdapter>) -> Self {
+        Self {
+            config,
+            llm_adapter: Some(adapter),
+        }
     }
 
     pub async fn generate(&self, repo_root: &Path) -> WikiGenResult<()> {
@@ -76,7 +91,12 @@ impl WikiGenerator {
             CacheStore::new()
         };
 
-        let llm_gen = LlmDocGenerator::new(self.config.llm.clone());
+        let llm_gen = match &self.llm_adapter {
+            Some(adapter) => {
+                LlmDocGenerator::with_adapter(self.config.llm.clone(), adapter.clone())
+            }
+            None => LlmDocGenerator::new(self.config.llm.clone()),
+        };
         let symbol_docs = llm_gen
             .generate_all(&ir, &graph, &file_contents, &mut cache)
             .await?;

@@ -10,6 +10,7 @@ pub mod memory_manage;
 pub mod metrics;
 pub mod multimodal;
 pub mod security;
+pub mod wiki;
 
 use axum::{
     http::HeaderMap, http::HeaderValue, response::Response, routing::get, routing::post, Router,
