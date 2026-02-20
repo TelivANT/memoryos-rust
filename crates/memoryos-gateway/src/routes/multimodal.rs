@@ -1,9 +1,4 @@
-use axum::{
-    extract::State,
-    response::IntoResponse,
-    routing::{get, post},
-    Json, Router,
-};
+use axum::{extract::State, response::IntoResponse, routing::post, Json, Router};
 use memoryos_core::{AppError, MultiModalContent, MultiModalMessage};
 use memoryos_ports::MultiModalStorage;
 use serde::{Deserialize, Serialize};

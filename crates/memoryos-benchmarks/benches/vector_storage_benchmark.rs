@@ -24,17 +24,22 @@ fn create_test_message(i: usize) -> Message {
     }
 }
 
-async fn setup_storage() -> Arc<QdrantStorage> {
-    Arc::new(
-        QdrantStorage::new("http://localhost:6333")
-            .await
-            .expect("Failed to create storage"),
-    )
+async fn setup_storage() -> Option<Arc<QdrantStorage>> {
+    match QdrantStorage::new("http://localhost:6333").await {
+        Ok(s) => Some(Arc::new(s)),
+        Err(e) => {
+            eprintln!("Skipping vector benchmarks: Qdrant not available ({})", e);
+            None
+        }
+    }
 }
 
 fn bench_add_message(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
-    let storage = rt.block_on(setup_storage());
+    let storage = match rt.block_on(setup_storage()) {
+        Some(s) => s,
+        None => return,
+    };
     let user_id = format!("bench_user_{}", uuid::Uuid::now_v7());
 
     c.bench_function("add_short_term_message", |b| {
@@ -53,16 +58,17 @@ fn bench_add_message(c: &mut Criterion) {
         });
     });
 
-    // 清理
     rt.block_on(storage.clear_short_term(&user_id)).unwrap();
 }
 
 fn bench_get_messages(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
-    let storage = rt.block_on(setup_storage());
+    let storage = match rt.block_on(setup_storage()) {
+        Some(s) => s,
+        None => return,
+    };
     let user_id = format!("bench_user_{}", uuid::Uuid::now_v7());
 
-    // 预填充数据
     rt.block_on(async {
         for i in 0..10 {
             storage
@@ -90,27 +96,27 @@ fn bench_get_messages(c: &mut Criterion) {
     }
     group.finish();
 
-    // 清理
     rt.block_on(storage.clear_short_term(&user_id)).unwrap();
 }
 
 fn bench_clear_messages(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
-    let storage = rt.block_on(setup_storage());
+    let storage = match rt.block_on(setup_storage()) {
+        Some(s) => s,
+        None => return,
+    };
 
     c.bench_function("clear_short_term", |b| {
         b.to_async(&rt).iter(|| {
             let storage = storage.clone();
             let user_id = format!("bench_user_{}", uuid::Uuid::now_v7());
             async move {
-                // 添加一些消息
                 for i in 0..10 {
                     storage
                         .add_short_term_message(&user_id, create_test_message(i))
                         .await
                         .unwrap();
                 }
-                // 清空
                 storage.clear_short_term(black_box(&user_id)).await.unwrap();
             }
         });
@@ -119,7 +125,10 @@ fn bench_clear_messages(c: &mut Criterion) {
 
 fn bench_concurrent_writes(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
-    let storage = rt.block_on(setup_storage());
+    let storage = match rt.block_on(setup_storage()) {
+        Some(s) => s,
+        None => return,
+    };
 
     let mut group = c.benchmark_group("concurrent_writes");
     for concurrency in [1, 5, 10, 20].iter() {
@@ -150,7 +159,6 @@ fn bench_concurrent_writes(c: &mut Criterion) {
                             handle.await.unwrap();
                         }
 
-                        // 清理
                         storage.clear_short_term(&user_id).await.unwrap();
                     }
                 });

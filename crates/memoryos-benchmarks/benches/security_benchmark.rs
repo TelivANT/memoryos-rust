@@ -71,6 +71,7 @@ fn bench_audit_logging(c: &mut Criterion) {
     let config = AuditConfig {
         enabled: true,
         max_buffer_size: 10000,
+        persist_path: None,
     };
     let logger = AuditLogger::new(config);
 
