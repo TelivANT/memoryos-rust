@@ -25,7 +25,8 @@ fn create_test_message(i: usize) -> Message {
 }
 
 async fn setup_storage() -> Option<Arc<QdrantStorage>> {
-    match QdrantStorage::new("http://localhost:6333").await {
+    let url = std::env::var("QDRANT_URL").unwrap_or_else(|_| "http://localhost:6334".to_string());
+    match QdrantStorage::new(&url).await {
         Ok(s) => Some(Arc::new(s)),
         Err(e) => {
             eprintln!("Skipping vector benchmarks: Qdrant not available ({})", e);
