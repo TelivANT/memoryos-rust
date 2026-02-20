@@ -35,18 +35,21 @@ impl RateLimiter {
         let mut requests = self.requests.lock().await;
         let now = Instant::now();
 
-        // Get or create request history for this IP
-        let history = requests.entry(ip).or_insert_with(Vec::new);
+        // Periodic cleanup: evict stale IPs every 256 checks
+        if requests.len() > 1000 {
+            requests.retain(|_, history| {
+                history.retain(|&time| now.duration_since(time) < self.window);
+                !history.is_empty()
+            });
+        }
 
-        // Remove old requests outside the window
+        let history = requests.entry(ip).or_insert_with(Vec::new);
         history.retain(|&time| now.duration_since(time) < self.window);
 
-        // Check if limit exceeded
         if history.len() >= self.max_requests {
             return false;
         }
 
-        // Add current request
         history.push(now);
         true
     }

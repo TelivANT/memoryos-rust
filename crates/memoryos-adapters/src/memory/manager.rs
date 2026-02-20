@@ -38,9 +38,15 @@ impl EmbeddingCache {
     async fn set(&self, text: String, embedding: Vec<f32>) {
         let mut cache = self.cache.write().await;
         if cache.len() >= self.max_size {
-            // 简单 LRU：清空一半
-            cache.clear();
-            info!("Embedding cache cleared (reached max size)");
+            let to_remove = cache.len() / 2;
+            let keys: Vec<String> = cache.keys().take(to_remove).cloned().collect();
+            for k in keys {
+                cache.remove(&k);
+            }
+            info!(
+                "Embedding cache evicted {} entries (reached max size)",
+                to_remove
+            );
         }
         cache.insert(text, embedding);
     }

@@ -1,18 +1,18 @@
 {
   "project_name": "MemoryOS-Rust",
-  "version": "0.12.5",
+  "version": "0.12.6",
   "edition": "Personal/Enterprise Single-Tenant Edition",
   "last_updated": "2026-02-20",
   "status": {
-        "phase": "v0.12.5 Complete - PR #18 Review Security Hardening",
+        "phase": "v0.12.6 Complete - Comprehensive Audit Fixes",
         "progress_percentage": 100,
-        "current_task": "v0.12.5 PR #18 review 安全加固已完成",
+        "current_task": "v0.12.6 综合审计修复已完成",
     "is_blocked": false
   },
   "branches": {
     "main": {
       "description": "Personal/Enterprise Single-Tenant Edition",
-      "current_version": "v0.12.5",
+      "current_version": "v0.12.6",
       "target_users": "Individual developers, single enterprise deployments"
     },
     "feature/saas-multi-tenant": {
@@ -110,7 +110,8 @@
       "v0.12.2: Enterprise Deep Hardening (async I/O, race condition fix, constant-time auth, tenant isolation, tests)",
       "v0.12.3: PR #16 Review Gap Fixes (Qdrant tenant search filter, serial persist queue, build_mid_term_segment helper)",
       "v0.12.4: PR #17 Review Follow-up (dedup search methods, atomic persist, gateway tenant wiring, concurrent persist test)",
-      "v0.12.5: PR #18 Review Security Hardening (tenant ID validation, FAQ tenant wiring, multi_thread tests, add+delete edge test)"
+      "v0.12.5: PR #18 Review Security Hardening (tenant ID validation, FAQ tenant wiring, multi_thread tests, add+delete edge test)",
+      "v0.12.6: Comprehensive Audit Fixes (constant-time auth, nested route auth, CORS restriction, rate limiter leak fix, dedup tenant util, user ID from header, cache eviction)"
     ],
         "in_progress": [],
         "todo": [
@@ -127,6 +128,23 @@
     ]
   },
   "recent_changes": [
+    {
+      "date": "2026-02-20",
+      "author": "Devin",
+      "description": "v0.12.6: Comprehensive Audit Fixes",
+      "changes": [
+        "Security: auth.rs constant-time token comparison via subtle::ConstantTimeEq (prevents timing attacks)",
+        "Security: nested routes (graph/multimodal/memory_manage/security) moved under auth middleware",
+        "Security: Admin CORS restricted from Any to localhost:3000 default + ADMIN_CORS_ORIGINS env var",
+        "Security: RateLimiter memory leak fix (evicts stale IPs when >1000 entries)",
+        "Architecture: extract_validated_tenant_id deduplicated to routes/mod.rs shared module",
+        "Logic: handlers.rs reads X-User-ID header instead of hardcoded default_user",
+        "Logic: handlers.rs eliminates double compliance check (caches first result)",
+        "Design: removed duplicate AppError::TooManyRequests variant (unified to RateLimited)",
+        "Design: removed emoji from log messages (production-clean logs)",
+        "Design: EmbeddingCache evicts half entries instead of clearing all"
+      ]
+    },
     {
       "date": "2026-02-20",
       "author": "Devin",

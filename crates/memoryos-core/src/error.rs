@@ -36,10 +36,6 @@ pub enum AppError {
     #[error("Too many requests: {0}")]
     RateLimited(String),
 
-    /// Too many requests (alias for compatibility)
-    #[error("Too many requests: {0}")]
-    TooManyRequests(String),
-
     /// External service failures (Redis, Qdrant, LLM)
     #[error("External service error: {0}")]
     ExternalService(String),
@@ -58,7 +54,7 @@ impl AppError {
             Self::Unauthorized(_) => 401,
             Self::Forbidden(_) => 403,
             Self::NotFound(_) => 404,
-            Self::RateLimited(_) | Self::TooManyRequests(_) => 429,
+            Self::RateLimited(_) => 429,
             Self::ExternalService(_) => 503,
             Self::Internal(_) => 500,
         }
@@ -72,7 +68,7 @@ impl AppError {
             Self::Unauthorized(_) => "unauthorized",
             Self::Forbidden(_) => "forbidden",
             Self::NotFound(_) => "not_found",
-            Self::RateLimited(_) | Self::TooManyRequests(_) => "rate_limited",
+            Self::RateLimited(_) => "rate_limited",
             Self::ExternalService(_) => "service_unavailable",
             Self::Internal(_) => "internal_error",
         }
