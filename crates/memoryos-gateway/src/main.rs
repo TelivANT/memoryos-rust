@@ -3,7 +3,7 @@ use axum::{
     Router,
 };
 use memoryos_core::{AppError, ConfigManager};
-use std::{net::SocketAddr, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod auth;
@@ -17,6 +17,7 @@ use handlers::{chat_completions, health_check, health_status};
 use routes::faq::{create_faq_routes, FaqState};
 use routes::graph::{create_graph_routes, GraphState};
 use routes::memory_manage::{create_memory_manage_routes, MemoryManageState};
+use routes::multimodal::{create_multimodal_routes, MultiModalState};
 use routes::security::{create_security_routes, SecurityState};
 use state::AppState;
 use worker_monitor::spawn_worker_monitor;
@@ -131,14 +132,41 @@ async fn main() -> Result<(), AppError> {
     };
     let memory_manage_routes = create_memory_manage_routes(memory_manage_state);
 
+    // Multimodal 路由 (v0.5.0)
+    let multimodal_storage = std::sync::Arc::new(
+        memoryos_adapters::multimodal::QdrantMultiModalStorage::new(&config.storage.vector.url)
+            .await
+            .expect("Failed to init QdrantMultiModalStorage"),
+    );
+    let multimodal_state = MultiModalState {
+        storage: multimodal_storage,
+    };
+    let multimodal_routes = create_multimodal_routes(multimodal_state);
+
     // Security 路由 (v0.8.0)
+    let data_dir = std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join(".memoryos");
+    let _ = std::fs::create_dir_all(&data_dir);
+
+    let audit_path = data_dir.join("audit.jsonl");
+    let gdpr_path = data_dir.join("gdpr.json");
+
+    let audit_logger = std::sync::Arc::new(memoryos_core::AuditLogger::new(
+        memoryos_core::AuditConfig {
+            persist_path: Some(audit_path.to_string_lossy().to_string()),
+            ..memoryos_core::AuditConfig::default()
+        },
+    ));
+
+    let gdpr_path_str = gdpr_path.to_string_lossy().to_string();
+    let gdpr_manager = std::sync::Arc::new(tokio::sync::RwLock::new(
+        memoryos_core::GdprManager::with_persistence(&gdpr_path_str),
+    ));
     let security_state = SecurityState {
-        audit_logger: std::sync::Arc::new(memoryos_core::AuditLogger::new(
-            memoryos_core::AuditConfig::default(),
-        )),
-        gdpr_manager: std::sync::Arc::new(tokio::sync::RwLock::new(
-            memoryos_core::GdprManager::new(),
-        )),
+        audit_logger,
+        gdpr_manager,
     };
     let security_routes = create_security_routes(security_state);
 
@@ -169,6 +197,7 @@ async fn main() -> Result<(), AppError> {
         .nest("/v1/admin/faq", faq_routes)
         .nest("/v1/graph", graph_routes)
         .nest("/v1/memory/manage", memory_manage_routes)
+        .nest("/v1/multimodal", multimodal_routes)
         .nest("/v1/security", security_routes);
 
     if config.auth.enabled {

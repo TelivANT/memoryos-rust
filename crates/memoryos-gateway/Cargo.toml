@@ -26,6 +26,9 @@ qdrant-client.workspace = true
 redis.workspace = true
 sha2 = "0.10"
 
+[features]
+integration-tests = []
+
 [dev-dependencies]
 tower.workspace = true
 async-trait.workspace = true

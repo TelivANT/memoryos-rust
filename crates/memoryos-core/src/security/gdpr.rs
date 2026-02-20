@@ -1,5 +1,6 @@
 use crate::AppError;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use tracing::info;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,9 +43,16 @@ pub struct ConsentRecord {
     pub timestamp: chrono::DateTime<chrono::Utc>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct GdprSnapshot {
+    consents: std::collections::HashMap<String, Vec<ConsentRecord>>,
+    deletion_requests: Vec<DeletionRequest>,
+}
+
 pub struct GdprManager {
     consents: std::collections::HashMap<String, Vec<ConsentRecord>>,
     deletion_requests: Vec<DeletionRequest>,
+    persist_path: Option<PathBuf>,
 }
 
 impl GdprManager {
@@ -52,6 +60,42 @@ impl GdprManager {
         Self {
             consents: std::collections::HashMap::new(),
             deletion_requests: Vec::new(),
+            persist_path: None,
+        }
+    }
+
+    pub fn with_persistence(path: &str) -> Self {
+        let persist_path = PathBuf::from(path);
+        if let Some(parent) = persist_path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+
+        let (consents, deletion_requests) = if persist_path.exists() {
+            std::fs::read_to_string(&persist_path)
+                .ok()
+                .and_then(|data| serde_json::from_str::<GdprSnapshot>(&data).ok())
+                .map(|s| (s.consents, s.deletion_requests))
+                .unwrap_or_default()
+        } else {
+            Default::default()
+        };
+
+        Self {
+            consents,
+            deletion_requests,
+            persist_path: Some(persist_path),
+        }
+    }
+
+    fn save(&self) {
+        if let Some(ref path) = self.persist_path {
+            let snapshot = GdprSnapshot {
+                consents: self.consents.clone(),
+                deletion_requests: self.deletion_requests.clone(),
+            };
+            if let Ok(json) = serde_json::to_string_pretty(&snapshot) {
+                let _ = std::fs::write(path, json);
+            }
         }
     }
 
@@ -66,6 +110,7 @@ impl GdprManager {
             .entry(user_id.to_string())
             .or_default()
             .push(record);
+        self.save();
     }
 
     pub fn has_consent(&self, user_id: &str, purpose: &str) -> bool {
@@ -143,6 +188,7 @@ impl GdprManager {
         };
 
         self.deletion_requests.push(request.clone());
+        self.save();
         Ok(request)
     }
 
@@ -174,6 +220,7 @@ impl GdprManager {
         }
 
         self.consents.remove(user_id);
+        self.save();
 
         Ok(())
     }
@@ -233,5 +280,26 @@ mod tests {
         let reqs = mgr.get_deletion_requests("user1");
         assert_eq!(reqs[0].status, DeletionStatus::Completed);
         assert!(!mgr.has_consent("user1", "data_processing"));
+    }
+
+    #[test]
+    fn test_gdpr_file_persistence() {
+        let dir = std::env::temp_dir().join("memoryos_gdpr_test");
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("gdpr.json");
+        let _ = std::fs::remove_file(&path);
+
+        let mut mgr = GdprManager::with_persistence(&path.to_string_lossy());
+        mgr.record_consent("user1", "data_processing", true);
+        mgr.record_consent("user1", "marketing", false);
+        mgr.request_deletion("user2").unwrap();
+        drop(mgr);
+
+        let mgr2 = GdprManager::with_persistence(&path.to_string_lossy());
+        assert!(mgr2.has_consent("user1", "data_processing"));
+        assert!(!mgr2.has_consent("user1", "marketing"));
+        assert_eq!(mgr2.get_deletion_requests("user2").len(), 1);
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

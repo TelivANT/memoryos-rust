@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
+use std::io::Write;
+use std::path::PathBuf;
 use std::sync::Mutex;
 use tracing::info;
 
@@ -41,6 +43,8 @@ pub enum AuditOutcome {
 pub struct AuditConfig {
     pub enabled: bool,
     pub max_buffer_size: usize,
+    #[serde(default)]
+    pub persist_path: Option<String>,
 }
 
 impl Default for AuditConfig {
@@ -48,6 +52,7 @@ impl Default for AuditConfig {
         Self {
             enabled: true,
             max_buffer_size: 10000,
+            persist_path: None,
         }
     }
 }
@@ -55,13 +60,41 @@ impl Default for AuditConfig {
 pub struct AuditLogger {
     config: AuditConfig,
     buffer: Mutex<VecDeque<AuditEvent>>,
+    file_writer: Mutex<Option<std::fs::File>>,
 }
 
 impl AuditLogger {
     pub fn new(config: AuditConfig) -> Self {
+        let file_writer = config.persist_path.as_ref().and_then(|path| {
+            let path = PathBuf::from(path);
+            if let Some(parent) = path.parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&path)
+                .ok()
+        });
+
+        let mut buffer = VecDeque::new();
+        if let Some(ref path) = config.persist_path {
+            if let Ok(data) = std::fs::read_to_string(path) {
+                for line in data.lines() {
+                    if let Ok(event) = serde_json::from_str::<AuditEvent>(line) {
+                        buffer.push_back(event);
+                    }
+                }
+                while buffer.len() > config.max_buffer_size {
+                    buffer.pop_front();
+                }
+            }
+        }
+
         Self {
             config,
-            buffer: Mutex::new(VecDeque::new()),
+            buffer: Mutex::new(buffer),
+            file_writer: Mutex::new(file_writer),
         }
     }
 
@@ -81,6 +114,15 @@ impl AuditLogger {
             event.resource,
             event.outcome
         );
+
+        if let Ok(mut writer) = self.file_writer.lock() {
+            if let Some(ref mut file) = *writer {
+                if let Ok(json) = serde_json::to_string(&event) {
+                    let _ = writeln!(file, "{}", json);
+                    let _ = file.flush();
+                }
+            }
+        }
 
         if let Ok(mut buffer) = self.buffer.lock() {
             if buffer.len() >= self.config.max_buffer_size {
@@ -223,6 +265,7 @@ mod tests {
         let config = AuditConfig {
             enabled: true,
             max_buffer_size: 3,
+            persist_path: None,
         };
         let logger = AuditLogger::new(config);
         for i in 0..5 {
@@ -236,9 +279,41 @@ mod tests {
         let config = AuditConfig {
             enabled: false,
             max_buffer_size: 100,
+            persist_path: None,
         };
         let logger = AuditLogger::new(config);
         logger.log_auth(Some("user1"), true, None);
         assert_eq!(logger.event_count(), 0);
+    }
+
+    #[test]
+    fn test_audit_file_persistence() {
+        let dir = std::env::temp_dir().join("memoryos_audit_test");
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("audit.jsonl");
+        let _ = std::fs::remove_file(&path);
+
+        let config = AuditConfig {
+            enabled: true,
+            max_buffer_size: 10000,
+            persist_path: Some(path.to_string_lossy().to_string()),
+        };
+        let logger = AuditLogger::new(config);
+        logger.log_data_access("user1", "memory", "read");
+        logger.log_auth(Some("user2"), true, None);
+        drop(logger);
+
+        let config2 = AuditConfig {
+            enabled: true,
+            max_buffer_size: 10000,
+            persist_path: Some(path.to_string_lossy().to_string()),
+        };
+        let logger2 = AuditLogger::new(config2);
+        assert_eq!(logger2.event_count(), 2);
+        let events = logger2.get_recent(10);
+        assert_eq!(events[0].resource, "api");
+        assert_eq!(events[1].resource, "memory");
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

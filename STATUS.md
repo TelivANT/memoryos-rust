@@ -2,11 +2,11 @@
 
 | Metric | Value |
 | :--- | :--- |
-| **Version** | v0.8.0 |
+| **Version** | v0.9.0 |
 | **Build Status** | Passing |
-| **Overall Completion** | ~95% |
+| **Overall Completion** | ~98% |
 | **Documentation** | Aligned with code |
-| **Security Audit** | Passed (Internal) |
+| **Security Audit** | Passed (v0.9.0 - AES-256-GCM, audit persistence, GDPR persistence) |
 
 ## Component Health
 
@@ -54,7 +54,19 @@
 - GDPR full compliance (GdprManager: consent + export + deletion)
 - Security API endpoints (/v1/security/audit + /v1/security/gdpr)
 
+### v0.9.0 - Technical Debt & v1.0 Preparation
+- Encryption upgraded: XOR -> AES-256-GCM (aes-gcm crate, random nonces, AEAD authentication)
+- Audit log persistence: JSONL file-based, loads on startup, in-memory buffer of last 10000 events
+- GDPR record persistence: JSON file-based, auto-save on consent/deletion changes
+- Multimodal routes wired into main.rs router (/v1/multimodal)
+- Vector storage benchmark graceful skip when Qdrant unavailable
+- ROADMAP comparison table updated to reflect v0.9.0 feature parity
+- Performance benchmark report published (docs/PERFORMANCE_REPORT.md)
+- Security audit report updated to v0.9.0
+- Unused import warnings cleaned up
+
 ## Recent Activity
+- **2026-02-20**: Released v0.9.0. Technical debt cleanup, AES-256-GCM encryption, persistence for audit/GDPR.
 - **2026-02-20**: Released v0.4.0-v0.8.0. All P0+P1 features implemented.
 - **2026-02-20**: Released v0.3.0. FAQ router integration + wiki export backends + FAQ management API.
 - **2026-02-20**: Docs aligned with code, ROADMAP updated.

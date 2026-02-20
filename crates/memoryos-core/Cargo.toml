@@ -19,6 +19,9 @@ uuid.workspace = true
 num_cpus = "1.16"
 regex = "1.10"
 once_cell = "1.19"
-# TODO: Upgrade to redis 0.26+ when they fix future-incompat issues
+aes-gcm = "0.10"
+rand = "0.8"
+# Note: redis 0.24 has future-incompat warnings. Upgrading to 0.32+ requires
+# rewriting defense.rs (query_async API changed significantly).
 redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
 qdrant-client = "1.7"

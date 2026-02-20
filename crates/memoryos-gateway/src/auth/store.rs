@@ -135,8 +135,6 @@ impl ApiKeyStore {
     }
 
     pub async fn delete_key(&self, api_key: &str) -> Result<(), AppError> {
-        use qdrant_client::qdrant::{DeletePointsBuilder, PointsSelector};
-
         let key_hash = Self::hash_api_key(api_key);
 
         // Query to find point_id
@@ -169,8 +167,6 @@ impl ApiKeyStore {
     }
 
     pub async fn get_metadata(&self, api_key: &str) -> Result<Option<ApiKeyMetadata>, AppError> {
-        use qdrant_client::qdrant::{ScrollPointsBuilder, SearchPointsBuilder};
-
         let key_hash = Self::hash_api_key(api_key);
 
         // Search by key_hash filter

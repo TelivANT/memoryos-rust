@@ -1,29 +1,28 @@
 {
   "project_name": "MemoryOS-Rust",
-  "version": "0.3.0",
+  "version": "0.9.0",
   "edition": "Personal/Enterprise Single-Tenant Edition",
-  "last_updated": "2026-02-19",
+  "last_updated": "2026-02-20",
   "status": {
-    "phase": "Phase 16: Production Ready (Personal Edition)",
-    "progress_percentage": 100,
-    "current_task": "个人版/企业单租户版完成 - 生产就绪",
+    "phase": "v0.9.0 Technical Debt & v1.0 Preparation",
+    "progress_percentage": 98,
+    "current_task": "v0.9.0 技术债修复完成，准备 v1.0.0 发布",
     "is_blocked": false
   },
   "branches": {
     "main": {
       "description": "Personal/Enterprise Single-Tenant Edition",
-      "phases": "Phase 1-16",
+      "current_version": "v0.9.0",
       "target_users": "Individual developers, single enterprise deployments"
     },
     "feature/saas-multi-tenant": {
       "description": "SaaS Multi-Tenant Edition",
-      "phases": "Phase 1-18",
       "additional_features": ["SaaS Billing Integration", "Multi-Tenant Architecture"],
       "target_users": "SaaS platforms, multi-tenant scenarios"
     }
   },
   "context": {
-    "description": "Rust implementation of MemoryOS with unified vector storage architecture. All memory tiers (short-term, mid-term, long-term) now use vector databases (Qdrant/Chroma/Pinecone) for persistent storage. Redis/NATS repositioned as coordination layer. Complete FAQ system, 6 performance optimization modules, IP defense system. Production ready with comprehensive documentation. This is the Personal/Enterprise Single-Tenant Edition.",
+    "description": "Rust implementation of MemoryOS with 3-tier memory (STM/MTM/LTM), hexagonal architecture, 10 LLM adapters, 3 vector databases (Qdrant/Chroma/Pinecone), knowledge graph (entity/relation extraction), multimodal storage, memory versioning, AES-256-GCM encryption, persistent audit logging, GDPR compliance, and comprehensive security shield.",
     "target_platform": "Local Deployable (Linux/macOS/Windows) + K3s Cluster",
     "primary_language": "Rust (Edition 2021)",
     "storage_options": {
@@ -36,488 +35,170 @@
         "redis": "Session, Lock, Cache, IP Defense",
         "nats": "Message Queue, Pub/Sub, Service Discovery"
       },
-      "wiki": ["S3", "Local FS"]
+      "wiki": ["S3", "Confluence", "Local FS"]
     },
     "format_constraints": {
-      "file_naming": "snake_case (strictly functional naming, no version numbers like _v1, _new)",
+      "file_naming": "snake_case (strictly functional naming)",
       "code_style": "rustfmt (standard)",
       "architecture": "Hexagonal Architecture (Core -> Ports -> Adapters). Monolithic Binary with Feature Flags."
     }
   },
+  "versions_completed": {
+    "v0.2.0-alpha": {
+      "date": "2026-02-18",
+      "features": ["3-Tier Memory", "10 LLM Adapters", "Security Shield (17 injection patterns, PII)", "6 Optimization Modules", "Graceful Degradation"]
+    },
+    "v0.3.0": {
+      "date": "2026-02-20",
+      "features": ["Router Tier 0 FAQ Direct Hit", "Wiki S3 Export (OpenDAL)", "Wiki Confluence Export", "FAQ Management API", "Wiki Exporter Dedup"]
+    },
+    "v0.4.0": {
+      "date": "2026-02-20",
+      "features": ["Knowledge Graph: Entity Extraction", "Relationship Extraction (10 patterns)", "Graph Query API (/v1/graph)", "DFS Path Query"]
+    },
+    "v0.5.0": {
+      "date": "2026-02-20",
+      "features": ["QdrantMultiModalStorage", "Multimodal HTTP Endpoints (/v1/multimodal)", "Python SDK Async Support (async_client.py)"]
+    },
+    "v0.6.0": {
+      "date": "2026-02-20",
+      "features": ["Memory Version Control", "Memory Tags & Categorization", "Search by Tags", "Export/Import (JSON + Markdown)"]
+    },
+    "v0.7.0": {
+      "date": "2026-02-20",
+      "features": ["Optimization Benchmarks (BloomFilter, EmbeddingCache, SimilarityFilter)", "Graph Benchmarks", "Security Benchmarks"]
+    },
+    "v0.8.0": {
+      "date": "2026-02-20",
+      "features": ["DataEncryptor (XOR MVP)", "AuditLogger", "GdprManager (consent + export + deletion)", "Security API (/v1/security)"]
+    },
+    "v0.9.0": {
+      "date": "2026-02-20",
+      "features": [
+        "Encryption upgraded: XOR -> AES-256-GCM",
+        "Audit log persistence: JSONL file-based",
+        "GDPR record persistence: JSON file-based",
+        "Multimodal routes wired into main.rs",
+        "Vector storage benchmark graceful skip",
+        "ROADMAP comparison table updated",
+        "Performance benchmark report (docs/PERFORMANCE_REPORT.md)",
+        "Security audit report updated",
+        "Unused import cleanup"
+      ]
+    }
+  },
   "task_queue": {
     "done": [
-      "Phase 1: Foundation (Config, Log, Error)",
-      "Phase 2: Universal Gateway (Axum, Upstream Adapters)",
-      "Phase 3: Storage Hardening (Redis Fencing, Qdrant RBAC)",
-      "Phase 4: Intelligence (Router V2, Security Shield, Context Injection)",
-      "Phase 5: Async Evolution (Worker, Event Bus, DLQ)",
-      "Phase 6: Knowledge Management (Wiki Export, S3 Adapter)",
-      "Phase 7: Graph Memory (Mermaid Parser, Qdrant-Native Graph)",
-      "Phase 8: FAQ System (Heat Tracking, Auto-Promotion, Wiki Export)",
-      "Phase 9: Performance Optimization (Bloom Filter, Cache, Batch, Buffer, Filter, Summarizer)",
-      "Phase 10: System Refinement (Compile Fixes, Defense Integration, Documentation)",
-      "Phase 11: Architecture Refactoring (Short-term Memory to Vector DB)",
-      "Phase 12: Integration Testing (Vector DB CRUD, Concurrent Operations)",
-      "Phase 13: Performance Benchmarking (Criterion, Simple Perf Tool)",
-      "Phase 14: Production Deployment Guide (Docker Compose, Migration, Monitoring)",
-      "Phase 15: Monitoring & Observability (Prometheus, Grafana, Alerting)",
-      "Phase 16: Multi-Modal Support (Image/Audio/Video structure)",
-      "Security: Prompt Injection Defense, PII Sanitization, API Key Auth, IP Defense System",
-      "Ops: Docker Compose, K8s Deployment Plan, K3s Auto-Deploy",
-      "Docs: User Manual, K3s Deployment, FAQ System, Optimization, Defense System, Vector Databases, Architecture Improvement, Integration Testing, Performance Benchmarking, Production Deployment, Monitoring, Multi-Modal"
+      "v0.2.0-alpha: MVP (3-Tier Memory, 10 LLM Adapters, Security Shield)",
+      "v0.3.0: FAQ Router Tier 0, Wiki S3/Confluence Export, FAQ Management API",
+      "v0.4.0: Knowledge Graph Upgrade (entity/relation extraction, graph query)",
+      "v0.5.0: Multimodal Storage + Python SDK Async",
+      "v0.6.0: Memory Enhancement (versioning, tags, export/import)",
+      "v0.7.0: Performance Benchmarks (3 Criterion suites)",
+      "v0.8.0: Security Enhancements (encryption, audit, GDPR)",
+      "v0.9.0: Technical Debt (AES-256-GCM, persistence, benchmark fixes, docs)"
     ],
     "in_progress": [],
     "todo": [
-      "FAQ Enhancement: S3/Confluence Export Implementation",
-      "Multi-Modal: CLIP/Whisper Integration (Experimental)"
+      "v1.0.0: Production release (user cases, production validation)",
+      "CLIP/Whisper integration for multimodal (experimental)"
     ],
     "saas_branch_only": [
-      "Phase 17: SaaS Billing Integration (feature/saas-multi-tenant branch)",
-      "Phase 18: Multi-Tenant Architecture (feature/saas-multi-tenant branch)"
+      "SaaS Billing Integration (feature/saas-multi-tenant branch)",
+      "Multi-Tenant Architecture (feature/saas-multi-tenant branch)"
     ]
   },
   "recent_changes": [
     {
-      "date": "2026-02-19",
-      "author": "Delevan + Kiro AI",
+      "date": "2026-02-20",
+      "author": "Devin",
+      "description": "v0.9.0 Technical Debt & v1.0 Preparation",
       "changes": [
-        "🔴 安全问题全面修复 (12/15 完成) ✅",
-        "✅ P0 Critical: 4/4 修复 (100%)",
-        "  • P0-1: Admin API 认证保护 (CVSS 9.8 → 0.0)",
-        "  • P0-2: API Key SHA-256 存储 (CVSS 8.1 → 0.0)",
-        "  • P0-3: STM 清理逻辑 (CVSS 7.5 → 0.0)",
-        "  • P0-4: 数据一致性 (CVSS 6.5 → 0.0)",
-        "✅ P1 High: 5/6 修复 (83%)",
-        "  • P1-5: Gateway Coordinator 幂等性",
-        "  • P1-6: 异步 Pipeline 实现",
-        "  • P1-7: Config 读取 embedding 配置",
-        "  • P1-8: server.host 配置生效",
-        "  • P1-9: 已在 P0-2 中修复",
-        "  • P1-10: Worker 处理 pending entries",
-        "✅ P2 Medium: 3/5 修复 (60%)",
-        "  • P2-11: HTTP 连接复用 (性能提升 20-30%)",
-        "  • P2-12: LRU Cache 淘汰策略修复",
-        "  • P2-13: 代码格式化 (9 files)",
-        "  • P2-14: 依赖版本统一 (待处理)",
-        "  • P2-15: Core 层架构清理 (待处理)",
-        "编译修复",
-        "  • 添加 sha2 依赖",
-        "  • 导出 admin_only 中间件",
-        "  • 添加 async_memory_pipeline 字段",
-        "  • 修复 qdrant API 兼容性",
-        "  • 修复重复字段错误",
-        "  • 所有 crates 编译通过 ✅",
-        "安全提升",
-        "  • 风险等级: 🔴 HIGH → 🟡 MEDIUM",
-        "  • 总体完成: 12/15 (80%)",
-        "  • 所有关键问题已修复",
-        "Git 提交",
-        "  • 977c242: P1 修复 (5 issues)",
-        "  • 4e06c84: P2 修复 (3 issues)",
-        "  • b222236: 编译修复",
-        "13 files changed, 300+ insertions(+), 100+ deletions(-)"
-      ],
-      "commits": [
-        "977c242 - fix: resolve all P1 high priority issues (5/6)",
-        "4e06c84 - fix: resolve P2 medium priority issues (3/5)",
-        "b222236 - fix: resolve compilation errors from P0/P1/P2 fixes"
+        "Encryption: XOR -> AES-256-GCM (aes-gcm crate, random nonces, AEAD)",
+        "Audit log: JSONL file persistence, load on startup, 10000 event buffer",
+        "GDPR: JSON file persistence, auto-save on consent/deletion",
+        "Multimodal routes: wired into main.rs (/v1/multimodal)",
+        "Vector benchmark: graceful skip when Qdrant unavailable",
+        "ROADMAP comparison table: updated to v0.9.0 feature parity",
+        "Performance report: docs/PERFORMANCE_REPORT.md (Criterion data)",
+        "Security audit: SECURITY_AUDIT.md updated to v0.9.0",
+        "Gateway: audit/GDPR persistence at ~/.memoryos/",
+        "Cleanup: unused imports, dead_code warnings"
       ]
     },
     {
-      "date": "2026-02-19",
-      "author": "Delevan",
+      "date": "2026-02-20",
+      "author": "Devin",
+      "description": "v0.4.0-v0.8.0 P0+P1 Full Implementation",
       "changes": [
-        "✅ 生产部署指南完成",
-        "完整部署文档",
-        "  • docs/PRODUCTION_DEPLOYMENT.md",
-        "  • 架构概览",
-        "  • 配置指南（Qdrant/Chroma/Pinecone）",
-        "  • 迁移步骤（v0.2.x → v0.3.0）",
-        "  • 监控设置（Prometheus, 日志）",
-        "  • 安全最佳实践",
-        "  • 故障排查",
-        "  • 性能优化",
-        "Docker Compose 配置",
-        "  • docker-compose.yml",
-        "  • Qdrant, Redis, NATS",
-        "  • Gateway, Worker",
-        "  • 网络隔离",
-        "  • 健康检查",
-        "环境变量示例",
-        "  • .env.example",
-        "  • 所有配置选项",
-        "快速部署脚本",
-        "  • scripts/deploy.sh",
-        "  • 自动检查依赖",
-        "  • 启动所有服务",
-        "  • 验证服务状态",
-        "快速入门",
-        "  • PRODUCTION_DEPLOYMENT_README.md",
-        "5 files changed, 978 insertions(+)",
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-        "🎉 所有核心任务完成！",
-        "✅ Phase 12: Integration Testing",
-        "✅ Phase 13: Performance Benchmarking",
-        "✅ Phase 14: Production Deployment Guide",
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-        "版本: v0.3.0",
-        "状态: Production Ready 🚀"
-      ],
-      "commits": [
-        "faf958e - feat: 添加生产部署指南"
+        "v0.4.0: Knowledge graph (entity/relation extraction, graph query API)",
+        "v0.5.0: Multimodal (QdrantMultiModalStorage, HTTP endpoints, async SDK)",
+        "v0.6.0: Memory (version control, tags, search, export/import)",
+        "v0.7.0: Benchmarks (optimization, graph, security)",
+        "v0.8.0: Security (encryption, audit, GDPR, security API)"
       ]
     },
     {
-      "date": "2026-02-19",
-      "author": "Kiro AI",
+      "date": "2026-02-20",
+      "author": "Devin",
+      "description": "v0.3.0 Feature Implementation",
       "changes": [
-        "✅ 性能基准测试基础设施完成",
-        "创建 memoryos-benchmarks 包",
-        "  • 独立的 benchmark 包",
-        "  • Criterion 基准测试支持",
-        "  • 简单性能测试工具",
-        "Criterion 基准测试",
-        "  • vector_storage_benchmark.rs",
-        "  • 统计分析（平均值、标准差、置信区间）",
-        "  • HTML 报告生成",
-        "  • 历史对比",
-        "简单性能测试工具",
-        "  • perf_test.rs",
-        "  • 快速性能测量",
-        "  • 友好的输出格式",
-        "自动化脚本",
-        "  • run_benchmarks.sh",
-        "  • 自动检查 Qdrant",
-        "  • 运行 benchmark",
-        "详细文档",
-        "  • PERFORMANCE_BENCHMARKING.md",
-        "  • 完整测试指南",
-        "  • 性能基准参考",
-        "  • 优化建议",
-        "测试覆盖",
-        "  • add_short_term_message ✅",
-        "  • get_short_term_messages ✅",
-        "  • clear_short_term ✅",
-        "  • 并发写入 ✅",
-        "预期性能",
-        "  • add: 10-20ms",
-        "  • get: 8-15ms",
-        "  • clear: 50-100ms",
-        "  • 吞吐量: 50-100 ops/sec",
-        "9 files changed, 974 insertions(+)"
-      ],
-      "commits": [
-        "c6ae685 - feat: 添加性能基准测试"
-      ]
-    },
-    {
-      "date": "2026-02-19",
-      "author": "Kiro AI",
-      "changes": [
-        "✅ 集成测试基础设施完成",
-        "创建向量存储集成测试",
-        "  • vector_storage_integration.rs",
-        "  • 测试所有向量数据库短期记忆 CRUD",
-        "  • Qdrant, Chroma, Pinecone 支持",
-        "  • 并发操作测试",
-        "自动化测试脚本",
-        "  • run_integration_tests.sh",
-        "  • 自动检测可用向量数据库",
-        "  • 运行相应测试",
-        "详细文档",
-        "  • INTEGRATION_TESTING.md",
-        "  • 完整测试指南",
-        "  • 故障排查说明",
-        "  • 性能基准参考",
-        "测试覆盖",
-        "  • add_short_term_message ✅",
-        "  • get_short_term_messages ✅",
-        "  • 限制数量测试 ✅",
-        "  • 用户隔离测试 ✅",
-        "  • clear_short_term ✅",
-        "  • 并发操作测试 ✅",
-        "4 files changed, 546 insertions(+)"
-      ],
-      "commits": [
-        "4dbe6af - feat: 添加向量存储集成测试"
-      ]
-    },
-    {
-      "date": "2026-02-19",
-      "author": "Kiro AI",
-      "changes": [
-        "✅ MemoryManager 架构重构完成",
-        "移除 ShortTermStorage trait 依赖",
-        "  • DefaultMemoryManager 不再依赖 Redis/NATS",
-        "  • 统一使用 VectorStorage 接口",
-        "  • 简化构造函数 (移除 short_term 参数)",
-        "更新所有调用点",
-        "  • Gateway: 移除 RedisStorage 依赖",
-        "  • Worker: 使用 VectorStorage",
-        "  • 所有构造调用已更新",
-        "测试全面更新",
-        "  • 删除 TestShortTermStorage (27 行)",
-        "  • TestVectorStorage 支持 short_term 操作",
-        "  • 添加 delay_ms 模拟延迟",
-        "  • 5 个并发控制测试全部通过",
-        "代码简化",
-        "  • 3 files changed",
-        "  • 40 insertions(+), 104 deletions(-)",
-        "  • 净减少 64 lines",
-        "架构优势",
-        "  • 统一存储: 所有内存层使用向量数据库",
-        "  • 语义搜索: 短期记忆支持向量检索",
-        "  • 简化依赖: 移除 Redis ShortTermStorage",
-        "  • 性能提升: 减少存储层跳转",
-        "  • 扩展性强: 易于添加新向量数据库",
-        "测试结果: 48/48 passing ✅"
-      ],
-      "commits": [
-        "1fd7dd7 - refactor: 移除 ShortTermStorage 依赖，统一使用 VectorStorage",
-        "a23f24d - test: 修复测试并格式化代码"
-      ]
-    },
-    {
-      "date": "2026-02-19",
-      "author": "Kiro AI",
-      "changes": [
-        "✅ 完成所有向量数据库 clear_short_term 实现",
-        "Chroma clear_short_term 实现",
-        "  • POST /api/v1/collections/{name}/delete",
-        "  • 按 user_id metadata 过滤删除",
-        "Pinecone clear_short_term 实现",
-        "  • POST /vectors/delete",
-        "  • deleteAll + namespace 删除",
-        "Qdrant clear_short_term 实现",
-        "  • DeletePointsBuilder + Filter",
-        "  • 按 user_id 过滤删除",
-        "所有向量数据库 CRUD 操作完整",
-        "  • add_short_term_message ✅",
-        "  • get_short_term_messages ✅",
-        "  • clear_short_term ✅",
-        "架构文档全面更新",
-        "  • ARCHITECTURE.md",
-        "  • ARCHITECTURE_IMPROVEMENT.md",
-        "  • WORK_LOG.md",
-        "  • state.json",
-        "  • README.md"
-      ],
-      "commits": [
-        "50d7804 - feat: 实现 clear_short_term 方法",
-        "5fe8a2b - feat: 完成 Qdrant clear_short_term 实现",
-        "c2fb16a - docs: 全面更新架构文档"
-      ]
-    },
-    {
-      "date": "2026-02-19",
-      "author": "Kiro AI",
-      "changes": [
-        "✅ 架构重构完成 - 短期记忆迁移到向量数据库",
-        "扩展 VectorStorage trait 支持短期记忆",
-        "  • add_short_term_message()",
-        "  • get_short_term_messages()",
-        "  • clear_short_term()",
-        "Message 结构体添加 embedding 字段",
-        "Qdrant 实现短期记忆存储",
-        "  • 新 collection: short_term_messages",
-        "  • 按 user_id 过滤，timestamp 排序",
-        "Chroma 实现短期记忆存储",
-        "  • REST API 集成",
-        "  • Metadata 查询支持",
-        "Pinecone 实现短期记忆存储",
-        "  • Cloud API 集成",
-        "  • Namespace 隔离",
-        "修复 Gateway 和 Worker 编译错误",
-        "统一所有记忆层到向量数据库",
-        "Redis/NATS 重定位为分布式协调层",
-        "版本: 0.2.3 → 0.3.0"
-      ],
-      "commits": [
-        "4391ad1 - feat: 短期记忆迁移到向量数据库"
-      ]
-    },
-    {
-      "date": "2026-02-19",
-      "author": "Kiro AI",
-      "changes": [
-        "🔍 发现短期记忆架构问题",
-        "创建 ARCHITECTURE_IMPROVEMENT.md 文档 (完整改进方案)",
-        "问题: 短期记忆存储在 Redis/NATS 有数据丢失风险",
-        "建议: 短期记忆应该存储在向量数据库（持久化）",
-        "Redis/NATS 应该用于分布式协调，而不是主存储",
-        "提供渐进式迁移方案 (双写模式 → 数据迁移 → 切换)",
-        "标记为高优先级改进项",
-        "采用文档先行策略，避免破坏现有代码"
-      ],
-      "commits": [
-        "待提交 - docs: 添加架构改进建议文档"
-      ]
-    },
-    {
-      "date": "2026-02-19",
-      "author": "Kiro AI",
-      "changes": [
-        "完善 Chroma 向量数据库适配器 (完整实现)",
-        "完善 Pinecone 向量数据库适配器 (完整实现)",
-        "实现 store_segment, search_segments, store_long_term, get_long_term",
-        "Chroma: REST API 集成，支持 collection 管理",
-        "Pinecone: Cloud API 集成，支持 namespace 隔离",
-        "修复类型问题 (UserProfile, KnowledgeItem)",
-        "创建 VECTOR_DATABASES.md 文档 (300+ 行)",
-        "包含使用指南、对比表、选择建议、迁移指南",
-        "三个向量库并存: Qdrant + Chroma + Pinecone",
-        "统一 VectorStorage 接口，轻松切换",
-        "编译通过，无错误"
-      ],
-      "commits": [
-        "待提交 - feat: 完善 Chroma 和 Pinecone 向量数据库适配器"
-      ]
-    },
-    {
-      "date": "2026-02-19",
-      "author": "Kiro AI",
-      "changes": [
-        "添加 NATS 作为 Redis 并存的备选方案",
-        "实现 NatsStorage (170 行代码)",
-        "使用 NATS JetStream KV 存储",
-        "支持 TTL 自动过期和消息限制",
-        "完全兼容 ShortTermStorage trait",
-        "无 future-incompat 警告",
-        "修复 ChromaStorage 和 PineconeStorage 警告",
-        "添加 #[allow(dead_code)] 注解",
-        "创建 NATS_ALTERNATIVE.md 文档 (200+ 行)",
-        "包含使用指南、部署指南、性能对比",
-        "memoryos-adapters 警告: 2 → 0 (-100%)",
-        "健康度提升: 88/100 → 95/100"
-      ],
-      "commits": [
-        "38a835f - feat: 添加 NATS 作为 Redis 备选方案并修复 adapters 警告"
-      ]
-    },
-    {
-      "date": "2026-02-19",
-      "author": "Kiro AI",
-      "changes": [
-        "修复 Gateway 编译错误 (AuthMiddleware)",
-        "修复 Qdrant API 调用 (UpsertPoints/DeletePoints/GetPoints)",
-        "集成 IP 防御中间件到 Gateway",
-        "添加防御管理 API (stats/whitelist/unban)",
-        "更新配置文件 (auth + defense)",
-        "清理代码警告 (51 → 39, -23%)",
-        "添加防御系统完整文档 (DEFENSE_SYSTEM.md, 200+ 行)",
-        "新增 3 个文件，修改 21 个文件",
-        "新增代码 ~500 行"
-      ],
-      "commits": [
-        "8c619ff - fix: 修复编译错误并完善防御系统",
-        "a717082 - docs: 更新工作日志"
-      ]
-    },
-    {
-      "date": "2026-02-19",
-      "author": "Kiro AI",
-      "changes": [
-        "实现 6 大性能优化模块 (600 行代码)",
-        "Bloom Filter - FAQ 快速匹配 (2000x 提升)",
-        "Embedding Cache - LRU 缓存 (跳过 100% LLM)",
-        "Batch Embedder - 批量生成 (90% 减少)",
-        "Heat Buffer - 批量更新 (98.5% 减少)",
-        "Similarity Filter - 分层过滤 (70% 减少)",
-        "Incremental Summarizer - 增量合并 (50% 减少)",
-        "集成示例和完整测试 (9/9 通过)",
-        "创建优化分析文档 (OPTIMIZATION.md)",
-        "创建使用指南 (OPTIMIZATION_USAGE.md)"
-      ],
-      "commits": [
-        "4a14244 - docs: 添加算法优化分析文档",
-        "0956da1 - feat: 实现 6 大性能优化模块",
-        "c3ebc54 - docs: 更新文档索引和 README"
-      ]
-    },
-    {
-      "date": "2026-02-19",
-      "author": "Kiro AI",
-      "changes": [
-        "实现 FAQ 热度追踪 (HeatTracker)",
-        "实现 FAQ 自动提升 (AutoPromoter)",
-        "实现 FAQ Wiki 导出 (WikiExporter)",
-        "扩展 MidTermSegment 支持新字段",
-        "Qdrant 适配器完整集成",
-        "添加 FAQ 管理 API (5 个端点)",
-        "13 个单元测试全部通过"
-      ],
-      "commits": [
-        "210fc5b - feat: 实现 FAQ 热度追踪功能",
-        "a2b3100 - feat: 实现 FAQ 自动提升功能",
-        "b94cda7 - feat: 实现 FAQ Wiki 导出功能"
-      ]
-    },
-    {
-      "date": "2026-02-18",
-      "author": "Kiro AI",
-      "changes": [
-        "添加 Apache 2.0 LICENSE",
-        "修复 .gitignore (Cargo.lock, 配置文件)",
-        "添加 CI/CD (GitHub Actions)",
-        "创建增强版 K3s 部署脚本",
-        "创建完整用户手册",
-        "移除所有 SQLite 引用",
-        "统一使用 Qdrant 存储"
-      ],
-      "commits": [
-        "62627a4 - chore: 项目初始化和安全加固"
+        "Router Tier 0: FAQ direct hit bypasses LLM",
+        "Wiki S3 export via OpenDAL S3ExportBackend",
+        "Wiki Confluence export via REST API",
+        "FAQ management API (5 endpoints)",
+        "Wiki exporter dedup"
       ]
     }
   ],
-  "issues_log": [
-    {
-      "id": "ISSUE-001",
-      "title": "Google Gemini Proxy Compatibility",
-      "status": "SOLVED",
-      "description": "Legacy Python client uses OpenAI SDK which conflicts with raw Gemini Proxy paths.",
-      "resolution": "Implemented GoogleNativeClient in Rust with x-goog-api-key support."
-    },
-    {
-      "id": "ISSUE-002",
-      "title": "SQLite References in Documentation",
-      "status": "SOLVED",
-      "description": "Documentation mentioned SQLite for LTM storage but it was never implemented.",
-      "resolution": "Removed all SQLite references, unified to use Qdrant for all storage tiers."
-    }
-  ],
-  "documentation_map": {
-    "api_standard": "./docs/specs/api_standard.md",
-    "project_definition": "./docs/references/project_definition.md",
-    "feature_matrix": "./docs/specs/feature_matrix.md",
-    "architecture_design": "./docs/specs/architecture_design.md",
-    "deployment_plan": "./docs/specs/deployment_plan.md",
-    "execution_plan": "./docs/plan/execution_master.md",
-    "llm_adapter_spec": "./docs/internal_design/llm/adapter_spec.md",
-    "observability_spec": "./docs/internal_design/ops/observability_spec.md",
-    "concurrency_spec": "./docs/specs/concurrency_control.md",
-    "security_spec": "./docs/specs/security_hardening.md",
-    "wiki_export_spec": "./docs/specs/wiki_export_spec.md",
-    "embedding_migration": "./docs/specs/embedding_migration.md",
-    "multilingual_spec": "./docs/specs/multilingual_support.md",
-    "conflict_resolution": "./docs/specs/memory_conflict_resolution.md",
-    "ethical_ai": "./docs/specs/ethical_ai.md",
-    "pricing_model": "./docs/business/pricing_model.md",
-    "terms_of_service": "./docs/legal/terms_of_service.md",
-    "redis_config": "./docs/ops/redis_configuration.md",
-    "disaster_recovery": "./docs/ops/disaster_recovery.md",
-    "supply_chain": "./docs/ops/supply_chain_security.md",
-    "config_reference": "./docs/ops/config_reference.md",
-    "user_manual": "./docs/USER_MANUAL.md",
-    "k3s_deployment": "./docs/K3S_DEPLOYMENT.md",
-    "faq_system": "./docs/FAQ_SYSTEM.md",
-    "optimization_analysis": "./docs/OPTIMIZATION.md",
-    "optimization_usage": "./docs/OPTIMIZATION_USAGE.md",
-    "defense_system": "./docs/DEFENSE_SYSTEM.md",
-    "nats_alternative": "./docs/NATS_ALTERNATIVE.md",
-    "vector_databases": "./docs/VECTOR_DATABASES.md",
-    "architecture_improvement": "./docs/ARCHITECTURE_IMPROVEMENT.md",
-    "project_review": "./docs/PROJECT_REVIEW.md",
-    "source_code_root": "./crates"
-  },
-  "handover_note": "🎉 MemoryOS-Rust v0.3.0 Personal Edition Production Ready! 完整的统一向量存储架构已实现并经过全面测试。Phase 1-16 全部完成：核心功能、架构重构、集成测试、性能基准测试、生产部署指南、监控与可观测性、多模态支持。48/48 测试通过，0 编译警告，完整文档。一键部署支持（./scripts/deploy.sh）。适合个人用户和企业单租户部署。SaaS 多租户功能（Phase 17-18）在 feature/saas-multi-tenant 分支。"
+  "api_endpoints": {
+    "public": [
+      "GET /health",
+      "GET /health/status"
+    ],
+    "protected": [
+      "POST /v1/chat/completions",
+      "POST /v1/memory/add",
+      "POST /v1/memory/retrieve",
+      "GET /v1/memory/:memory_id/history"
+    ],
+    "admin": [
+      "POST /v1/admin/keys",
+      "DELETE /v1/admin/keys/:key",
+      "GET /v1/admin/faq/candidates",
+      "POST /v1/admin/faq/promote",
+      "DELETE /v1/admin/faq/:id",
+      "GET /v1/admin/faq/history",
+      "GET /v1/admin/faq/stats"
+    ],
+    "graph": [
+      "POST /v1/graph/ingest",
+      "GET /v1/graph/entities",
+      "GET /v1/graph/entities/:label",
+      "GET /v1/graph/relations",
+      "POST /v1/graph/path"
+    ],
+    "multimodal": [
+      "POST /v1/multimodal/store",
+      "POST /v1/multimodal/search",
+      "POST /v1/multimodal/search/embedding",
+      "POST /v1/multimodal/recent"
+    ],
+    "memory_manage": [
+      "POST /v1/memory/manage/tags",
+      "POST /v1/memory/manage/search/tags",
+      "POST /v1/memory/manage/export",
+      "POST /v1/memory/manage/import",
+      "POST /v1/memory/manage/versions"
+    ],
+    "security": [
+      "POST /v1/security/audit/query",
+      "GET /v1/security/audit/recent",
+      "POST /v1/security/gdpr/consent",
+      "GET /v1/security/gdpr/consent/:user_id",
+      "POST /v1/security/gdpr/delete",
+      "GET /v1/security/gdpr/delete/:user_id",
+      "POST /v1/security/gdpr/export"
+    ]
+  }
 }
