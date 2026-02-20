@@ -56,6 +56,7 @@ pub struct IpDefenseSystem {
     redis_client: redis::Client,
     qdrant_client: std::sync::Arc<qdrant_client::Qdrant>,
     collection_name: String,
+    key_prefix: String,
 }
 
 impl IpDefenseSystem {
@@ -63,13 +64,27 @@ impl IpDefenseSystem {
         redis_url: &str,
         qdrant_client: std::sync::Arc<qdrant_client::Qdrant>,
     ) -> Result<Self> {
+        Self::with_tenant(redis_url, qdrant_client, None)
+    }
+
+    pub fn with_tenant(
+        redis_url: &str,
+        qdrant_client: std::sync::Arc<qdrant_client::Qdrant>,
+        tenant_id: Option<&str>,
+    ) -> Result<Self> {
         let redis_client = redis::Client::open(redis_url)
             .map_err(|e| AppError::Config(format!("Redis: {}", e)))?;
+
+        let key_prefix = match tenant_id {
+            Some(tid) => format!("{}:", tid),
+            None => String::new(),
+        };
 
         Ok(Self {
             redis_client,
             qdrant_client,
             collection_name: "ip_blacklist".to_string(),
+            key_prefix,
         })
     }
 
@@ -136,7 +151,7 @@ impl IpDefenseSystem {
             .as_secs();
         let window = attack_type.window_seconds();
         let threshold = attack_type.threshold();
-        let key = format!("rate:{}:{:?}", ip, attack_type);
+        let key = format!("{}rate:{}:{:?}", self.key_prefix, ip, attack_type);
 
         let mut conn = self
             .redis_client
@@ -239,7 +254,7 @@ impl IpDefenseSystem {
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
-        let key = format!("ban:temp:{}", ip);
+        let key = format!("{}ban:temp:{}", self.key_prefix, ip);
         let duration = reason.ban_duration();
 
         redis::cmd("SETEX")
@@ -250,8 +265,7 @@ impl IpDefenseSystem {
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
-        // 增加计数
-        let count_key = format!("ban:count:{}", ip);
+        let count_key = format!("{}ban:count:{}", self.key_prefix, ip);
         redis::cmd("INCR")
             .arg(&count_key)
             .query_async::<()>(&mut conn)
@@ -275,7 +289,7 @@ impl IpDefenseSystem {
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
-        let key = format!("ban:temp:{}", ip);
+        let key = format!("{}ban:temp:{}", self.key_prefix, ip);
         let exists: bool = redis::cmd("EXISTS")
             .arg(&key)
             .query_async::<bool>(&mut conn)
@@ -292,8 +306,9 @@ impl IpDefenseSystem {
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
+        let wl_key = format!("{}whitelist", self.key_prefix);
         let exists: bool = redis::cmd("SISMEMBER")
-            .arg("whitelist")
+            .arg(&wl_key)
             .arg(ip.to_string())
             .query_async::<bool>(&mut conn)
             .await
@@ -309,7 +324,7 @@ impl IpDefenseSystem {
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
-        let key = format!("ban:count:{}", ip);
+        let key = format!("{}ban:count:{}", self.key_prefix, ip);
         let count: Option<u32> = redis::cmd("GET")
             .arg(&key)
             .query_async::<Option<u32>>(&mut conn)
@@ -326,8 +341,9 @@ impl IpDefenseSystem {
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
+        let wl_key = format!("{}whitelist", self.key_prefix);
         redis::cmd("SADD")
-            .arg("whitelist")
+            .arg(&wl_key)
             .arg(ip.to_string())
             .query_async::<()>(&mut conn)
             .await
@@ -345,8 +361,8 @@ impl IpDefenseSystem {
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
         redis::cmd("DEL")
-            .arg(format!("ban:temp:{}", ip))
-            .arg(format!("ban:count:{}", ip))
+            .arg(format!("{}ban:temp:{}", self.key_prefix, ip))
+            .arg(format!("{}ban:count:{}", self.key_prefix, ip))
             .query_async::<()>(&mut conn)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;

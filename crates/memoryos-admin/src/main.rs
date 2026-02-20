@@ -12,6 +12,7 @@ use memoryos_core::{
     tenant::TenantManager,
 };
 use std::sync::Arc;
+use subtle::ConstantTimeEq;
 use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -99,7 +100,8 @@ async fn main() {
                         .and_then(|h| h.to_str().ok())
                         .and_then(|h: &str| h.strip_prefix("Bearer "))
                         .unwrap_or("");
-                    if provided != token {
+                    let token_match = provided.as_bytes().ct_eq(token.as_bytes());
+                    if !bool::from(token_match) {
                         return Err((
                             StatusCode::UNAUTHORIZED,
                             axum::Json(serde_json::json!({

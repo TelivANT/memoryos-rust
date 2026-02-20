@@ -161,15 +161,13 @@ impl RbacManager {
         }
     }
 
-    async fn persist(&self) {
+    async fn persist_snapshot(&self, snapshot: Vec<UserRecord>) {
         if let Some(ref path) = self.persist_path {
-            let users = self.users.read().await;
-            let records: Vec<&UserRecord> = users.values().collect();
-            if let Ok(data) = serde_json::to_string_pretty(&records) {
+            if let Ok(data) = serde_json::to_string_pretty(&snapshot) {
                 if let Some(parent) = path.parent() {
-                    let _ = std::fs::create_dir_all(parent);
+                    let _ = tokio::fs::create_dir_all(parent).await;
                 }
-                if let Err(e) = std::fs::write(path, data) {
+                if let Err(e) = tokio::fs::write(path, data).await {
                     tracing::error!("Failed to persist RBAC data: {}", e);
                 }
             }
@@ -177,20 +175,24 @@ impl RbacManager {
     }
 
     pub async fn add_user(&self, user: UserRecord) {
-        let mut users = self.users.write().await;
-        users.insert(user.user_id.clone(), user);
-        drop(users);
-        self.persist().await;
+        let snapshot = {
+            let mut users = self.users.write().await;
+            users.insert(user.user_id.clone(), user);
+            users.values().cloned().collect()
+        };
+        self.persist_snapshot(snapshot).await;
     }
 
     pub async fn remove_user(&self, user_id: &str) -> bool {
-        let mut users = self.users.write().await;
-        let removed = users.remove(user_id).is_some();
-        drop(users);
-        if removed {
-            self.persist().await;
-        }
-        removed
+        let snapshot = {
+            let mut users = self.users.write().await;
+            if users.remove(user_id).is_none() {
+                return false;
+            }
+            users.values().cloned().collect()
+        };
+        self.persist_snapshot(snapshot).await;
+        true
     }
 
     pub async fn get_user(&self, user_id: &str) -> Option<UserRecord> {
@@ -204,16 +206,18 @@ impl RbacManager {
     }
 
     pub async fn assign_role(&self, user_id: &str, role: Role) -> bool {
-        let mut users = self.users.write().await;
-        if let Some(user) = users.get_mut(user_id) {
-            user.role = role;
-            user.updated_at = chrono::Utc::now().to_rfc3339();
-            drop(users);
-            self.persist().await;
-            true
-        } else {
-            false
-        }
+        let snapshot = {
+            let mut users = self.users.write().await;
+            if let Some(user) = users.get_mut(user_id) {
+                user.role = role;
+                user.updated_at = chrono::Utc::now().to_rfc3339();
+                users.values().cloned().collect::<Vec<_>>()
+            } else {
+                return false;
+            }
+        };
+        self.persist_snapshot(snapshot).await;
+        true
     }
 
     pub async fn check_permission(&self, user_id: &str, permission: Permission) -> bool {
@@ -249,24 +253,26 @@ impl RbacManager {
         email: Option<String>,
         is_active: Option<bool>,
     ) -> bool {
-        let mut users = self.users.write().await;
-        if let Some(user) = users.get_mut(user_id) {
-            if let Some(name) = display_name {
-                user.display_name = name;
+        let snapshot = {
+            let mut users = self.users.write().await;
+            if let Some(user) = users.get_mut(user_id) {
+                if let Some(name) = display_name {
+                    user.display_name = name;
+                }
+                if let Some(email) = email {
+                    user.email = email;
+                }
+                if let Some(active) = is_active {
+                    user.is_active = active;
+                }
+                user.updated_at = chrono::Utc::now().to_rfc3339();
+                users.values().cloned().collect::<Vec<_>>()
+            } else {
+                return false;
             }
-            if let Some(email) = email {
-                user.email = email;
-            }
-            if let Some(active) = is_active {
-                user.is_active = active;
-            }
-            user.updated_at = chrono::Utc::now().to_rfc3339();
-            drop(users);
-            self.persist().await;
-            true
-        } else {
-            false
-        }
+        };
+        self.persist_snapshot(snapshot).await;
+        true
     }
 
     pub async fn user_count(&self) -> usize {
@@ -403,5 +409,51 @@ mod tests {
             .await;
         let user = mgr.get_user("upd").await.unwrap();
         assert_eq!(user.display_name, "Updated Name");
+    }
+
+    #[tokio::test]
+    async fn test_persistence_roundtrip() {
+        let dir = std::env::temp_dir().join(format!("rbac_test_{}", uuid::Uuid::now_v7()));
+        let path = dir.join("rbac_users.json");
+
+        {
+            let mgr = RbacManager::with_persistence(&path);
+            mgr.add_user(make_user("persist1", "t1", Role::Admin)).await;
+            mgr.add_user(make_user("persist2", "t1", Role::User)).await;
+            assert_eq!(mgr.user_count().await, 2);
+        }
+
+        {
+            let mgr = RbacManager::with_persistence(&path);
+            assert_eq!(mgr.user_count().await, 2);
+            let u = mgr.get_user("persist1").await.unwrap();
+            assert_eq!(u.role, Role::Admin);
+        }
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test]
+    async fn test_persistence_survives_mutation() {
+        let dir = std::env::temp_dir().join(format!("rbac_mut_{}", uuid::Uuid::now_v7()));
+        let path = dir.join("rbac_users.json");
+
+        {
+            let mgr = RbacManager::with_persistence(&path);
+            mgr.add_user(make_user("mut1", "t1", Role::User)).await;
+            mgr.assign_role("mut1", Role::SuperAdmin).await;
+            mgr.add_user(make_user("mut2", "t1", Role::ReadOnly)).await;
+            mgr.remove_user("mut2").await;
+        }
+
+        {
+            let mgr = RbacManager::with_persistence(&path);
+            assert_eq!(mgr.user_count().await, 1);
+            let u = mgr.get_user("mut1").await.unwrap();
+            assert_eq!(u.role, Role::SuperAdmin);
+            assert!(mgr.get_user("mut2").await.is_none());
+        }
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

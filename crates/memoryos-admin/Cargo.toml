@@ -19,3 +19,4 @@ chrono.workspace = true
 uuid.workspace = true
 memoryos-core = { path = "../memoryos-core" }
 tower-http.workspace = true
+subtle = "2.6"

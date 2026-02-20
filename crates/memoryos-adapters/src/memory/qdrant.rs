@@ -230,6 +230,9 @@ impl VectorStorage for QdrantStorage {
     async fn store_segment(&self, segment: MidTermSegment) -> Result<(), AppError> {
         let mut payload: HashMap<String, Value> = HashMap::new();
         payload.insert("user_id".to_string(), Value::from(segment.user_id));
+        if let Some(ref tid) = segment.tenant_id {
+            payload.insert("tenant_id".to_string(), Value::from(tid.clone()));
+        }
         payload.insert("summary".to_string(), Value::from(segment.summary));
         payload.insert("heat".to_string(), Value::from(segment.heat as f64));
         payload.insert(
@@ -341,6 +344,7 @@ impl VectorStorage for QdrantStorage {
                     embedding: point.vectors.map(convert_vectors).unwrap_or_default(),
                     heat,
                     created_at,
+                    tenant_id: payload_string(&payload, "tenant_id"),
                     access_count: payload
                         .get("access_count")
                         .and_then(|v| v.as_integer())
@@ -449,6 +453,7 @@ impl VectorStorage for QdrantStorage {
                     embedding: point.vectors.map(convert_vectors).unwrap_or_default(),
                     heat,
                     created_at,
+                    tenant_id: payload_string(&payload, "tenant_id"),
                     access_count: payload
                         .get("access_count")
                         .and_then(|v| v.as_integer())

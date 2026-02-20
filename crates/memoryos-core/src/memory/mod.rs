@@ -42,6 +42,9 @@ pub struct MidTermSegment {
     pub created_at: chrono::DateTime<chrono::Utc>,
 
     #[serde(default)]
+    pub tenant_id: Option<String>,
+
+    #[serde(default)]
     pub access_count: u32,
     #[serde(default)]
     pub heat_score: f32,

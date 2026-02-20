@@ -1,18 +1,18 @@
 {
   "project_name": "MemoryOS-Rust",
-  "version": "0.12.1",
+  "version": "0.12.2",
   "edition": "Personal/Enterprise Single-Tenant Edition",
   "last_updated": "2026-02-20",
   "status": {
-        "phase": "v0.12.1 Complete - Enterprise Hardening",
+        "phase": "v0.12.2 Complete - Enterprise Deep Hardening",
         "progress_percentage": 100,
-        "current_task": "v0.12.1 企业级加固已完成",
+        "current_task": "v0.12.2 企业级深度加固已完成",
     "is_blocked": false
   },
   "branches": {
     "main": {
       "description": "Personal/Enterprise Single-Tenant Edition",
-      "current_version": "v0.12.1",
+      "current_version": "v0.12.2",
       "target_users": "Individual developers, single enterprise deployments"
     },
     "feature/saas-multi-tenant": {
@@ -106,7 +106,8 @@
       "v0.10.0: Prometheus Observability + LLM FAQ Classification",
       "v0.11.0: All Remaining Issues Fixed (tag search, history, redis, graph LLM, auth, audit/GDPR)",
       "v0.12.0: Enterprise Features (RBAC, multi-tenant, admin service, service separation)",
-      "v0.12.1: Enterprise Hardening (persistence, admin auth, fail-closed RBAC, docs alignment)"
+      "v0.12.1: Enterprise Hardening (persistence, admin auth, fail-closed RBAC, docs alignment)",
+      "v0.12.2: Enterprise Deep Hardening (async I/O, race condition fix, constant-time auth, tenant isolation, tests)"
     ],
         "in_progress": [],
         "todo": [
@@ -123,6 +124,18 @@
     ]
   },
   "recent_changes": [
+    {
+      "date": "2026-02-20",
+      "author": "Devin",
+      "description": "v0.12.2: Enterprise Deep Hardening",
+      "changes": [
+        "Async I/O: std::fs -> tokio::fs in RBAC and Tenant persist methods",
+        "Race condition fix: snapshot-under-lock pattern prevents concurrent mutation data loss",
+        "Constant-time token comparison: subtle::ConstantTimeEq for admin Bearer token auth",
+        "Enterprise tests: RBAC persistence round-trip, concurrent mutation survival, tenant persistence",
+        "Data-layer tenant isolation: MidTermSegment.tenant_id field, Qdrant payload store/extract, Redis key_prefix"
+      ]
+    },
     {
       "date": "2026-02-20",
       "author": "Devin",

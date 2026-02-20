@@ -69,15 +69,13 @@ impl TenantManager {
         }
     }
 
-    async fn persist(&self) {
+    async fn persist_snapshot(&self, snapshot: Vec<Tenant>) {
         if let Some(ref path) = self.persist_path {
-            let tenants = self.tenants.read().await;
-            let records: Vec<&Tenant> = tenants.values().collect();
-            if let Ok(data) = serde_json::to_string_pretty(&records) {
+            if let Ok(data) = serde_json::to_string_pretty(&snapshot) {
                 if let Some(parent) = path.parent() {
-                    let _ = std::fs::create_dir_all(parent);
+                    let _ = tokio::fs::create_dir_all(parent).await;
                 }
-                if let Err(e) = std::fs::write(path, data) {
+                if let Err(e) = tokio::fs::write(path, data).await {
                     tracing::error!("Failed to persist tenant data: {}", e);
                 }
             }
@@ -85,13 +83,15 @@ impl TenantManager {
     }
 
     pub async fn create_tenant(&self, tenant: Tenant) -> Result<(), String> {
-        let mut tenants = self.tenants.write().await;
-        if tenants.contains_key(&tenant.id) {
-            return Err(format!("Tenant '{}' already exists", tenant.id));
-        }
-        tenants.insert(tenant.id.clone(), tenant);
-        drop(tenants);
-        self.persist().await;
+        let snapshot = {
+            let mut tenants = self.tenants.write().await;
+            if tenants.contains_key(&tenant.id) {
+                return Err(format!("Tenant '{}' already exists", tenant.id));
+            }
+            tenants.insert(tenant.id.clone(), tenant);
+            tenants.values().cloned().collect()
+        };
+        self.persist_snapshot(snapshot).await;
         Ok(())
     }
 
@@ -110,43 +110,47 @@ impl TenantManager {
         api_rate_limit: Option<u32>,
         enabled: Option<bool>,
     ) -> bool {
-        let mut tenants = self.tenants.write().await;
-        if let Some(tenant) = tenants.get_mut(tenant_id) {
-            if let Some(n) = name {
-                tenant.name = n;
+        let snapshot = {
+            let mut tenants = self.tenants.write().await;
+            if let Some(tenant) = tenants.get_mut(tenant_id) {
+                if let Some(n) = name {
+                    tenant.name = n;
+                }
+                if let Some(d) = description {
+                    tenant.description = d;
+                }
+                if let Some(m) = max_users {
+                    tenant.max_users = m;
+                }
+                if let Some(s) = storage_quota_mb {
+                    tenant.storage_quota_mb = s;
+                }
+                if let Some(r) = api_rate_limit {
+                    tenant.api_rate_limit = r;
+                }
+                if let Some(e) = enabled {
+                    tenant.enabled = e;
+                }
+                tenant.updated_at = chrono::Utc::now().to_rfc3339();
+                tenants.values().cloned().collect::<Vec<_>>()
+            } else {
+                return false;
             }
-            if let Some(d) = description {
-                tenant.description = d;
-            }
-            if let Some(m) = max_users {
-                tenant.max_users = m;
-            }
-            if let Some(s) = storage_quota_mb {
-                tenant.storage_quota_mb = s;
-            }
-            if let Some(r) = api_rate_limit {
-                tenant.api_rate_limit = r;
-            }
-            if let Some(e) = enabled {
-                tenant.enabled = e;
-            }
-            tenant.updated_at = chrono::Utc::now().to_rfc3339();
-            drop(tenants);
-            self.persist().await;
-            true
-        } else {
-            false
-        }
+        };
+        self.persist_snapshot(snapshot).await;
+        true
     }
 
     pub async fn delete_tenant(&self, tenant_id: &str) -> bool {
-        let mut tenants = self.tenants.write().await;
-        let removed = tenants.remove(tenant_id).is_some();
-        drop(tenants);
-        if removed {
-            self.persist().await;
-        }
-        removed
+        let snapshot = {
+            let mut tenants = self.tenants.write().await;
+            if tenants.remove(tenant_id).is_none() {
+                return false;
+            }
+            tenants.values().cloned().collect()
+        };
+        self.persist_snapshot(snapshot).await;
+        true
     }
 
     pub async fn list_tenants(&self) -> Vec<Tenant> {
@@ -262,5 +266,60 @@ mod tests {
         mgr.create_tenant(make_tenant("t1")).await.unwrap();
         mgr.create_tenant(make_tenant("t2")).await.unwrap();
         assert_eq!(mgr.tenant_count().await, 2);
+    }
+
+    #[tokio::test]
+    async fn test_persistence_roundtrip() {
+        let dir = std::env::temp_dir().join(format!("tenant_test_{}", uuid::Uuid::now_v7()));
+        let path = dir.join("tenants.json");
+
+        {
+            let mgr = TenantManager::with_persistence(&path);
+            mgr.create_tenant(make_tenant("pt1")).await.unwrap();
+            mgr.create_tenant(make_tenant("pt2")).await.unwrap();
+            assert_eq!(mgr.tenant_count().await, 2);
+        }
+
+        {
+            let mgr = TenantManager::with_persistence(&path);
+            assert_eq!(mgr.tenant_count().await, 2);
+            let t = mgr.get_tenant("pt1").await.unwrap();
+            assert_eq!(t.name, "Tenant pt1");
+        }
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test]
+    async fn test_persistence_survives_mutation() {
+        let dir = std::env::temp_dir().join(format!("tenant_mut_{}", uuid::Uuid::now_v7()));
+        let path = dir.join("tenants.json");
+
+        {
+            let mgr = TenantManager::with_persistence(&path);
+            mgr.create_tenant(make_tenant("mt1")).await.unwrap();
+            mgr.create_tenant(make_tenant("mt2")).await.unwrap();
+            mgr.update_tenant(
+                "mt1",
+                Some("Renamed".to_string()),
+                None,
+                None,
+                None,
+                None,
+                None,
+            )
+            .await;
+            mgr.delete_tenant("mt2").await;
+        }
+
+        {
+            let mgr = TenantManager::with_persistence(&path);
+            assert_eq!(mgr.tenant_count().await, 1);
+            let t = mgr.get_tenant("mt1").await.unwrap();
+            assert_eq!(t.name, "Renamed");
+            assert!(mgr.get_tenant("mt2").await.is_none());
+        }
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
