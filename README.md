@@ -29,17 +29,17 @@ MemoryOS-Rust is a high-performance AI Agent memory management system built with
 
 ## ✨ Key Features
 
-- 🚀 **High Performance**: Rust + Tokio, supporting high concurrency with 10K+ QPS per instance.
+- 🚀 **High Performance**: Rust + Tokio async runtime, designed for high concurrency (not yet benchmarked).
 - 🧠 **Unified Vector Storage**: All memory tiers (STM/MTM/LTM) use vector databases for persistent storage.
 - 💾 **3 Vector Database Options**: Qdrant (default), Chroma (lightweight), Pinecone (cloud-hosted).
-- ⚡ **FAQ Direct Hit**: High-frequency Q&A auto-promoted to instant response (< 50ms).
-- 🔌 **Universal Gateway**: OpenAI protocol compatible, supports Gemini, Claude, Ollama, DeepSeek, Azure.
-- 🕸️ **Graph Memory**: **Qdrant-Native GraphRAG** with Mermaid visualization.
-- 📚 **Knowledge Export**: Auto-export FAQs to Wiki (S3/Confluence), supports **Agent Playbook**.
-- 🛡️ **Enterprise Security**: RBAC, PII sanitization, prompt injection defense, IP defense system.
-- 🤖 **Smart Routing**: Auto-route between local Llama (hot/private) and cloud GPT-4 (complex/cold).
+- ⚡ **FAQ Heat Tracking**: High-frequency Q&A detection with heat score calculation and auto-promotion logic.
+- 🔌 **Universal Gateway**: OpenAI protocol compatible, 10 LLM adapters (OpenAI, Gemini, Claude, Ollama, DeepSeek, OpenRouter, Azure, Groq, Cohere, Mistral).
+- 🕸️ **Graph Memory**: Mermaid text parsing for entity/relation extraction (basic implementation, not a full GraphRAG).
+- 📚 **Knowledge Export**: FAQ export to local Markdown files (S3/Confluence planned).
+- 🛡️ **Security Shield**: PII sanitization (email/phone/credit card/SSN/API key), prompt injection defense (17 patterns), IP defense system.
+- 🤖 **3-Tier LLM Router**: Routes requests to different model tiers based on input complexity (heuristic-based).
 - 🔄 **Coordination Layer**: Redis/NATS for distributed coordination (Session, Lock, Cache, Message Queue).
-- 🎯 **6 Performance Optimizations**: Bloom Filter, LRU Cache, Batch Processing, Heat Buffer, Similarity Filter, Incremental Summary.
+- 🎯 **6 Performance Optimization Modules**: Bloom Filter, LRU Cache, Batch Processing, Heat Buffer, Similarity Filter, Incremental Summary.
 
 ### vs Mem0 Comparison
 
@@ -51,10 +51,10 @@ MemoryOS-Rust is a high-performance AI Agent memory management system built with
 | **Memory Overhead** | TBD (not benchmarked) | ~500MB | Needs testing |
 | **LLM Adapters** | 10 | 10+ | Similar |
 | **Vector DBs** | 3 (Qdrant, Chroma, Pinecone) | 5+ | Good coverage |
-| **Graph Memory** | ✅ Qdrant-native | ✅ Neo4j | Different approach |
+| **Graph Memory** | ⚠️ Mermaid parsing only | ✅ Neo4j | Mem0 has full GraphRAG |
 | **Hot Config Reload** | ✅ 5s auto-refresh | ❌ | Unique feature |
-| **Smart Routing** | ✅ 3-tier (FAQ/Local/Cloud) | ⚠️ Basic | Advanced |
-| **Cost Savings** | 85-90% (local routing) | ~50% | Better optimization |
+| **Smart Routing** | ⚠️ Length-based heuristic | ⚠️ Basic | Both basic |
+| **Cost Savings** | TBD (not measured) | ~50% | Needs testing |
 | **Production Ready** | Early development | ✅ Mature | Mem0 is more mature |
 
 **When to choose MemoryOS-Rust**:
@@ -129,14 +129,14 @@ curl http://localhost:8080/health/status
 graph TD
     Client[User Client] -->|OpenAI Protocol| Gateway
     subgraph MemoryOS-Rust
-        Gateway -->|Auth & Shield| Router{Smart Router}
-        Router -->|Tier 0: FAQ| DirectHit[Direct Response]
-        Router -->|Tier 1: Hot| LocalLLM[Local Llama]
-        Router -->|Tier 2: Cold| CloudLLM[OpenAI/Gemini]
+        Gateway -->|Auth & Shield| Router{LLM Router}
+        Router -->|Tier 1: Simple| SmallLLM[Small Model]
+        Router -->|Tier 2: Medium| MediumLLM[Medium Model]
+        Router -->|Tier 3: Complex| LargeLLM[Large Model]
         Gateway -->|Async Event| Queue[NATS/Redis]
         Queue --> Worker
         Worker -->|Summarize| VectorDB[(Qdrant)]
-        Worker -->|Export| Wiki[S3/Confluence]
+        Worker -->|Export| Wiki[Local Markdown]
     end
 ```
 
@@ -204,7 +204,7 @@ graph TD
 - **Web Framework**: Axum
 - **Short-term Storage**: Redis
 - **Vector Storage**: Qdrant
-- **LLM**: OpenAI, Gemini, Claude, Ollama, DeepSeek, OpenRouter, Azure
+- **LLM**: OpenAI, Gemini, Claude, Ollama, DeepSeek, OpenRouter, Azure, Groq, Cohere, Mistral (10 adapters)
 
 ---
 

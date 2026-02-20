@@ -268,12 +268,14 @@ User Request
 │                  6 Performance Optimization Modules          │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
-│  1. Bloom Filter        → FAQ 快速匹配 (2000x 提升)         │
-│  2. Embedding Cache     → LRU 缓存 (跳过 100% LLM)          │
-│  3. Batch Embedder      → 批量生成 (90% 减少)               │
-│  4. Heat Buffer         → 批量更新 (98.5% 减少)             │
-│  5. Similarity Filter   → 分层过滤 (70% 减少)               │
-│  6. Incremental Summary → 增量合并 (50% 减少)               │
+│  1. Bloom Filter        → FAQ 快速匹配 (性能提升待验证)      │
+│  2. Embedding Cache     → LRU 缓存 (减少 LLM 调用)          │
+│  3. Batch Embedder      → 批量生成 (减少 API 调用次数)       │
+│  4. Heat Buffer         → 批量更新 (减少 DB 写入)            │
+│  5. Similarity Filter   → 分层过滤 (减少无关结果)            │
+│  6. Incremental Summary → 增量合并 (减少重复计算)            │
+│                                                              │
+│  注：以上优化模块代码已实现，但具体性能提升数字尚未基准测试  │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -386,7 +388,7 @@ User Request
 │  Storage:                                                    │
 │  • Short-Term:  Redis 0.24 / NATS 0.37                       │
 │  • Vector:      Qdrant 1.7                                   │
-│  • Wiki:        OpenDAL (S3/FS)                              │
+│  • Wiki:        OpenDAL (FS; S3 planned)                     │
 │                                                              │
 │  LLM:                                                        │
 │  • 10 Providers (OpenAI, Claude, Gemini, ...)               │
@@ -444,8 +446,14 @@ MemoryOS-Rust 采用 **Hexagonal Architecture** 设计，通过 **Ports & Adapte
 
 **核心优势**:
 - ✅ 双存储选项 (Redis + NATS 并存)
-- ✅ 多向量数据库支持
+- ✅ 3 种向量数据库 (Qdrant, Chroma, Pinecone)
 - ✅ 10 个 LLM 适配器
-- ✅ 6 大性能优化模块
-- ✅ 完整的安全防御体系
-- ✅ 生产级部署方案
+- ✅ 6 个性能优化模块（待基准测试）
+- ✅ 安全防御体系（PII 脱敏 + 注入检测 + IP 防御）
+- ✅ K8s/Docker 部署方案
+
+**待完善**:
+- ⚠️ Graph Memory 仅 Mermaid 解析，非 GraphRAG
+- ⚠️ Wiki 导出仅本地文件，S3/Confluence 待实现
+- ⚠️ 多模态仅数据结构，无存储/API 实现
+- ⚠️ 性能数字未经基准测试验证
