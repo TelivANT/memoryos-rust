@@ -3,6 +3,66 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tracing::info;
 
+pub trait GdprStorageBackend: Send + Sync {
+    fn save_snapshot(
+        &self,
+        consents: &std::collections::HashMap<String, Vec<ConsentRecord>>,
+        deletion_requests: &[DeletionRequest],
+    );
+    fn load_snapshot(
+        &self,
+    ) -> Option<(
+        std::collections::HashMap<String, Vec<ConsentRecord>>,
+        Vec<DeletionRequest>,
+    )>;
+}
+
+pub struct FileGdprBackend {
+    path: PathBuf,
+}
+
+impl FileGdprBackend {
+    pub fn new(path: &str) -> Self {
+        let path = PathBuf::from(path);
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        Self { path }
+    }
+}
+
+impl GdprStorageBackend for FileGdprBackend {
+    fn save_snapshot(
+        &self,
+        consents: &std::collections::HashMap<String, Vec<ConsentRecord>>,
+        deletion_requests: &[DeletionRequest],
+    ) {
+        let snapshot = GdprSnapshot {
+            consents: consents.clone(),
+            deletion_requests: deletion_requests.to_vec(),
+        };
+        if let Ok(json) = serde_json::to_string_pretty(&snapshot) {
+            let _ = std::fs::write(&self.path, json);
+        }
+    }
+
+    fn load_snapshot(
+        &self,
+    ) -> Option<(
+        std::collections::HashMap<String, Vec<ConsentRecord>>,
+        Vec<DeletionRequest>,
+    )> {
+        if self.path.exists() {
+            std::fs::read_to_string(&self.path)
+                .ok()
+                .and_then(|data| serde_json::from_str::<GdprSnapshot>(&data).ok())
+                .map(|s| (s.consents, s.deletion_requests))
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GdprDataExport {
     pub user_id: String,
@@ -52,7 +112,7 @@ struct GdprSnapshot {
 pub struct GdprManager {
     consents: std::collections::HashMap<String, Vec<ConsentRecord>>,
     deletion_requests: Vec<DeletionRequest>,
-    persist_path: Option<PathBuf>,
+    backend: Option<Box<dyn GdprStorageBackend>>,
 }
 
 impl GdprManager {
@@ -60,42 +120,28 @@ impl GdprManager {
         Self {
             consents: std::collections::HashMap::new(),
             deletion_requests: Vec::new(),
-            persist_path: None,
+            backend: None,
         }
     }
 
     pub fn with_persistence(path: &str) -> Self {
-        let persist_path = PathBuf::from(path);
-        if let Some(parent) = persist_path.parent() {
-            let _ = std::fs::create_dir_all(parent);
-        }
+        let backend = Box::new(FileGdprBackend::new(path));
+        Self::with_backend(backend)
+    }
 
-        let (consents, deletion_requests) = if persist_path.exists() {
-            std::fs::read_to_string(&persist_path)
-                .ok()
-                .and_then(|data| serde_json::from_str::<GdprSnapshot>(&data).ok())
-                .map(|s| (s.consents, s.deletion_requests))
-                .unwrap_or_default()
-        } else {
-            Default::default()
-        };
+    pub fn with_backend(backend: Box<dyn GdprStorageBackend>) -> Self {
+        let (consents, deletion_requests) = backend.load_snapshot().unwrap_or_default();
 
         Self {
             consents,
             deletion_requests,
-            persist_path: Some(persist_path),
+            backend: Some(backend),
         }
     }
 
     fn save(&self) {
-        if let Some(ref path) = self.persist_path {
-            let snapshot = GdprSnapshot {
-                consents: self.consents.clone(),
-                deletion_requests: self.deletion_requests.clone(),
-            };
-            if let Ok(json) = serde_json::to_string_pretty(&snapshot) {
-                let _ = std::fs::write(path, json);
-            }
+        if let Some(ref backend) = self.backend {
+            backend.save_snapshot(&self.consents, &self.deletion_requests);
         }
     }
 

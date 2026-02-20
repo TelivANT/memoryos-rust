@@ -1,8 +1,8 @@
 # 工作日志 (Work Log)
 
 **项目**: MemoryOS-Rust  
-**当前版本**: v0.9.0  
-**更新**: 2026-02-20 06:32
+**当前版本**: v0.11.0  
+**更新**: 2026-02-20 13:05
 
 ---
 
@@ -37,6 +37,37 @@
 ---
 
 ## 🚀 当前活跃任务
+
+### [Devin] - v0.11.0 剩余问题全面修复
+- **开始时间**: 2026-02-20 12:00
+- **完成时间**: 2026-02-20 13:05
+- **当前进度**: 100%
+- **状态**: ✅ 完成
+- **任务描述**: 修复本地端到端测试发现的 7 个剩余问题
+- **成果**:
+  - ✅ Tag 搜索: 新增 search_segments_by_tags 方法，使用 Qdrant 原生 payload filter（替代零向量+内存过滤）
+  - ✅ Memory History: QdrantHistoryStorage 接入 gateway AppState 初始化
+  - ✅ Redis 升级: 0.24 → 0.32（defense.rs query_async API 迁移，workspace 统一版本）
+  - ✅ Graph LLM 提取: build_llm_extraction_prompt + parse_llm_extraction_response + 2 个新 API 端点
+  - ✅ Auth 警告增强: auth.enabled=false 时显示醒目多行警告
+  - ✅ Audit 存储: AuditStorageBackend trait + FileAuditBackend + with_backend() 构造器
+  - ✅ GDPR 存储: GdprStorageBackend trait + FileGdprBackend + with_backend() 构造器
+- **相关文件**:
+  - `crates/memoryos-ports/src/memory.rs` — VectorStorage trait 新增 search_segments_by_tags
+  - `crates/memoryos-adapters/src/memory/qdrant.rs` — Qdrant ScrollPointsBuilder 实现
+  - `crates/memoryos-adapters/src/memory/chroma.rs` — Chroma fallback 实现
+  - `crates/memoryos-adapters/src/memory/pinecone.rs` — Pinecone fallback 实现
+  - `crates/memoryos-gateway/src/state.rs` — QdrantHistoryStorage 初始化
+  - `crates/memoryos-gateway/src/routes/memory_manage.rs` — 使用新 search_segments_by_tags
+  - `crates/memoryos-gateway/src/routes/graph.rs` — LLM 提取端点
+  - `crates/memoryos-core/Cargo.toml` — redis workspace 统一
+  - `crates/memoryos-core/src/security/defense.rs` — redis 0.32 API 迁移
+  - `crates/memoryos-core/src/memory/graph.rs` — LLM 提取方法 + 4 个新测试
+  - `crates/memoryos-core/src/security/audit.rs` — AuditStorageBackend trait
+  - `crates/memoryos-core/src/security/gdpr.rs` — GdprStorageBackend trait
+  - `crates/memoryos-gateway/src/main.rs` — auth 警告增强
+
+---
 
 ### [Devin] - v0.10.0 Prometheus 可观测性 + LLM FAQ 分类
 - **开始时间**: 2026-02-20 06:30

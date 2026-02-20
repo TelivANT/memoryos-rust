@@ -143,18 +143,12 @@ async fn search_by_tags(
     State(state): State<MemoryManageState>,
     Json(req): Json<SearchByTagRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let dummy_embedding = vec![0.0_f32; 1536];
     let segments = state
         .vector_store
-        .search_segments(&req.user_id, dummy_embedding, req.limit)
+        .search_segments_by_tags(&req.user_id, &req.tags, req.limit)
         .await?;
 
-    let filtered: Vec<&MidTermSegment> = segments
-        .iter()
-        .filter(|s| req.tags.iter().any(|t| s.tags.contains(t)))
-        .collect();
-
-    let results: Vec<serde_json::Value> = filtered
+    let results: Vec<serde_json::Value> = segments
         .iter()
         .map(|s| {
             serde_json::json!({

@@ -2,11 +2,11 @@
 
 | Metric | Value |
 | :--- | :--- |
-| **Version** | v0.9.0 |
+| **Version** | v0.11.0 |
 | **Build Status** | Passing |
-| **Overall Completion** | ~98% |
+| **Overall Completion** | ~99% |
 | **Documentation** | Aligned with code |
-| **Security Audit** | Passed (v0.9.0 - AES-256-GCM, audit persistence, GDPR persistence) |
+| **Security Audit** | Passed (v0.11.0 - pluggable storage backends, redis 0.32) |
 
 ## Component Health
 
@@ -19,10 +19,11 @@
 | **Router** | 🟢 Active | Tier 0 FAQ direct hit implemented |
 | **Wiki Export** | 🟢 Active | Local + S3 + Confluence backends |
 | **FAQ System** | 🟢 Active | HeatTracker + AutoPromoter + Management API |
-| **Knowledge Graph** | 🟢 Active | Entity/relation extraction, graph query API |
+| **Knowledge Graph** | 🟢 Active | Entity/relation extraction, LLM extraction, graph query API |
 | **Multimodal** | 🟢 Active | Qdrant-backed storage, HTTP endpoints |
 | **Memory Manage** | 🟢 Active | Version control, tags, export/import |
-| **Security** | 🟢 Active | Encryption, audit logging, GDPR compliance |
+| **Memory History** | 🟢 Active | QdrantHistoryStorage wired into gateway |
+| **Security** | 🟢 Active | Encryption, pluggable audit/GDPR backends |
 
 ## v0.4.0-v0.8.0 Features (completed 2026-02-20)
 
@@ -65,7 +66,22 @@
 - Security audit report updated to v0.9.0
 - Unused import warnings cleaned up
 
+### v0.10.0 - Prometheus Observability + LLM FAQ Classification
+- Prometheus /metrics endpoint with HTTP/Router/FAQ/LLM metrics
+- Metrics middleware with path normalization
+- LLM FAQ classifier (prompt builder + response parser)
+
+### v0.11.0 - Remaining Issues Fix
+- Tag search: Qdrant native payload filter (replaces zero-vector + in-memory filter)
+- Memory history: QdrantHistoryStorage wired into gateway initialization
+- Redis upgrade: 0.24 -> 0.32 (defense.rs API migration, workspace-unified)
+- Graph extraction: LLM-based entity/relation extraction (prompt + parse endpoints)
+- Auth warning: prominent multi-line warning when auth disabled
+- Audit/GDPR: pluggable storage backend traits (AuditStorageBackend, GdprStorageBackend)
+
 ## Recent Activity
+- **2026-02-20**: Released v0.11.0. All remaining issues fixed (tag search, history, redis, graph LLM, auth, audit/GDPR).
+- **2026-02-20**: Released v0.10.0. Prometheus observability + LLM FAQ classification.
 - **2026-02-20**: Released v0.9.0. Technical debt cleanup, AES-256-GCM encryption, persistence for audit/GDPR.
 - **2026-02-20**: Released v0.4.0-v0.8.0. All P0+P1 features implemented.
 - **2026-02-20**: Released v0.3.0. FAQ router integration + wiki export backends + FAQ management API.

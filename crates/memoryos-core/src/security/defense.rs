@@ -149,14 +149,14 @@ impl IpDefenseSystem {
             .arg(&key)
             .arg(0)
             .arg(now - window)
-            .query_async::<_, ()>(&mut conn)
+            .query_async::<()>(&mut conn)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
         // 获取计数
         let count: usize = redis::cmd("ZCARD")
             .arg(&key)
-            .query_async(&mut conn)
+            .query_async::<usize>(&mut conn)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
@@ -171,14 +171,14 @@ impl IpDefenseSystem {
             .arg(&key)
             .arg(now)
             .arg(format!("{}:{}", now, uuid::Uuid::new_v4()))
-            .query_async::<_, ()>(&mut conn)
+            .query_async::<()>(&mut conn)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
         redis::cmd("EXPIRE")
             .arg(&key)
             .arg(window)
-            .query_async::<_, ()>(&mut conn)
+            .query_async::<()>(&mut conn)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
@@ -246,7 +246,7 @@ impl IpDefenseSystem {
             .arg(&key)
             .arg(duration)
             .arg(format!("{:?}", reason))
-            .query_async::<_, ()>(&mut conn)
+            .query_async::<()>(&mut conn)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
@@ -254,14 +254,14 @@ impl IpDefenseSystem {
         let count_key = format!("ban:count:{}", ip);
         redis::cmd("INCR")
             .arg(&count_key)
-            .query_async::<_, ()>(&mut conn)
+            .query_async::<()>(&mut conn)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
         redis::cmd("EXPIRE")
             .arg(&count_key)
             .arg(86400)
-            .query_async::<_, ()>(&mut conn)
+            .query_async::<()>(&mut conn)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
@@ -278,7 +278,7 @@ impl IpDefenseSystem {
         let key = format!("ban:temp:{}", ip);
         let exists: bool = redis::cmd("EXISTS")
             .arg(&key)
-            .query_async(&mut conn)
+            .query_async::<bool>(&mut conn)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
@@ -295,7 +295,7 @@ impl IpDefenseSystem {
         let exists: bool = redis::cmd("SISMEMBER")
             .arg("whitelist")
             .arg(ip.to_string())
-            .query_async(&mut conn)
+            .query_async::<bool>(&mut conn)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
@@ -312,7 +312,7 @@ impl IpDefenseSystem {
         let key = format!("ban:count:{}", ip);
         let count: Option<u32> = redis::cmd("GET")
             .arg(&key)
-            .query_async(&mut conn)
+            .query_async::<Option<u32>>(&mut conn)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
@@ -329,7 +329,7 @@ impl IpDefenseSystem {
         redis::cmd("SADD")
             .arg("whitelist")
             .arg(ip.to_string())
-            .query_async::<_, ()>(&mut conn)
+            .query_async::<()>(&mut conn)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 
@@ -347,7 +347,7 @@ impl IpDefenseSystem {
         redis::cmd("DEL")
             .arg(format!("ban:temp:{}", ip))
             .arg(format!("ban:count:{}", ip))
-            .query_async::<_, ()>(&mut conn)
+            .query_async::<()>(&mut conn)
             .await
             .map_err(|e| AppError::ExternalService(format!("Redis: {}", e)))?;
 

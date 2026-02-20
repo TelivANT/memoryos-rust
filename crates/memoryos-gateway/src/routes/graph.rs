@@ -52,6 +52,8 @@ pub struct GraphStatsResponse {
 pub fn create_graph_routes(state: GraphState) -> Router {
     Router::new()
         .route("/extract", post(extract_entities))
+        .route("/extract/llm-prompt", post(build_llm_prompt))
+        .route("/extract/llm-parse", post(parse_llm_response))
         .route("/query", post(query_entities))
         .route("/path", post(query_path))
         .route("/triples", get(get_all_triples))
@@ -71,6 +73,32 @@ async fn extract_entities(
         entities_added,
         triples,
     })
+}
+
+#[derive(Deserialize)]
+pub struct LlmParseRequest {
+    pub response: String,
+}
+
+async fn build_llm_prompt(Json(req): Json<ExtractRequest>) -> impl IntoResponse {
+    let prompt = GraphManager::build_llm_extraction_prompt(&req.text);
+    Json(serde_json::json!({
+        "prompt": prompt,
+    }))
+}
+
+async fn parse_llm_response(
+    State(state): State<GraphState>,
+    Json(req): Json<LlmParseRequest>,
+) -> impl IntoResponse {
+    let mut gm = state.graph_manager.write().await;
+    let (entities, triples) = gm.parse_llm_extraction_response(&req.response);
+    Json(serde_json::json!({
+        "entities_added": entities.len(),
+        "triples": triples,
+        "total_entities": gm.entity_count(),
+        "total_relations": gm.relation_count(),
+    }))
 }
 
 async fn query_entities(
