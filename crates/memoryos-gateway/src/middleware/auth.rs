@@ -23,9 +23,7 @@ fn constant_time_contains(haystack: &[String], needle: &str) -> bool {
     let needle_bytes = needle.as_bytes();
     let mut found = false;
     for candidate in haystack {
-        if candidate.len() == needle.len()
-            && bool::from(candidate.as_bytes().ct_eq(needle_bytes))
-        {
+        if candidate.len() == needle.len() && bool::from(candidate.as_bytes().ct_eq(needle_bytes)) {
             found = true;
         }
     }
