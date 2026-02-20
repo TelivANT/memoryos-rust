@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -117,23 +118,79 @@ pub struct UserRecord {
 #[derive(Clone)]
 pub struct RbacManager {
     users: Arc<RwLock<HashMap<String, UserRecord>>>,
+    persist_path: Option<PathBuf>,
 }
 
 impl RbacManager {
     pub fn new() -> Self {
         Self {
             users: Arc::new(RwLock::new(HashMap::new())),
+            persist_path: None,
+        }
+    }
+
+    pub fn with_persistence(persist_path: impl AsRef<Path>) -> Self {
+        let path = persist_path.as_ref().to_path_buf();
+        let users = if path.exists() {
+            match std::fs::read_to_string(&path) {
+                Ok(data) => match serde_json::from_str::<Vec<UserRecord>>(&data) {
+                    Ok(records) => {
+                        let mut map = HashMap::new();
+                        for r in records {
+                            map.insert(r.user_id.clone(), r);
+                        }
+                        tracing::info!("Loaded {} RBAC users from {}", map.len(), path.display());
+                        map
+                    }
+                    Err(e) => {
+                        tracing::warn!("Failed to parse RBAC data: {}", e);
+                        HashMap::new()
+                    }
+                },
+                Err(e) => {
+                    tracing::warn!("Failed to read RBAC file: {}", e);
+                    HashMap::new()
+                }
+            }
+        } else {
+            HashMap::new()
+        };
+        Self {
+            users: Arc::new(RwLock::new(users)),
+            persist_path: Some(path),
+        }
+    }
+
+    async fn persist(&self) {
+        if let Some(ref path) = self.persist_path {
+            let users = self.users.read().await;
+            let records: Vec<&UserRecord> = users.values().collect();
+            if let Ok(data) = serde_json::to_string_pretty(&records) {
+                if let Some(parent) = path.parent() {
+                    let _ = std::fs::create_dir_all(parent);
+                }
+                if let Err(e) = std::fs::write(path, data) {
+                    tracing::error!("Failed to persist RBAC data: {}", e);
+                }
+            }
         }
     }
 
     pub async fn add_user(&self, user: UserRecord) {
         let mut users = self.users.write().await;
         users.insert(user.user_id.clone(), user);
+        drop(users);
+        self.persist().await;
     }
 
     pub async fn remove_user(&self, user_id: &str) -> bool {
         let mut users = self.users.write().await;
-        users.remove(user_id).is_some()
+        let removed = users.remove(user_id).is_some();
+        drop(users);
+        if removed {
+            self.persist().await;
+        }
+        removed
     }
 
     pub async fn get_user(&self, user_id: &str) -> Option<UserRecord> {
@@ -151,6 +208,8 @@ impl RbacManager {
         if let Some(user) = users.get_mut(user_id) {
             user.role = role;
             user.updated_at = chrono::Utc::now().to_rfc3339();
+            drop(users);
+            self.persist().await;
             true
         } else {
             false
@@ -202,6 +261,8 @@ impl RbacManager {
                 user.is_active = active;
             }
             user.updated_at = chrono::Utc::now().to_rfc3339();
+            drop(users);
+            self.persist().await;
             true
         } else {
             false

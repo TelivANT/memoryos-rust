@@ -563,8 +563,8 @@ MemoryOS-Rust 采用 **Hexagonal Architecture** 设计，通过 **Ports & Adapte
 │                                                              │
 │  数据隔离:                                                   │
 │  ┌──────────────────────────────────────────────────┐       │
-│  │  Qdrant 查询自动添加 tenant_id 过滤条件          │       │
-│  │  Redis key 前缀: {tenant_id}:{original_key}      │       │
+│  │  [计划] Qdrant 查询自动添加 tenant_id 过滤条件    │       │
+│  │  [计划] Redis key 前缀: {tenant_id}:{key}         │       │
 │  │  审计日志标记 tenant_id                           │       │
 │  └──────────────────────────────────────────────────┘       │
 │                                                              │

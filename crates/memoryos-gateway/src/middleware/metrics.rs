@@ -17,9 +17,9 @@ fn normalize_path(path: &str) -> String {
     let normalized: Vec<String> = segments
         .iter()
         .map(|seg| {
-            if seg.len() >= 32 && seg.chars().all(|c| c.is_ascii_hexdigit() || c == '-') {
-                ":id".to_string()
-            } else if seg.chars().all(|c| c.is_ascii_digit()) && !seg.is_empty() {
+            if (seg.len() >= 32 && seg.chars().all(|c| c.is_ascii_hexdigit() || c == '-'))
+                || (!seg.is_empty() && seg.chars().all(|c| c.is_ascii_digit()))
+            {
                 ":id".to_string()
             } else {
                 seg.to_string()

@@ -1,18 +1,18 @@
 {
   "project_name": "MemoryOS-Rust",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "edition": "Personal/Enterprise Single-Tenant Edition",
   "last_updated": "2026-02-20",
   "status": {
-        "phase": "v0.12.0 Complete - Enterprise Features",
+        "phase": "v0.12.1 Complete - Enterprise Hardening",
         "progress_percentage": 100,
-        "current_task": "v0.12.0 企业级功能已完成，待合并 PR",
+        "current_task": "v0.12.1 企业级加固已完成",
     "is_blocked": false
   },
   "branches": {
     "main": {
       "description": "Personal/Enterprise Single-Tenant Edition",
-      "current_version": "v0.12.0",
+      "current_version": "v0.12.1",
       "target_users": "Individual developers, single enterprise deployments"
     },
     "feature/saas-multi-tenant": {
@@ -105,7 +105,8 @@
       "v0.9.0: Technical Debt (AES-256-GCM, persistence, benchmark fixes, docs)",
       "v0.10.0: Prometheus Observability + LLM FAQ Classification",
       "v0.11.0: All Remaining Issues Fixed (tag search, history, redis, graph LLM, auth, audit/GDPR)",
-      "v0.12.0: Enterprise Features (RBAC, multi-tenant, admin service, service separation)"
+      "v0.12.0: Enterprise Features (RBAC, multi-tenant, admin service, service separation)",
+      "v0.12.1: Enterprise Hardening (persistence, admin auth, fail-closed RBAC, docs alignment)"
     ],
         "in_progress": [],
         "todo": [
@@ -122,6 +123,20 @@
     ]
   },
   "recent_changes": [
+    {
+      "date": "2026-02-20",
+      "author": "Devin",
+      "description": "v0.12.1: Enterprise Hardening",
+      "changes": [
+        "RBAC persistence: RbacManager.with_persistence() - JSON file storage, load on startup, auto-save on mutation",
+        "Tenant persistence: TenantManager.with_persistence() - JSON file storage, load on startup, auto-save on mutation",
+        "Admin service auth: ADMIN_TOKEN env var guard, Bearer token validation, /health unauthenticated",
+        "RBAC middleware fail-closed: unknown users get 403 Forbidden instead of pass-through",
+        "Gateway shared persistence: reads ~/.memoryos/rbac_users.json + tenants.json",
+        "Docs: data-layer tenant isolation (Qdrant tenant_id filter, Redis key prefix) flagged as planned",
+        "Clippy fix: metrics.rs if_same_then_else merged"
+      ]
+    },
     {
       "date": "2026-02-20",
       "author": "Devin",
