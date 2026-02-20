@@ -38,6 +38,35 @@
 
 ## 🚀 当前活跃任务
 
+### [Devin] - v0.3.0 功能实现
+- **开始时间**: 2026-02-20 02:00
+- **完成时间**: 2026-02-20 03:40
+- **当前进度**: 100%
+- **状态**: ✅ 完成
+- **任务描述**: 实现 ROADMAP v0.3.0 所有必要功能
+- **成果**:
+  - ✅ Router Tier 0: FAQ 直接命中，绕过 LLM 返回
+  - ✅ Wiki S3 导出: WikiExportBackend trait + OpenDAL S3ExportBackend
+  - ✅ Wiki Confluence 导出: ConfluenceExportBackend (REST API)
+  - ✅ FAQ 管理 API: get_candidates, promote, delete, history, stats
+  - ✅ 清理重复 wiki exporter（core/wiki 委托给 core/faq）
+  - ✅ FAQ 路由挂载到 /v1/admin/faq
+- **相关文件**:
+  - `crates/memoryos-core/src/llm/router.rs` (RouterContext + faq_answer)
+  - `crates/memoryos-core/src/faq/wiki_exporter.rs` (WikiExportBackend trait)
+  - `crates/memoryos-core/src/wiki/exporter.rs` (重写为委托模式)
+  - `crates/memoryos-adapters/src/wiki/s3_backend.rs` (新增)
+  - `crates/memoryos-adapters/src/wiki/confluence_backend.rs` (新增)
+  - `crates/memoryos-gateway/src/routes/faq.rs` (实现 FAQ API)
+  - `crates/memoryos-gateway/src/handlers.rs` (FAQ lookup before routing)
+  - `crates/memoryos-gateway/src/routes/chat.rs` (FAQ lookup before routing)
+  - `crates/memoryos-gateway/src/main.rs` (FAQ routes wiring)
+  - `docs/ROADMAP.md` (标记 v0.3.0 完成)
+  - `STATUS.md` (更新项目状态)
+- **备注**: 所有 v0.3.0 功能实现完毕，cargo check/test/fmt 通过
+
+---
+
 ### [Delevan + Kiro AI] - 安全问题全面修复
 - **开始时间**: 2026-02-19 23:00
 - **完成时间**: 2026-02-19 23:50

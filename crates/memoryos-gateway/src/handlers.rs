@@ -46,17 +46,44 @@ pub async fn chat_completions(
         msg.content = state.shield.sanitize_pii(&msg.content);
     }
 
-    // 2. Router Decision
-    // TODO: Calculate real metrics (similarity, tokens)
+    // 2. FAQ Tier 0: Search for FAQ matches before routing
+    let memory_mgr = state.memory_manager.read().await.clone();
+    let (is_faq_match, global_similarity, faq_answer) =
+        match memory_mgr.retrieve_context(user_id, &last_msg).await {
+            Ok(ctx) => {
+                let faq_match = ctx
+                    .mid_term
+                    .iter()
+                    .enumerate()
+                    .find(|(_, seg)| seg.memory_type == memoryos_core::MemoryType::Faq);
+                match faq_match {
+                    Some((pos, seg)) => {
+                        let estimated_similarity = match pos {
+                            0 => 0.98_f32,
+                            1 => 0.93,
+                            _ => 0.80,
+                        };
+                        (true, estimated_similarity, Some(seg.summary.clone()))
+                    }
+                    None => (false, 0.0, None),
+                }
+            }
+            Err(e) => {
+                warn!(user_id, error = %e, "FAQ lookup failed, proceeding without FAQ match");
+                (false, 0.0, None)
+            }
+        };
+
     let router_ctx = RouterContext {
         query: last_msg.clone(),
-        token_count: last_msg.len() / 4, // Rough estimate
-        global_similarity: 0.0,          // TODO: Query Vector DB first
-        is_faq_match: false,
+        token_count: last_msg.len() / 4,
+        global_similarity,
+        is_faq_match,
         has_sensitive_keywords: matches!(
             state.shield.check_compliance(&last_msg),
             ComplianceResult::RequiresLocal
         ),
+        faq_answer,
     };
 
     let decision = state.router.route(&router_ctx).await?;

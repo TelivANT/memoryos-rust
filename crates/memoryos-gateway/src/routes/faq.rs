@@ -7,28 +7,28 @@ use axum::{
     routing::{delete, get, post},
     Json, Router,
 };
-use memoryos_core::{AutoPromoter, HeatTracker, PromotionRecord};
+use memoryos_core::{AutoPromoter, HeatTracker, MemoryType, MidTermSegment, PromotionRecord};
+use memoryos_ports::VectorStorage;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use tracing::{info, warn};
 use uuid::Uuid;
 
 /// FAQ 管理状态
-#[allow(dead_code)]
 #[derive(Clone)]
 pub struct FaqState {
     pub heat_tracker: Arc<HeatTracker>,
     pub auto_promoter: Arc<AutoPromoter>,
+    pub vector_store: Arc<dyn VectorStorage>,
 }
 
 /// FAQ 候选响应
-#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct FaqCandidateResponse {
     pub candidates: Vec<FaqCandidate>,
     pub total: usize,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct FaqCandidate {
     pub id: Uuid,
@@ -42,7 +42,6 @@ pub struct FaqCandidate {
 }
 
 /// 手动提升请求
-#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct PromoteRequest {
     pub memory_id: Uuid,
@@ -50,7 +49,6 @@ pub struct PromoteRequest {
 }
 
 /// 提升响应
-#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct PromoteResponse {
     pub success: bool,
@@ -58,8 +56,25 @@ pub struct PromoteResponse {
     pub record: Option<PromotionRecord>,
 }
 
+fn segment_to_candidate(seg: &MidTermSegment) -> FaqCandidate {
+    let type_str = match seg.memory_type {
+        MemoryType::QA => "qa",
+        MemoryType::FaqCandidate => "faq_candidate",
+        MemoryType::Faq => "faq",
+    };
+    FaqCandidate {
+        id: seg.id,
+        user_id: seg.user_id.clone(),
+        summary: seg.summary.clone(),
+        access_count: seg.access_count,
+        heat_score: seg.heat_score,
+        memory_type: type_str.to_string(),
+        created_at: seg.created_at.to_rfc3339(),
+        last_accessed: seg.last_accessed.map(|dt| dt.to_rfc3339()),
+    }
+}
+
 /// 创建 FAQ 路由
-#[allow(dead_code)]
 pub fn create_faq_routes(faq_state: FaqState) -> Router {
     Router::new()
         .route("/candidates", get(get_candidates))
@@ -71,10 +86,25 @@ pub fn create_faq_routes(faq_state: FaqState) -> Router {
 }
 
 /// GET /admin/faq/candidates - 获取候选 FAQ
-#[allow(dead_code)]
-async fn get_candidates(State(_state): State<FaqState>) -> impl IntoResponse {
-    // TODO: 从 Qdrant 获取实际数据
-    let candidates = vec![];
+async fn get_candidates(State(state): State<FaqState>) -> impl IntoResponse {
+    let dummy_embedding = vec![0.0_f32; 1536];
+    let segments = match state
+        .vector_store
+        .search_segments("__global__", dummy_embedding, 50)
+        .await
+    {
+        Ok(segs) => segs,
+        Err(e) => {
+            warn!("Failed to fetch FAQ candidates: {}", e);
+            vec![]
+        }
+    };
+
+    let candidates: Vec<FaqCandidate> = segments
+        .iter()
+        .filter(|s| s.memory_type == MemoryType::FaqCandidate || s.memory_type == MemoryType::Faq)
+        .map(segment_to_candidate)
+        .collect();
 
     Json(FaqCandidateResponse {
         total: candidates.len(),
@@ -83,34 +113,139 @@ async fn get_candidates(State(_state): State<FaqState>) -> impl IntoResponse {
 }
 
 /// POST /admin/faq/promote - 手动提升为 FAQ
-#[allow(dead_code)]
 async fn promote_to_faq(
-    State(_state): State<FaqState>,
+    State(state): State<FaqState>,
     Json(req): Json<PromoteRequest>,
 ) -> impl IntoResponse {
-    // TODO: 实现手动提升逻辑
-    Json(PromoteResponse {
-        success: true,
-        message: format!("Memory {} promoted to FAQ", req.memory_id),
-        record: None,
-    })
+    info!("Promoting memory {} to FAQ", req.memory_id);
+
+    let dummy_embedding = vec![0.0_f32; 1536];
+    let segments = match state
+        .vector_store
+        .search_segments("__global__", dummy_embedding, 100)
+        .await
+    {
+        Ok(segs) => segs,
+        Err(e) => {
+            warn!("Failed to search segments for promotion: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(PromoteResponse {
+                    success: false,
+                    message: format!("Failed to search segments: {}", e),
+                    record: None,
+                }),
+            );
+        }
+    };
+
+    let target = segments.iter().find(|s| s.id == req.memory_id);
+    match target {
+        Some(seg) => {
+            let mut promoted = seg.clone();
+            state.heat_tracker.promote_to_faq(&mut promoted);
+
+            if let Err(e) = state.vector_store.store_segment(promoted).await {
+                warn!("Failed to store promoted FAQ: {}", e);
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(PromoteResponse {
+                        success: false,
+                        message: format!("Failed to store promoted FAQ: {}", e),
+                        record: None,
+                    }),
+                );
+            }
+
+            let record = PromotionRecord {
+                id: Uuid::new_v4(),
+                memory_id: req.memory_id,
+                from_type: seg.memory_type.clone(),
+                to_type: MemoryType::Faq,
+                reason: req.reason.unwrap_or_else(|| "Manual promotion".to_string()),
+                heat_score: seg.heat_score,
+                access_count: seg.access_count,
+                promoted_at: chrono::Utc::now(),
+            };
+
+            info!("Successfully promoted memory {} to FAQ", req.memory_id);
+            (
+                StatusCode::OK,
+                Json(PromoteResponse {
+                    success: true,
+                    message: format!("Memory {} promoted to FAQ", req.memory_id),
+                    record: Some(record),
+                }),
+            )
+        }
+        None => (
+            StatusCode::NOT_FOUND,
+            Json(PromoteResponse {
+                success: false,
+                message: format!("Memory {} not found", req.memory_id),
+                record: None,
+            }),
+        ),
+    }
 }
 
-/// DELETE /admin/faq/:id - 删除 FAQ
-#[allow(dead_code)]
-async fn delete_faq(State(_state): State<FaqState>, Path(id): Path<Uuid>) -> impl IntoResponse {
-    // TODO: 实现删除逻辑
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({
-            "success": true,
-            "message": format!("FAQ {} deleted", id)
-        })),
-    )
+/// DELETE /admin/faq/:id - 删除 FAQ (demote back to QA)
+async fn delete_faq(State(state): State<FaqState>, Path(id): Path<Uuid>) -> impl IntoResponse {
+    info!("Demoting FAQ {} back to QA", id);
+
+    let dummy_embedding = vec![0.0_f32; 1536];
+    let segments = match state
+        .vector_store
+        .search_segments("__global__", dummy_embedding, 100)
+        .await
+    {
+        Ok(segs) => segs,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({
+                    "success": false,
+                    "message": format!("Failed to search segments: {}", e)
+                })),
+            );
+        }
+    };
+
+    let target = segments.iter().find(|s| s.id == id);
+    match target {
+        Some(seg) => {
+            let mut demoted = seg.clone();
+            demoted.memory_type = MemoryType::QA;
+
+            if let Err(e) = state.vector_store.store_segment(demoted).await {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({
+                        "success": false,
+                        "message": format!("Failed to store demoted segment: {}", e)
+                    })),
+                );
+            }
+
+            (
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "success": true,
+                    "message": format!("FAQ {} demoted to QA", id)
+                })),
+            )
+        }
+        None => (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "success": false,
+                "message": format!("FAQ {} not found", id)
+            })),
+        ),
+    }
 }
 
 /// GET /admin/faq/history - 获取提升历史
-#[allow(dead_code)]
 async fn get_promotion_history(State(state): State<FaqState>) -> impl IntoResponse {
     let history = state.auto_promoter.get_history(50).await;
     Json(serde_json::json!({
@@ -120,7 +255,6 @@ async fn get_promotion_history(State(state): State<FaqState>) -> impl IntoRespon
 }
 
 /// GET /admin/faq/stats - 获取统计信息
-#[allow(dead_code)]
 async fn get_stats(State(state): State<FaqState>) -> impl IntoResponse {
     let stats = state.auto_promoter.get_stats().await;
     Json(stats)

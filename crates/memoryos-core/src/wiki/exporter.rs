@@ -1,47 +1,51 @@
-use std::sync::Arc;
-use memoryos_ports::{VectorStorage, WikiAdapter, WikiDocument};
+//! Wiki exporter - delegates to the FAQ WikiExporter for actual export logic.
+//!
+//! This module bridges the adapter-layer WikiAdapter trait with the core FAQ
+//! wiki export pipeline. For the full export implementation (filtering,
+//! categorization, markdown generation, S3/Confluence backends), see
+//! `memoryos_core::faq::wiki_exporter`.
+
+use crate::faq::{WikiExportConfig, WikiExporter as FaqWikiExporter};
+use crate::memory::MidTermSegment;
 use crate::AppError;
-use tracing::{info, warn};
+use tracing::info;
 
 pub struct WikiExporter {
-    vector_store: Arc<dyn VectorStorage>,
-    adapter: Arc<dyn WikiAdapter>,
+    inner: FaqWikiExporter,
 }
 
 impl WikiExporter {
-    pub fn new(vector_store: Arc<dyn VectorStorage>, adapter: Arc<dyn WikiAdapter>) -> Self {
+    pub fn new(config: WikiExportConfig) -> Self {
         Self {
-            vector_store,
-            adapter,
+            inner: FaqWikiExporter::new(config),
         }
     }
 
-    pub async fn run_export(&self) -> Result<usize, AppError> {
+    pub async fn run_export(&self, segments: &[MidTermSegment]) -> Result<usize, AppError> {
         info!("Starting Wiki Export job...");
-        
-        // 1. Query Exportable FAQs
-        // Mocking for now, will implement real query in VectorStorage trait later
-        let exportable_items = vec![]; 
-        
-        let mut count = 0;
-        for _item in exportable_items {
-            let doc = WikiDocument {
-                id: "mock".to_string(),
-                title: "Mock".to_string(),
-                content: "# Mock".to_string(),
-                category: "General".to_string(),
-                tags: vec![],
-                metadata: Default::default(),
-            };
 
-            if let Err(e) = self.adapter.publish(doc).await {
-                warn!("Failed to export: {}", e);
-                continue;
-            }
-            count += 1;
+        let exportable = self.inner.filter_exportable(segments);
+
+        if exportable.is_empty() {
+            info!("No exportable FAQ segments found");
+            return Ok(0);
         }
 
-        info!("Wiki Export complete. Count: {}", count);
-        Ok(count)
+        let categories = self.inner.categorize(exportable);
+        let markdown = self.inner.generate_markdown(categories);
+
+        match self.inner.export(markdown).await {
+            Ok(result) => {
+                info!(
+                    "Wiki Export complete: {} items to {}",
+                    result.exported_count, result.target
+                );
+                Ok(result.exported_count)
+            }
+            Err(e) => Err(AppError::ExternalService(format!(
+                "Wiki export failed: {}",
+                e
+            ))),
+        }
     }
 }
