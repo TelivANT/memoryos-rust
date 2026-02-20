@@ -18,6 +18,10 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   benchmark:
     name: Performance Benchmarks
@@ -63,7 +67,7 @@ jobs:
         run: cargo build --release --benches
       
       - name: Run benchmarks
-        run: cargo bench --no-fail-fast -- --output-format bencher | tee benchmark_results.txt
+        run: cargo bench -p memoryos-benchmarks --no-fail-fast -- --output-format bencher | tee benchmark_results.txt
         env:
           REDIS_URL: redis://localhost:6379
           QDRANT_URL: http://localhost:6333
