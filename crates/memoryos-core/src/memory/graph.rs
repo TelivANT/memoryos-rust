@@ -101,3 +101,84 @@ impl Default for GraphManager {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_mermaid_nodes() {
+        let gm = GraphManager::new();
+        let mermaid = "graph TD\n    A[Apple]\n    B[Banana]";
+        let entities = gm.parse_mermaid(mermaid);
+        assert_eq!(entities.len(), 2);
+        let labels: Vec<&str> = entities.iter().map(|e| e.label.as_str()).collect();
+        assert!(labels.contains(&"Apple"));
+        assert!(labels.contains(&"Banana"));
+    }
+
+    #[test]
+    fn test_parse_mermaid_edges() {
+        let gm = GraphManager::new();
+        let mermaid = "graph TD\n    A[Apple]\n    B[iPhone]\n    A -->|makes| B";
+        let entities = gm.parse_mermaid(mermaid);
+        let apple = entities.iter().find(|e| e.id == "A").unwrap();
+        assert_eq!(apple.relations.len(), 1);
+        assert_eq!(apple.relations[0].predicate, "makes");
+        assert_eq!(apple.relations[0].target_id, "B");
+    }
+
+    #[test]
+    fn test_parse_mermaid_empty() {
+        let gm = GraphManager::new();
+        let entities = gm.parse_mermaid("");
+        assert!(entities.is_empty());
+    }
+
+    #[test]
+    fn test_parse_mermaid_no_nodes() {
+        let gm = GraphManager::new();
+        let entities = gm.parse_mermaid("just some random text");
+        assert!(entities.is_empty());
+    }
+
+    #[test]
+    fn test_to_mermaid_roundtrip() {
+        let gm = GraphManager::new();
+        let entities = vec![GraphEntity {
+            id: "A".to_string(),
+            label: "Apple".to_string(),
+            relations: vec![GraphRelation {
+                predicate: "makes".to_string(),
+                target_id: "B".to_string(),
+                target_label: "iPhone".to_string(),
+            }],
+        }];
+        let mermaid = gm.to_mermaid(&entities);
+        assert!(mermaid.contains("graph TD"));
+        assert!(mermaid.contains("A[Apple]"));
+        assert!(mermaid.contains("makes"));
+    }
+
+    #[test]
+    fn test_parse_mermaid_edge_creates_missing_source() {
+        let gm = GraphManager::new();
+        let mermaid = "X -->|rel| Y[Target]";
+        let entities = gm.parse_mermaid(mermaid);
+        let x = entities.iter().find(|e| e.id == "X");
+        assert!(x.is_some());
+        assert_eq!(x.unwrap().label, "X");
+    }
+
+    #[test]
+    fn test_to_mermaid_empty() {
+        let gm = GraphManager::new();
+        let mermaid = gm.to_mermaid(&[]);
+        assert_eq!(mermaid, "graph TD\n");
+    }
+
+    #[test]
+    fn test_default() {
+        let _gm = GraphManager::default();
+    }
+}
