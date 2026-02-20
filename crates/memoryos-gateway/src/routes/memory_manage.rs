@@ -1,10 +1,17 @@
-use axum::{extract::State, response::IntoResponse, routing::post, Json, Router};
+use axum::{extract::State, http::HeaderMap, response::IntoResponse, routing::post, Json, Router};
 use memoryos_core::{AppError, MemoryType, MidTermSegment};
 use memoryos_ports::VectorStorage;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::info;
 use uuid::Uuid;
+
+fn extract_tenant_id(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get("X-Tenant-ID")
+        .and_then(|h| h.to_str().ok())
+        .map(|s| s.to_string())
+}
 
 #[derive(Clone)]
 pub struct MemoryManageState {
@@ -97,6 +104,7 @@ pub fn create_memory_manage_routes(state: MemoryManageState) -> Router {
 
 async fn add_tags(
     State(state): State<MemoryManageState>,
+    headers: HeaderMap,
     Json(req): Json<TagRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     info!(
@@ -105,10 +113,18 @@ async fn add_tags(
     );
 
     let dummy_embedding = vec![0.0_f32; 1536];
-    let segments = state
-        .vector_store
-        .search_segments(&req.user_id, dummy_embedding, 100)
-        .await?;
+    let tenant_id = extract_tenant_id(&headers);
+    let segments = if let Some(ref tid) = tenant_id {
+        state
+            .vector_store
+            .search_segments_for_tenant(&req.user_id, tid, dummy_embedding, 100)
+            .await?
+    } else {
+        state
+            .vector_store
+            .search_segments(&req.user_id, dummy_embedding, 100)
+            .await?
+    };
 
     let segment_id: Uuid = req
         .segment_id
@@ -141,12 +157,21 @@ async fn add_tags(
 
 async fn search_by_tags(
     State(state): State<MemoryManageState>,
+    headers: HeaderMap,
     Json(req): Json<SearchByTagRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let segments = state
-        .vector_store
-        .search_segments_by_tags(&req.user_id, &req.tags, req.limit)
-        .await?;
+    let tenant_id = extract_tenant_id(&headers);
+    let segments = if let Some(ref tid) = tenant_id {
+        state
+            .vector_store
+            .search_segments_by_tags_for_tenant(&req.user_id, tid, &req.tags, req.limit)
+            .await?
+    } else {
+        state
+            .vector_store
+            .search_segments_by_tags(&req.user_id, &req.tags, req.limit)
+            .await?
+    };
 
     let results: Vec<serde_json::Value> = segments
         .iter()
@@ -171,15 +196,24 @@ async fn search_by_tags(
 
 async fn export_memories(
     State(state): State<MemoryManageState>,
+    headers: HeaderMap,
     Json(req): Json<ExportRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     info!("Exporting memories for user: {}", req.user_id);
 
     let dummy_embedding = vec![0.0_f32; 1536];
-    let segments = state
-        .vector_store
-        .search_segments(&req.user_id, dummy_embedding, 1000)
-        .await?;
+    let tenant_id = extract_tenant_id(&headers);
+    let segments = if let Some(ref tid) = tenant_id {
+        state
+            .vector_store
+            .search_segments_for_tenant(&req.user_id, tid, dummy_embedding, 1000)
+            .await?
+    } else {
+        state
+            .vector_store
+            .search_segments(&req.user_id, dummy_embedding, 1000)
+            .await?
+    };
 
     let exported: Vec<ExportedSegment> = segments
         .iter()
@@ -280,13 +314,22 @@ async fn import_memories(
 
 async fn get_version_history(
     State(state): State<MemoryManageState>,
+    headers: HeaderMap,
     Json(req): Json<VersionHistoryRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let dummy_embedding = vec![0.0_f32; 1536];
-    let segments = state
-        .vector_store
-        .search_segments(&req.user_id, dummy_embedding, 200)
-        .await?;
+    let tenant_id = extract_tenant_id(&headers);
+    let segments = if let Some(ref tid) = tenant_id {
+        state
+            .vector_store
+            .search_segments_for_tenant(&req.user_id, tid, dummy_embedding, 200)
+            .await?
+    } else {
+        state
+            .vector_store
+            .search_segments(&req.user_id, dummy_embedding, 200)
+            .await?
+    };
 
     let segment_id: Uuid = req
         .segment_id

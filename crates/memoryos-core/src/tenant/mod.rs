@@ -72,9 +72,13 @@ impl TenantManager {
         }
     }
 
-    async fn persist_snapshot(&self, snapshot: Vec<Tenant>) {
+    async fn persist_snapshot(&self) {
         let _guard = self.persist_lock.lock().await;
         if let Some(ref path) = self.persist_path {
+            let snapshot: Vec<Tenant> = {
+                let tenants = self.tenants.read().await;
+                tenants.values().cloned().collect()
+            };
             if let Ok(data) = serde_json::to_string_pretty(&snapshot) {
                 if let Some(parent) = path.parent() {
                     let _ = tokio::fs::create_dir_all(parent).await;
@@ -87,15 +91,14 @@ impl TenantManager {
     }
 
     pub async fn create_tenant(&self, tenant: Tenant) -> Result<(), String> {
-        let snapshot = {
+        {
             let mut tenants = self.tenants.write().await;
             if tenants.contains_key(&tenant.id) {
                 return Err(format!("Tenant '{}' already exists", tenant.id));
             }
             tenants.insert(tenant.id.clone(), tenant);
-            tenants.values().cloned().collect()
-        };
-        self.persist_snapshot(snapshot).await;
+        }
+        self.persist_snapshot().await;
         Ok(())
     }
 
@@ -114,7 +117,7 @@ impl TenantManager {
         api_rate_limit: Option<u32>,
         enabled: Option<bool>,
     ) -> bool {
-        let snapshot = {
+        {
             let mut tenants = self.tenants.write().await;
             if let Some(tenant) = tenants.get_mut(tenant_id) {
                 if let Some(n) = name {
@@ -136,24 +139,22 @@ impl TenantManager {
                     tenant.enabled = e;
                 }
                 tenant.updated_at = chrono::Utc::now().to_rfc3339();
-                tenants.values().cloned().collect::<Vec<_>>()
             } else {
                 return false;
             }
-        };
-        self.persist_snapshot(snapshot).await;
+        }
+        self.persist_snapshot().await;
         true
     }
 
     pub async fn delete_tenant(&self, tenant_id: &str) -> bool {
-        let snapshot = {
+        {
             let mut tenants = self.tenants.write().await;
             if tenants.remove(tenant_id).is_none() {
                 return false;
             }
-            tenants.values().cloned().collect()
-        };
-        self.persist_snapshot(snapshot).await;
+        }
+        self.persist_snapshot().await;
         true
     }
 

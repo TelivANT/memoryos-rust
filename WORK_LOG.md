@@ -1,8 +1,8 @@
 # 工作日志 (Work Log)
 
 **项目**: MemoryOS-Rust  
-**当前版本**: v0.12.3  
-**更新**: 2026-02-20 14:40
+**当前版本**: v0.12.4  
+**更新**: 2026-02-20 14:55
 
 ---
 
@@ -37,6 +37,25 @@
 ---
 
 ## 🚀 当前活跃任务
+
+### [Devin] - v0.12.4 PR #17 Review 跟进修复
+- **开始时间**: 2026-02-20 14:45
+- **完成时间**: 2026-02-20 14:55
+- **当前进度**: 100%
+- **状态**: ✅ 完成
+- **任务描述**: 修复 PR #17 自动 review 发现的 5 项问题
+- **成果**:
+  - ✅ 消除代码重复: search_segments() / search_segments_by_tags() 改用 build_mid_term_segment() helper（删除 ~150 行重复代码）
+  - ✅ 修复持久化竞态: persist_snapshot() 改为在锁内读取最新状态再写入，避免旧快照覆盖新数据
+  - ✅ 接入 tenant 搜索: gateway 的 5 个路由处理器读取 X-Tenant-ID header，有值时调用 search_segments_for_tenant/search_segments_by_tags_for_tenant
+  - ✅ 新增并发持久化测试: 20 个并发 add_user 后验证文件完整性
+- **相关文件**:
+  - `crates/memoryos-adapters/src/memory/qdrant.rs` — search methods 改用 helper
+  - `crates/memoryos-core/src/rbac/mod.rs` — persist_snapshot 读写原子化 + 并发测试
+  - `crates/memoryos-core/src/tenant/mod.rs` — persist_snapshot 读写原子化
+  - `crates/memoryos-gateway/src/routes/memory_manage.rs` — X-Tenant-ID header 接入
+
+---
 
 ### [Devin] - v0.12.3 PR #16 Review 缺口修复
 - **开始时间**: 2026-02-20 14:25

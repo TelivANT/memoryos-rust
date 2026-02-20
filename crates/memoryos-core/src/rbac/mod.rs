@@ -164,9 +164,13 @@ impl RbacManager {
         }
     }
 
-    async fn persist_snapshot(&self, snapshot: Vec<UserRecord>) {
+    async fn persist_snapshot(&self) {
         let _guard = self.persist_lock.lock().await;
         if let Some(ref path) = self.persist_path {
+            let snapshot: Vec<UserRecord> = {
+                let users = self.users.read().await;
+                users.values().cloned().collect()
+            };
             if let Ok(data) = serde_json::to_string_pretty(&snapshot) {
                 if let Some(parent) = path.parent() {
                     let _ = tokio::fs::create_dir_all(parent).await;
@@ -179,23 +183,21 @@ impl RbacManager {
     }
 
     pub async fn add_user(&self, user: UserRecord) {
-        let snapshot = {
+        {
             let mut users = self.users.write().await;
             users.insert(user.user_id.clone(), user);
-            users.values().cloned().collect()
-        };
-        self.persist_snapshot(snapshot).await;
+        }
+        self.persist_snapshot().await;
     }
 
     pub async fn remove_user(&self, user_id: &str) -> bool {
-        let snapshot = {
+        {
             let mut users = self.users.write().await;
             if users.remove(user_id).is_none() {
                 return false;
             }
-            users.values().cloned().collect()
-        };
-        self.persist_snapshot(snapshot).await;
+        }
+        self.persist_snapshot().await;
         true
     }
 
@@ -210,17 +212,16 @@ impl RbacManager {
     }
 
     pub async fn assign_role(&self, user_id: &str, role: Role) -> bool {
-        let snapshot = {
+        {
             let mut users = self.users.write().await;
             if let Some(user) = users.get_mut(user_id) {
                 user.role = role;
                 user.updated_at = chrono::Utc::now().to_rfc3339();
-                users.values().cloned().collect::<Vec<_>>()
             } else {
                 return false;
             }
-        };
-        self.persist_snapshot(snapshot).await;
+        }
+        self.persist_snapshot().await;
         true
     }
 
@@ -257,7 +258,7 @@ impl RbacManager {
         email: Option<String>,
         is_active: Option<bool>,
     ) -> bool {
-        let snapshot = {
+        {
             let mut users = self.users.write().await;
             if let Some(user) = users.get_mut(user_id) {
                 if let Some(name) = display_name {
@@ -270,12 +271,11 @@ impl RbacManager {
                     user.is_active = active;
                 }
                 user.updated_at = chrono::Utc::now().to_rfc3339();
-                users.values().cloned().collect::<Vec<_>>()
             } else {
                 return false;
             }
-        };
-        self.persist_snapshot(snapshot).await;
+        }
+        self.persist_snapshot().await;
         true
     }
 
@@ -457,6 +457,32 @@ mod tests {
             assert_eq!(u.role, Role::SuperAdmin);
             assert!(mgr.get_user("mut2").await.is_none());
         }
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_persist_no_data_loss() {
+        let dir = std::env::temp_dir().join(format!("rbac_conc_{}", uuid::Uuid::now_v7()));
+        let path = dir.join("rbac_users.json");
+        let mgr = std::sync::Arc::new(RbacManager::with_persistence(&path));
+
+        let mut handles = Vec::new();
+        for i in 0..20 {
+            let mgr = mgr.clone();
+            handles.push(tokio::spawn(async move {
+                let id = format!("user_{}", i);
+                mgr.add_user(make_user(&id, "t1", Role::User)).await;
+            }));
+        }
+        for h in handles {
+            h.await.unwrap();
+        }
+
+        assert_eq!(mgr.user_count().await, 20);
+
+        let mgr2 = RbacManager::with_persistence(&path);
+        assert_eq!(mgr2.user_count().await, 20);
 
         let _ = std::fs::remove_dir_all(&dir);
     }

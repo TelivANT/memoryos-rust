@@ -1,18 +1,18 @@
 {
   "project_name": "MemoryOS-Rust",
-  "version": "0.12.3",
+  "version": "0.12.4",
   "edition": "Personal/Enterprise Single-Tenant Edition",
   "last_updated": "2026-02-20",
   "status": {
-        "phase": "v0.12.3 Complete - PR #16 Review Gap Fixes",
+        "phase": "v0.12.4 Complete - PR #17 Review Follow-up",
         "progress_percentage": 100,
-        "current_task": "v0.12.3 PR #16 review 缺口修复已完成",
+        "current_task": "v0.12.4 PR #17 review 跟进修复已完成",
     "is_blocked": false
   },
   "branches": {
     "main": {
       "description": "Personal/Enterprise Single-Tenant Edition",
-      "current_version": "v0.12.3",
+      "current_version": "v0.12.4",
       "target_users": "Individual developers, single enterprise deployments"
     },
     "feature/saas-multi-tenant": {
@@ -108,7 +108,8 @@
       "v0.12.0: Enterprise Features (RBAC, multi-tenant, admin service, service separation)",
       "v0.12.1: Enterprise Hardening (persistence, admin auth, fail-closed RBAC, docs alignment)",
       "v0.12.2: Enterprise Deep Hardening (async I/O, race condition fix, constant-time auth, tenant isolation, tests)",
-      "v0.12.3: PR #16 Review Gap Fixes (Qdrant tenant search filter, serial persist queue, build_mid_term_segment helper)"
+      "v0.12.3: PR #16 Review Gap Fixes (Qdrant tenant search filter, serial persist queue, build_mid_term_segment helper)",
+      "v0.12.4: PR #17 Review Follow-up (dedup search methods, atomic persist, gateway tenant wiring, concurrent persist test)"
     ],
         "in_progress": [],
         "todo": [
@@ -125,6 +126,17 @@
     ]
   },
   "recent_changes": [
+    {
+      "date": "2026-02-20",
+      "author": "Devin",
+      "description": "v0.12.4: PR #17 Review Follow-up",
+      "changes": [
+        "Dedup: search_segments() and search_segments_by_tags() now use build_mid_term_segment() helper (~150 lines removed)",
+        "Atomic persist: persist_snapshot() reads latest state under lock before writing, prevents stale snapshot overwrite",
+        "Gateway tenant wiring: 5 route handlers read X-Tenant-ID header and call tenant-scoped search when present",
+        "Concurrent persist test: 20 parallel add_user calls verified to persist all records to file"
+      ]
+    },
     {
       "date": "2026-02-20",
       "author": "Devin",
