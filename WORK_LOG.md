@@ -38,6 +38,30 @@
 
 ## 🚀 当前活跃任务
 
+### [Kiro AI] - Storage Connectors 实现
+- **开始时间**: 2026-02-21 10:00
+- **预计完成**: 2026-02-28 18:00
+- **当前进度**: 12%
+- **状态**: 🟢 进行中
+- **任务描述**: 为 wiki-gen 实现统一存储连接器，支持从多种源读取代码
+- **实现计划**:
+  - **P0 (Week 1)**: Local, Git, S3, WebDAV (4 个)
+  - **P1 (Week 2-3)**: OSS, COS, OBS, SMB, NFS, SFTP (6 个)
+  - **P2 (Week 4-6)**: OneDrive, Google Drive, Dropbox, GCS, Azure, 百度网盘, 阿里云盘 (7 个)
+- **已完成**:
+  - ✅ StorageConnector trait (7 methods)
+  - ✅ LocalConnector (本地文件系统)
+  - ✅ GitConnector (Git 仓库克隆，Token + SSH 认证)
+  - ✅ 单元测试 (LocalConnector 通过)
+  - ✅ PR #28 已创建
+- **相关文件**:
+  - docs/STORAGE_CONNECTORS.md (设计文档)
+  - crates/memoryos-wiki-gen/src/storage/ (实现目录)
+- **当前任务**: P0 Phase 2 - 实现 S3Connector 和 WebDavConnector
+- **备注**: 排除容器存储和特殊协议，专注企业实用场景
+
+---
+
 ### [Devin] - Wiki 生成系统设计文档
 - **开始时间**: 2026-02-20 16:30
 - **完成时间**: 2026-02-20 17:05
