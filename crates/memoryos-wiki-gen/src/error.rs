@@ -26,8 +26,12 @@ pub enum WikiGenError {
     #[error("Cache error: {0}")]
     Cache(String),
 
+    #[error("Storage error: {0}")]
+    Storage(String),
+
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 }
 
-pub type WikiGenResult<T> = Result<T, WikiGenError>;
+pub type WikiGenResult<T> = std::result::Result<T, WikiGenError>;
+pub type Result<T> = WikiGenResult<T>;

@@ -14,6 +14,7 @@ pub mod llm_gen;
 pub mod manifest;
 pub mod page_builder;
 pub mod parser;
+pub mod storage;
 pub mod wiki_index;
 
 use std::collections::HashMap;

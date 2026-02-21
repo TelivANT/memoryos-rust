@@ -53,5 +53,9 @@ sha2 = "0.10"
 # Config
 toml = "0.8"
 
+# Storage
+git2 = "0.19"
+uuid = { version = "1", features = ["v4"] }
+
 [dev-dependencies]
 tempfile = "3"
