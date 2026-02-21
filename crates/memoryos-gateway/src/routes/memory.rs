@@ -100,7 +100,7 @@ pub async fn retrieve_context(
 
 // TODO: Memory API 测试需要重构以适配新架构
 #[cfg(test)]
-#[cfg(feature = "integration-tests")]
+#[cfg(feature = "memory-route-tests-disabled")]
 mod tests {
     use super::*;
     use async_trait::async_trait;

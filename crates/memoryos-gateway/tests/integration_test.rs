@@ -2,8 +2,7 @@
 
 use memoryos_adapters::memory::{QdrantStorage, RedisStorage};
 use memoryos_core::{GdprManager, Message, OptimizedFaqMatcher};
-use memoryos_ports::{ShortTermStorage, VectorStorage};
-use std::sync::Arc;
+use memoryos_ports::{EventBus, ShortTermStorage, VectorStorage};
 
 fn redis_url() -> String {
     std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string())
@@ -95,7 +94,7 @@ async fn test_qdrant_segment_store_search() {
     storage.store_segment(segment).await.unwrap();
 
     let results = storage
-        .search_segments(user_id, &vec![0.5; 1536], 10)
+        .search_segments(user_id, vec![0.5; 1536], 10)
         .await
         .unwrap();
     assert!(!results.is_empty());
@@ -181,7 +180,7 @@ async fn test_qdrant_delete_user_data_all_collections() {
     storage.delete_user_data(user_id).await.unwrap();
 
     let results = storage
-        .search_segments(user_id, &vec![0.3; 1536], 10)
+        .search_segments(user_id, vec![0.3; 1536], 10)
         .await
         .unwrap();
     let user_results: Vec<_> = results.iter().filter(|s| s.user_id == *user_id).collect();
