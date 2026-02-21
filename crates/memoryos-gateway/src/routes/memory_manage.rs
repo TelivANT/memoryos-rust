@@ -296,6 +296,7 @@ async fn import_memories(
             tags: seg.tags.clone(),
             updated_at: None,
             previous_version_id: None,
+            score: None,
         };
 
         state.vector_store.store_segment(segment).await?;

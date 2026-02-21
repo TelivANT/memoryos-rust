@@ -36,3 +36,6 @@ integration-tests = []
 [dev-dependencies]
 tower.workspace = true
 async-trait.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+serde_json.workspace = true

@@ -58,8 +58,14 @@ jobs:
     - name: Build
       run: cargo build --verbose
     
-    - name: Run tests
+    - name: Run unit tests
       run: cargo test --lib --verbose
+      env:
+        REDIS_URL: redis://localhost:6379
+        QDRANT_URL: http://localhost:6334
+
+    - name: Run integration tests
+      run: cargo test -p memoryos-gateway --test integration_test --features integration-tests --verbose
       env:
         REDIS_URL: redis://localhost:6379
         QDRANT_URL: http://localhost:6334

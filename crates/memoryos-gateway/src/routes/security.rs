@@ -4,7 +4,9 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use memoryos_adapters::memory::{QdrantStorage, RedisStorage};
 use memoryos_core::{AuditLogger, GdprManager};
+use memoryos_ports::ShortTermStorage;
 use serde::Deserialize;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -13,6 +15,8 @@ use tokio::sync::RwLock;
 pub struct SecurityState {
     pub audit_logger: Arc<AuditLogger>,
     pub gdpr_manager: Arc<RwLock<GdprManager>>,
+    pub qdrant_storage: Arc<QdrantStorage>,
+    pub redis_storage: Arc<RedisStorage>,
 }
 
 #[derive(Deserialize)]
@@ -96,15 +100,33 @@ async fn gdpr_delete_request(
 ) -> impl IntoResponse {
     let mut gdpr = state.gdpr_manager.write().await;
     match gdpr.request_deletion(&req.user_id) {
-        Ok(deletion_req) => {
-            state
-                .audit_logger
-                .log_data_deletion(&req.user_id, "all_data");
+        Ok(_) => {
+            let mut errors: Vec<String> = Vec::new();
 
-            Json(serde_json::json!({
-                "status": "ok",
-                "deletion_request": deletion_req,
-            }))
+            if let Err(e) = state.redis_storage.clear(&req.user_id).await {
+                errors.push(format!("redis: {}", e));
+            }
+
+            if let Err(e) = state.qdrant_storage.delete_user_data(&req.user_id).await {
+                errors.push(format!("qdrant: {}", e));
+            }
+
+            if errors.is_empty() {
+                let _ = gdpr.complete_deletion(&req.user_id);
+                state
+                    .audit_logger
+                    .log_data_deletion(&req.user_id, "all_data");
+                Json(serde_json::json!({
+                    "status": "ok",
+                    "message": "User data deleted from all backends",
+                }))
+            } else {
+                Json(serde_json::json!({
+                    "status": "partial",
+                    "message": "Some backends failed",
+                    "errors": errors,
+                }))
+            }
         }
         Err(e) => Json(serde_json::json!({
             "status": "error",
