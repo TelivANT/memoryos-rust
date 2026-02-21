@@ -23,10 +23,12 @@ memoryos-core = { path = "../memoryos-core" }
 memoryos-ports = { path = "../memoryos-ports" }
 memoryos-adapters = { path = "../memoryos-adapters" }
 memoryos-metrics = { path = "../memoryos-metrics" }
+memoryos-wiki-gen = { path = "../memoryos-wiki-gen" }
 qdrant-client.workspace = true
 redis.workspace = true
 sha2 = "0.10"
 subtle = "2.6"
+async-trait.workspace = true
 
 [features]
 integration-tests = []

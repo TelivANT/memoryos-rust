@@ -19,6 +19,7 @@ thiserror.workspace = true
 chrono.workspace = true
 async-trait.workspace = true
 
+
 # Parsing
 tree-sitter = "0.24"
 tree-sitter-rust = "0.23"
@@ -41,6 +42,7 @@ indicatif = "0.17"
 
 # File discovery
 walkdir = "2"
+ignore = "0.4.22"
 
 # Parallel
 rayon = "1.10"
@@ -50,3 +52,6 @@ sha2 = "0.10"
 
 # Config
 toml = "0.8"
+
+[dev-dependencies]
+tempfile = "3"

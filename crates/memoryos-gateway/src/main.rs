@@ -19,6 +19,7 @@ use routes::graph::{create_graph_routes, GraphState};
 use routes::memory_manage::{create_memory_manage_routes, MemoryManageState};
 use routes::multimodal::{create_multimodal_routes, MultiModalState};
 use routes::security::{create_security_routes, SecurityState};
+use routes::wiki::{create_wiki_routes, WikiState};
 use state::AppState;
 use worker_monitor::spawn_worker_monitor;
 
@@ -172,6 +173,14 @@ async fn main() -> Result<(), AppError> {
     };
     let security_routes = create_security_routes(security_state);
 
+    // Wiki generation routes (v0.12.6)
+    let default_llm_adapter = state.providers.get(&config.llm.default_provider).cloned();
+    let wiki_state = WikiState {
+        llm_adapter: default_llm_adapter,
+        jobs: std::sync::Arc::new(tokio::sync::RwLock::new(Vec::new())),
+    };
+    let wiki_routes = create_wiki_routes(wiki_state);
+
     // All routes that require authentication (including nested sub-routes)
     let authed_routes = Router::new()
         .route("/v1/chat/completions", post(chat_completions))
@@ -189,6 +198,7 @@ async fn main() -> Result<(), AppError> {
         .nest("/v1/memory/manage", memory_manage_routes)
         .nest("/v1/multimodal", multimodal_routes)
         .nest("/v1/security", security_routes)
+        .nest("/v1/wiki", wiki_routes)
         .layer(axum::middleware::from_fn_with_state(
             state_arc.clone(),
             middleware::auth_middleware,
