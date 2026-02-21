@@ -56,6 +56,9 @@ toml = "0.8"
 # Storage
 git2 = "0.19"
 uuid = { version = "1", features = ["v4"] }
+aws-sdk-s3 = "1"
+aws-config = "1"
+reqwest = { version = "0.12", features = ["json"] }
 
 [dev-dependencies]
 tempfile = "3"
