@@ -5,8 +5,10 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use memoryos_wiki_gen::storage::{GitConnector, LocalConnector, StorageConnector};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use uuid::Uuid;
 
 /// Connector field definition
@@ -219,19 +221,69 @@ async fn list_connectors(State(_state): State<super::wiki::WikiState>) -> impl I
 
 async fn test_connection(
     State(_state): State<super::wiki::WikiState>,
-    Json(_req): Json<TestConnectionRequest>,
+    Json(req): Json<TestConnectionRequest>,
 ) -> impl IntoResponse {
-    // TODO: Implement actual connection test
-    let connector_id = Uuid::now_v7().to_string();
+    // Create connector based on type
+    let result = match req.connector_type.as_str() {
+        "local" => {
+            let path = req
+                .config
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path' field");
+            match path {
+                Ok(p) => {
+                    let mut connector = LocalConnector::new(PathBuf::from(p));
+                    connector.connect().await
+                }
+                Err(e) => Err(memoryos_wiki_gen::error::WikiGenError::Storage(
+                    e.to_string(),
+                )),
+            }
+        }
+        "git" => {
+            let url = req
+                .config
+                .get("url")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'url' field");
+            match url {
+                Ok(u) => {
+                    let mut connector = GitConnector::new(u.to_string());
+                    if let Some(token) = req.config.get("token").and_then(|v| v.as_str()) {
+                        connector = connector.with_token(token.to_string());
+                    }
+                    connector.connect().await
+                }
+                Err(e) => Err(memoryos_wiki_gen::error::WikiGenError::Storage(
+                    e.to_string(),
+                )),
+            }
+        }
+        _ => Err(memoryos_wiki_gen::error::WikiGenError::Storage(format!(
+            "Unsupported connector type: {}",
+            req.connector_type
+        ))),
+    };
 
-    Json(TestConnectionResponse {
-        success: true,
-        message: Some("Connection successful".to_string()),
-        connector_id: Some(connector_id),
-        metadata: Some(HashMap::new()),
-        error: None,
-        error_code: None,
-    })
+    match result {
+        Ok(_) => Json(TestConnectionResponse {
+            success: true,
+            message: Some("Connection successful".to_string()),
+            connector_id: Some(Uuid::now_v7().to_string()),
+            metadata: Some(HashMap::new()),
+            error: None,
+            error_code: None,
+        }),
+        Err(e) => Json(TestConnectionResponse {
+            success: false,
+            message: None,
+            connector_id: None,
+            metadata: None,
+            error: Some(format!("{}", e)),
+            error_code: Some("CONNECTION_FAILED".to_string()),
+        }),
+    }
 }
 
 async fn browse_directory(
