@@ -50,6 +50,22 @@ pub async fn chat_completions(
         msg.content = state.shield.sanitize_pii(&msg.content);
     }
 
+    if let Some(answer) = state.faq_matcher.read().await.match_faq(&last_msg).await {
+        return Ok(Json(ChatResponse {
+            id: format!("faq-bloom-{}", uuid::Uuid::now_v7()),
+            object: "chat.completion".to_string(),
+            model: "memoryos-faq-cache".to_string(),
+            choices: vec![ChatChoice {
+                index: 0,
+                message: ChatMessage {
+                    role: "assistant".to_string(),
+                    content: answer,
+                },
+                finish_reason: "stop".to_string(),
+            }],
+        }));
+    }
+
     let memory_mgr = state.memory_manager.read().await.clone();
     let (is_faq_match, global_similarity, faq_answer) =
         match memory_mgr.retrieve_context(user_id, &last_msg).await {
@@ -60,13 +76,9 @@ pub async fn chat_completions(
                     .enumerate()
                     .find(|(_, seg)| seg.memory_type == memoryos_core::MemoryType::Faq);
                 match faq_match {
-                    Some((pos, seg)) => {
-                        let estimated_similarity = match pos {
-                            0 => 0.98_f32,
-                            1 => 0.93,
-                            _ => 0.80,
-                        };
-                        (true, estimated_similarity, Some(seg.summary.clone()))
+                    Some((_pos, seg)) => {
+                        let similarity = seg.score.unwrap_or(0.85);
+                        (true, similarity, Some(seg.summary.clone()))
                     }
                     None => (false, 0.0, None),
                 }
@@ -125,8 +137,21 @@ pub async fn chat_completions(
 
     let response = adapter.chat(request).await?;
 
-    // 5. Async: Emit Event (TODO)
-    // state.event_bus.emit(ChatLog { ... });
+    if let Some(ref event_bus) = state.event_bus {
+        let event_id = uuid::Uuid::now_v7().to_string();
+        let payload = serde_json::json!({
+            "user_id": user_id,
+            "query": last_msg,
+            "provider": target_provider,
+            "tier": format!("{:?}", decision.tier),
+        });
+        let bus = event_bus.clone();
+        tokio::spawn(async move {
+            if let Err(e) = bus.publish_chat_log(&event_id, payload).await {
+                tracing::warn!(error = %e, "Failed to publish chat event");
+            }
+        });
+    }
 
     Ok(Json(response))
 }

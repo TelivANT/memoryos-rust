@@ -170,6 +170,8 @@ async fn main() -> Result<(), AppError> {
     let security_state = SecurityState {
         audit_logger,
         gdpr_manager,
+        qdrant_storage: state.qdrant_storage.clone(),
+        redis_storage: state.redis_storage.clone(),
     };
     let security_routes = create_security_routes(security_state);
 

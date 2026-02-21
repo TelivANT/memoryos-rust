@@ -119,12 +119,53 @@ impl QdrantStorage {
         Ok(())
     }
 
+    pub async fn delete_points_by_id(&self, id: &uuid::Uuid) -> Result<(), AppError> {
+        use qdrant_client::qdrant::DeletePointsBuilder;
+        let point_id = qdrant_client::qdrant::PointId::from(id.to_string());
+        self.client
+            .delete_points(
+                DeletePointsBuilder::new(&self.segment_collection)
+                    .points(vec![point_id])
+                    .wait(true),
+            )
+            .await
+            .map_err(|e| AppError::ExternalService(format!("Qdrant delete point failed: {}", e)))?;
+        Ok(())
+    }
+
+    pub async fn delete_user_data(&self, user_id: &str) -> Result<(), AppError> {
+        use qdrant_client::qdrant::{Condition, DeletePointsBuilder, Filter};
+
+        for collection in [
+            &self.shortterm_collection,
+            &self.segment_collection,
+            &self.longterm_collection,
+        ] {
+            let filter = Filter::must([Condition::matches("user_id", user_id.to_string())]);
+            self.client
+                .delete_points(
+                    DeletePointsBuilder::new(collection)
+                        .points(filter)
+                        .wait(true),
+                )
+                .await
+                .map_err(|e| {
+                    AppError::ExternalService(format!(
+                        "Qdrant delete from '{}' failed: {}",
+                        collection, e
+                    ))
+                })?;
+        }
+        Ok(())
+    }
+
     fn build_mid_term_segment(
         &self,
         user_id: &str,
         payload: HashMap<String, Value>,
         point_id: Option<PointId>,
         vectors: Option<VectorsOutput>,
+        score: Option<f32>,
     ) -> MidTermSegment {
         let summary = payload_string(&payload, "summary").unwrap_or_default();
         let heat = payload_f64(&payload, "heat").unwrap_or(0.0) as f32;
@@ -194,6 +235,7 @@ impl QdrantStorage {
                 .get("previous_version_id")
                 .and_then(|v| v.as_str())
                 .and_then(|s| uuid::Uuid::parse_str(s).ok()),
+            score,
         }
     }
 }
@@ -407,7 +449,8 @@ impl VectorStorage for QdrantStorage {
             .into_iter()
             .map(|point| {
                 let payload = point.payload;
-                self.build_mid_term_segment(user_id, payload, point.id, point.vectors)
+                let score = Some(point.score);
+                self.build_mid_term_segment(user_id, payload, point.id, point.vectors, score)
             })
             .collect::<Vec<_>>();
 
@@ -451,7 +494,7 @@ impl VectorStorage for QdrantStorage {
             .into_iter()
             .map(|point| {
                 let payload = point.payload;
-                self.build_mid_term_segment(user_id, payload, point.id, point.vectors)
+                self.build_mid_term_segment(user_id, payload, point.id, point.vectors, None)
             })
             .collect::<Vec<_>>();
 
@@ -484,7 +527,8 @@ impl VectorStorage for QdrantStorage {
             .into_iter()
             .map(|point| {
                 let payload = point.payload;
-                self.build_mid_term_segment(user_id, payload, point.id, point.vectors)
+                let score = Some(point.score);
+                self.build_mid_term_segment(user_id, payload, point.id, point.vectors, score)
             })
             .collect::<Vec<_>>();
 
@@ -524,7 +568,7 @@ impl VectorStorage for QdrantStorage {
             .into_iter()
             .map(|point| {
                 let payload = point.payload;
-                self.build_mid_term_segment(user_id, payload, point.id, point.vectors)
+                self.build_mid_term_segment(user_id, payload, point.id, point.vectors, None)
             })
             .collect::<Vec<_>>();
 

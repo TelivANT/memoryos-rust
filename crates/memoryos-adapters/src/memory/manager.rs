@@ -56,7 +56,7 @@ pub struct DefaultMemoryManager {
     vector_store: Arc<dyn VectorStorage>,
     write_coordinator: Option<Arc<dyn ConcurrencyControl>>,
     history_storage: Option<Arc<dyn memoryos_ports::HistoryStorage>>,
-    _llm: Arc<dyn LlmAdapter>,
+    llm: Arc<dyn LlmAdapter>,
     short_term_limit: usize,
     mid_term_limit: usize,
     short_term_capacity: usize,
@@ -174,7 +174,7 @@ impl DefaultMemoryManager {
             vector_store,
             write_coordinator: None,
             history_storage: None,
-            _llm: llm,
+            llm,
             short_term_limit: 10,
             mid_term_limit: 5,
             short_term_capacity: 20,
@@ -216,7 +216,7 @@ impl DefaultMemoryManager {
             vector_store,
             write_coordinator: Some(write_coordinator),
             history_storage: None,
-            _llm: llm,
+            llm,
             short_term_limit: 10,
             mid_term_limit: 5,
             short_term_capacity: 20,
@@ -252,7 +252,7 @@ impl DefaultMemoryManager {
             vector_store,
             write_coordinator: Some(write_coordinator),
             history_storage: None,
-            _llm: llm,
+            llm,
             short_term_limit: 10,
             mid_term_limit: 5,
             short_term_capacity: 20,
@@ -393,6 +393,7 @@ impl DefaultMemoryManager {
                 tags: vec![],
                 updated_at: None,
                 previous_version_id: None,
+                score: None,
             };
             if let Err(err) = self.vector_store.store_segment(segment).await {
                 warn!(
@@ -790,6 +791,7 @@ impl DefaultMemoryManager {
             tags: vec![],
             updated_at: None,
             previous_version_id: None,
+            score: None,
         };
 
         // 4. 存储到向量数据库
@@ -825,28 +827,62 @@ impl DefaultMemoryManager {
         Ok(())
     }
 
-    /// 使用 LLM 总结对话
     async fn summarize_messages_internal(&self, messages: &[Message]) -> Result<String, AppError> {
-        // 构造对话文本
         let conversation = messages
             .iter()
             .map(|m| format!("{}: {}", m.role, m.content))
             .collect::<Vec<_>>()
             .join("\n");
 
-        // 简化版：直接返回拼接的对话（避免额外的 LLM 调用）
-        // 在生产环境中，这里应该调用 LLM 生成摘要
-        let summary = if conversation.len() > 500 {
-            format!("{}...", &conversation[..500])
-        } else {
+        let prompt = format!(
+            "Summarize the following conversation into a concise paragraph that captures the key topics, decisions, and context. Output ONLY the summary, no preamble.\n\n{}",
             conversation
+        );
+
+        let model = std::env::var("MEMORYOS__LLM__DEFAULT_MODEL")
+            .or_else(|_| std::env::var("LLM_MODEL"))
+            .unwrap_or_else(|_| "gpt-4o-mini".to_string());
+
+        let request = memoryos_ports::ChatRequest {
+            model,
+            messages: vec![memoryos_ports::ChatMessage {
+                role: "user".to_string(),
+                content: prompt,
+            }],
+            temperature: Some(0.3),
+            max_tokens: Some(256),
+            stream: false,
+            extra: HashMap::new(),
         };
 
-        Ok(format!(
-            "[Consolidated at {}] {}",
-            chrono::Utc::now().format("%Y-%m-%d %H:%M:%S"),
-            summary
-        ))
+        match self.llm.chat(request).await {
+            Ok(response) => {
+                if let Some(choice) = response.choices.first() {
+                    let summary = choice.message.content.trim().to_string();
+                    if !summary.is_empty() {
+                        return Ok(summary);
+                    }
+                }
+                let fallback = if conversation.len() > 500 {
+                    format!("{}...", &conversation[..500])
+                } else {
+                    conversation
+                };
+                Ok(fallback)
+            }
+            Err(e) => {
+                warn!(
+                    "LLM summarization failed, falling back to truncation: {}",
+                    e
+                );
+                let fallback = if conversation.len() > 500 {
+                    format!("{}...", &conversation[..500])
+                } else {
+                    conversation
+                };
+                Ok(fallback)
+            }
+        }
     }
 }
 

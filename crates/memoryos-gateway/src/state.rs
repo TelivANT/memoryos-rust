@@ -9,7 +9,7 @@ use memoryos_core::{
     security::{SecurityConfig, SecurityShield},
     tenant::TenantManager,
 };
-use memoryos_ports::{HistoryStorage, LlmAdapter, MemoryManager, VectorStorage};
+use memoryos_ports::{EventBus, HistoryStorage, LlmAdapter, MemoryManager, VectorStorage};
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 
@@ -25,12 +25,16 @@ pub struct AppState {
     pub context_injector: Arc<dyn ContextInjector>,
     #[allow(dead_code)]
     pub vector_store: Arc<dyn VectorStorage>,
+    pub qdrant_storage: Arc<QdrantStorage>,
+    pub redis_storage: Arc<RedisStorage>,
     pub providers: HashMap<String, Arc<dyn LlmAdapter>>,
     pub memory_manager: Arc<RwLock<Arc<dyn MemoryManager>>>,
     pub history_storage: Option<Arc<dyn HistoryStorage>>,
     pub worker_monitor: Arc<RwLock<WorkerMonitorSnapshot>>,
     pub api_key_store: Option<Arc<ApiKeyStore>>,
     pub async_memory_pipeline: bool,
+    pub event_bus: Option<Arc<dyn EventBus>>,
+    pub faq_matcher: Arc<tokio::sync::RwLock<memoryos_core::OptimizedFaqMatcher>>,
     pub rbac_manager: Option<RbacManager>,
     pub tenant_manager: Option<TenantManager>,
 }
@@ -99,7 +103,7 @@ impl AppState {
             Arc::new(DefaultMemoryManager::new_with_coordinator(
                 vector_store.clone(),
                 default_llm,
-                redis_storage,
+                redis_storage.clone(),
             ));
 
         // 5. Init History Storage (uses same Qdrant client)
@@ -149,18 +153,39 @@ impl AppState {
             data_dir.join("tenants.json"),
         ));
 
+        let event_bus: Option<Arc<dyn EventBus>> = {
+            let stream_key =
+                std::env::var("MEMORYOS_WORKER_STREAM").unwrap_or_else(|_| "chat_log".to_string());
+            match memoryos_adapters::RedisStreamEventBus::new(
+                &config.storage.redis.url,
+                &stream_key,
+            ) {
+                Ok(bus) => Some(Arc::new(bus)),
+                Err(e) => {
+                    tracing::warn!("EventBus init failed, async events disabled: {}", e);
+                    None
+                }
+            }
+        };
+
+        let faq_matcher = Arc::new(RwLock::new(memoryos_core::OptimizedFaqMatcher::new(10_000)));
+
         Self {
             config: Arc::new(config),
             router,
             shield,
             context_injector,
-            vector_store,
+            vector_store: vector_store.clone(),
+            qdrant_storage: vector_store,
+            redis_storage,
             providers,
             memory_manager: Arc::new(RwLock::new(memory_manager)),
             history_storage,
             worker_monitor,
             api_key_store,
             async_memory_pipeline: false,
+            event_bus,
+            faq_matcher,
             rbac_manager,
             tenant_manager,
         }
@@ -171,12 +196,19 @@ impl AppState {
     }
 
     pub async fn current_health(&self) -> HealthStatus {
-        // Simple health check
+        let redis_ok = self.redis_storage.health_check().await.is_ok();
+        let qdrant_ok = self.qdrant_storage.health_check().await.is_ok();
+        let degraded = !redis_ok || !qdrant_ok;
+        let mode = if degraded {
+            "degraded".to_string()
+        } else {
+            "ready".to_string()
+        };
         HealthStatus {
-            redis: true,  // TODO: actual check
-            qdrant: true, // TODO: actual check
-            degraded: false,
-            mode: "ready".to_string(),
+            redis: redis_ok,
+            qdrant: qdrant_ok,
+            degraded,
+            mode,
             upstream: true,
             auth_cache: true,
         }

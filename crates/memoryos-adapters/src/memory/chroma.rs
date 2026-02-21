@@ -320,6 +320,7 @@ impl VectorStorage for ChromaStorage {
                     tags: vec![],
                     updated_at: None,
                     previous_version_id: None,
+                    score: None,
                 };
                 segments.push(segment);
             }

@@ -167,6 +167,7 @@ mod tests {
             tags: vec![],
             updated_at: None,
             previous_version_id: None,
+            score: None,
         }
     }
 

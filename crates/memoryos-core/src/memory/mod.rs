@@ -61,6 +61,8 @@ pub struct MidTermSegment {
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
     #[serde(default)]
     pub previous_version_id: Option<Uuid>,
+    #[serde(default)]
+    pub score: Option<f32>,
 }
 
 /// Long-term memory (用户画像、知识、图谱)
