@@ -1,6 +1,5 @@
 use axum::{
     extract::State,
-    http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
     Json, Router,
@@ -100,11 +99,29 @@ pub struct BrowseDirectoryResponse {
     pub total: usize,
 }
 
+/// Generate wiki request
+#[derive(Debug, Deserialize)]
+pub struct GenerateWithConnectorRequest {
+    pub connector_id: String,
+    pub path: String,
+    #[serde(default)]
+    pub config: Option<serde_json::Value>,
+}
+
+/// Generate wiki response
+#[derive(Debug, Serialize)]
+pub struct GenerateWithConnectorResponse {
+    pub job_id: String,
+    pub status: String,
+    pub message: String,
+}
+
 pub fn create_connector_routes() -> Router<super::wiki::WikiState> {
     Router::new()
         .route("/connectors", get(list_connectors))
         .route("/connectors/test", post(test_connection))
         .route("/connectors/browse", post(browse_directory))
+        .route("/connectors/generate", post(generate_with_connector))
 }
 
 async fn list_connectors(State(_state): State<super::wiki::WikiState>) -> impl IntoResponse {
@@ -375,4 +392,104 @@ async fn browse_directory(
             total: 0,
         }),
     }
+}
+
+async fn generate_with_connector(
+    State(state): State<super::wiki::WikiState>,
+    Json(req): Json<GenerateWithConnectorRequest>,
+) -> impl IntoResponse {
+    // Get connector from session
+    let sessions = state.connector_sessions.read().await;
+    let connector = match sessions.get(&req.connector_id) {
+        Some(c) => c.clone(),
+        None => {
+            return Json(GenerateWithConnectorResponse {
+                job_id: String::new(),
+                status: "failed".to_string(),
+                message: "Connector not found or session expired".to_string(),
+            })
+        }
+    };
+    drop(sessions);
+
+    // Clone to temp directory
+    let connector = connector.read().await;
+    let temp_path = match connector.clone_to_temp().await {
+        Ok(p) => p,
+        Err(e) => {
+            return Json(GenerateWithConnectorResponse {
+                job_id: String::new(),
+                status: "failed".to_string(),
+                message: format!("Failed to clone: {}", e),
+            })
+        }
+    };
+
+    // Create job
+    let job_id = format!("wiki-{}", uuid::Uuid::now_v7());
+    let job = super::wiki::WikiJob {
+        id: job_id.clone(),
+        repo_path: temp_path.display().to_string(),
+        status: super::wiki::JobStatus::Pending,
+        pages_generated: 0,
+        error: None,
+        started_at: chrono::Utc::now().to_rfc3339(),
+        completed_at: None,
+    };
+
+    {
+        let mut jobs = state.jobs.write().await;
+        jobs.push(job);
+    }
+
+    // Start generation in background
+    let jobs = state.jobs.clone();
+    let job_id_clone = job_id.clone();
+    let adapter = state.llm_adapter.clone();
+
+    tokio::spawn(async move {
+        use memoryos_wiki_gen::llm_adapter as wiki_llm;
+        use memoryos_wiki_gen::WikiGenerator;
+
+        {
+            let mut jobs_lock = jobs.write().await;
+            if let Some(job) = jobs_lock.iter_mut().find(|j| j.id == job_id_clone) {
+                job.status = super::wiki::JobStatus::Running;
+            }
+        }
+
+        let config = memoryos_wiki_gen::config::WikiGenConfig::default();
+        let generator = match adapter {
+            Some(a) => {
+                let bridge: Arc<dyn wiki_llm::WikiLlmAdapter> =
+                    Arc::new(super::wiki::PortsLlmBridge { inner: a });
+                WikiGenerator::with_llm_adapter(config, bridge)
+            }
+            None => WikiGenerator::new(config),
+        };
+
+        match generator.generate(&temp_path).await {
+            Ok(()) => {
+                let mut jobs_lock = jobs.write().await;
+                if let Some(job) = jobs_lock.iter_mut().find(|j| j.id == job_id_clone) {
+                    job.status = super::wiki::JobStatus::Completed;
+                    job.completed_at = Some(chrono::Utc::now().to_rfc3339());
+                }
+            }
+            Err(e) => {
+                let mut jobs_lock = jobs.write().await;
+                if let Some(job) = jobs_lock.iter_mut().find(|j| j.id == job_id_clone) {
+                    job.status = super::wiki::JobStatus::Failed;
+                    job.error = Some(format!("{}", e));
+                    job.completed_at = Some(chrono::Utc::now().to_rfc3339());
+                }
+            }
+        }
+    });
+
+    Json(GenerateWithConnectorResponse {
+        job_id,
+        status: "pending".to_string(),
+        message: "Wiki generation started".to_string(),
+    })
 }

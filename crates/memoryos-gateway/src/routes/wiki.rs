@@ -17,8 +17,8 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
-struct PortsLlmBridge {
-    inner: Arc<dyn LlmAdapter>,
+pub struct PortsLlmBridge {
+    pub inner: Arc<dyn LlmAdapter>,
 }
 
 #[async_trait::async_trait]
