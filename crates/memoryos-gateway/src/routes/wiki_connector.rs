@@ -116,9 +116,35 @@ pub struct GenerateWithConnectorResponse {
     pub message: String,
 }
 
+/// Save connector request
+#[derive(Debug, Deserialize)]
+pub struct SaveConnectorRequest {
+    pub name: String,
+    pub connector_type: String,
+    pub config: HashMap<String, serde_json::Value>,
+}
+
+/// Save connector response
+#[derive(Debug, Serialize)]
+pub struct SaveConnectorResponse {
+    pub id: String,
+    pub message: String,
+}
+
+/// Saved connector info
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SavedConnector {
+    pub id: String,
+    pub name: String,
+    pub connector_type: String,
+    pub config: HashMap<String, serde_json::Value>,
+    pub created_at: String,
+}
+
 pub fn create_connector_routes() -> Router<super::wiki::WikiState> {
     Router::new()
-        .route("/connectors", get(list_connectors))
+        .route("/connectors", get(list_connectors).post(save_connector))
+        .route("/connectors/saved", get(list_saved_connectors))
         .route("/connectors/test", post(test_connection))
         .route("/connectors/browse", post(browse_directory))
         .route("/connectors/generate", post(generate_with_connector))
@@ -492,4 +518,58 @@ async fn generate_with_connector(
         status: "pending".to_string(),
         message: "Wiki generation started".to_string(),
     })
+}
+
+async fn save_connector(
+    State(_state): State<super::wiki::WikiState>,
+    Json(req): Json<SaveConnectorRequest>,
+) -> impl IntoResponse {
+    let id = Uuid::now_v7().to_string();
+    let saved = SavedConnector {
+        id: id.clone(),
+        name: req.name,
+        connector_type: req.connector_type,
+        config: req.config,
+        created_at: chrono::Utc::now().to_rfc3339(),
+    };
+
+    // Save to file: ./data/connectors/{id}.json
+    let dir = PathBuf::from("./data/connectors");
+    if let Err(_) = tokio::fs::create_dir_all(&dir).await {
+        return Json(SaveConnectorResponse {
+            id: String::new(),
+            message: "Failed to create directory".to_string(),
+        });
+    }
+
+    let file_path = dir.join(format!("{}.json", id));
+    let json = serde_json::to_string_pretty(&saved).unwrap_or_default();
+
+    match tokio::fs::write(&file_path, json).await {
+        Ok(_) => Json(SaveConnectorResponse {
+            id,
+            message: "Connector saved successfully".to_string(),
+        }),
+        Err(_) => Json(SaveConnectorResponse {
+            id: String::new(),
+            message: "Failed to save connector".to_string(),
+        }),
+    }
+}
+
+async fn list_saved_connectors(State(_state): State<super::wiki::WikiState>) -> impl IntoResponse {
+    let dir = PathBuf::from("./data/connectors");
+    let mut connectors = Vec::new();
+
+    if let Ok(mut entries) = tokio::fs::read_dir(&dir).await {
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            if let Ok(content) = tokio::fs::read_to_string(entry.path()).await {
+                if let Ok(saved) = serde_json::from_str::<SavedConnector>(&content) {
+                    connectors.push(saved);
+                }
+            }
+        }
+    }
+
+    Json(connectors)
 }
