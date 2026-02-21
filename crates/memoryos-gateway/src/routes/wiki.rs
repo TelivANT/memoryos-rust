@@ -136,11 +136,14 @@ pub struct PageResponse {
 }
 
 pub fn create_wiki_routes(wiki_state: WikiState) -> Router {
+    use super::wiki_connector;
+
     Router::new()
         .route("/generate", post(generate_wiki))
         .route("/parse", post(parse_repo))
         .route("/status", get(get_status))
         .route("/jobs/:job_id", get(get_job_status))
+        .merge(wiki_connector::create_connector_routes())
         .with_state(wiki_state)
 }
 

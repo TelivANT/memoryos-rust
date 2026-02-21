@@ -11,6 +11,7 @@ pub mod metrics;
 pub mod multimodal;
 pub mod security;
 pub mod wiki;
+pub mod wiki_connector;
 
 use axum::{
     http::HeaderMap, http::HeaderValue, response::Response, routing::get, routing::post, Router,
