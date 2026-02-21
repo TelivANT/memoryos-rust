@@ -45,9 +45,13 @@ pub trait StorageConnector: Send + Sync {
 
 mod git;
 mod local;
+mod s3;
+mod webdav;
 
 #[cfg(test)]
 mod tests;
 
 pub use git::GitConnector;
 pub use local::LocalConnector;
+pub use s3::S3Connector;
+pub use webdav::WebDavConnector;

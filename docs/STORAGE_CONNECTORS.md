@@ -67,14 +67,14 @@ pub trait StorageConnector: Send + Sync {
 - **Compatible**: AWS S3, MinIO, Wasabi, Cloudflare R2, DigitalOcean Spaces
 - **Dependencies**: `aws-sdk-s3`
 - **Auth**: Access Key + Secret Key
-- **Status**: 📋 Planned
+- **Status**: ✅ Implemented
 
 #### 4. WebDavConnector
 - **Purpose**: WebDAV protocol
 - **Compatible**: 坚果云, Nextcloud, ownCloud, Seafile
 - **Dependencies**: `reqwest`
 - **Auth**: Basic Auth
-- **Status**: 📋 Planned
+- **Status**: ✅ Implemented
 
 ---
 
