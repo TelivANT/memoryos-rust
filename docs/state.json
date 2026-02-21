@@ -4,9 +4,9 @@
   "edition": "Personal/Enterprise Single-Tenant Edition",
   "last_updated": "2026-02-20",
   "status": {
-        "phase": "Wiki Generation System - Design Complete, Implementation Pending",
-        "progress_percentage": 10,
-        "current_task": "memoryos-wiki-gen 设计文档已完成，待实现",
+    "phase": "Storage Connectors - Design & Implementation",
+    "progress_percentage": 5,
+    "current_task": "Implementing P0 storage connectors (Local, Git, S3, WebDAV)",
     "is_blocked": false
   },
   "branches": {
