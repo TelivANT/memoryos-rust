@@ -8,8 +8,10 @@ use axum::{
 use memoryos_ports::LlmAdapter;
 use memoryos_wiki_gen::config::WikiGenConfig;
 use memoryos_wiki_gen::llm_adapter as wiki_llm;
+use memoryos_wiki_gen::storage::StorageConnector;
 use memoryos_wiki_gen::WikiGenerator;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -72,6 +74,7 @@ impl wiki_llm::WikiLlmAdapter for PortsLlmBridge {
 pub struct WikiState {
     pub llm_adapter: Option<Arc<dyn LlmAdapter>>,
     pub jobs: Arc<RwLock<Vec<WikiJob>>>,
+    pub connector_sessions: Arc<RwLock<HashMap<String, Arc<RwLock<Box<dyn StorageConnector>>>>>>,
 }
 
 #[derive(Debug, Clone, Serialize)]
