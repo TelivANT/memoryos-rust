@@ -43,15 +43,23 @@ pub trait StorageConnector: Send + Sync {
     fn name(&self) -> &str;
 }
 
+mod cos;
 mod git;
 mod local;
+mod obs;
+mod oss;
 mod s3;
+mod sftp;
 mod webdav;
 
 #[cfg(test)]
 mod tests;
 
+pub use cos::CosConnector;
 pub use git::GitConnector;
 pub use local::LocalConnector;
+pub use obs::ObsConnector;
+pub use oss::OssConnector;
 pub use s3::S3Connector;
+pub use sftp::SftpConnector;
 pub use webdav::WebDavConnector;
