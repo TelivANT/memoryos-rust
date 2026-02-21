@@ -46,69 +46,41 @@ impl QdrantStorage {
     }
 
     async fn ensure_collections(&self) -> Result<(), AppError> {
-        // 检查现有 collections
+        for name in [
+            &self.shortterm_collection,
+            &self.segment_collection,
+            &self.longterm_collection,
+        ] {
+            if !self.collection_exists(name).await? {
+                match self
+                    .client
+                    .create_collection(
+                        CreateCollectionBuilder::new(name)
+                            .vectors_config(VectorParamsBuilder::new(1536, Distance::Cosine)),
+                    )
+                    .await
+                {
+                    Ok(_) => debug!("Created Qdrant collection: {}", name),
+                    Err(e) if e.to_string().contains("already exists") => {
+                        debug!("Qdrant collection already exists (race ok): {}", name);
+                    }
+                    Err(e) => {
+                        return Err(AppError::ExternalService(format!(
+                            "Failed to create collection '{}': {}",
+                            name, e
+                        )));
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    async fn collection_exists(&self, name: &str) -> Result<bool, AppError> {
         let collections = self.client.list_collections().await.map_err(|e| {
             AppError::ExternalService(format!("Failed to list Qdrant collections: {}", e))
         })?;
-
-        let existing: std::collections::HashSet<_> = collections
-            .collections
-            .iter()
-            .map(|c| c.name.as_str())
-            .collect();
-
-        // 创建 short-term messages collection
-        if !existing.contains(self.shortterm_collection.as_str()) {
-            self.client
-                .create_collection(
-                    CreateCollectionBuilder::new(&self.shortterm_collection)
-                        .vectors_config(VectorParamsBuilder::new(1536, Distance::Cosine)),
-                )
-                .await
-                .map_err(|e| {
-                    AppError::ExternalService(format!(
-                        "Failed to create collection '{}': {}",
-                        self.shortterm_collection, e
-                    ))
-                })?;
-            debug!("Created Qdrant collection: {}", self.shortterm_collection);
-        }
-
-        // 创建 mid-term segments collection
-        if !existing.contains(self.segment_collection.as_str()) {
-            self.client
-                .create_collection(
-                    CreateCollectionBuilder::new(&self.segment_collection)
-                        .vectors_config(VectorParamsBuilder::new(1536, Distance::Cosine)),
-                )
-                .await
-                .map_err(|e| {
-                    AppError::ExternalService(format!(
-                        "Failed to create collection '{}': {}",
-                        self.segment_collection, e
-                    ))
-                })?;
-            debug!("Created Qdrant collection: {}", self.segment_collection);
-        }
-
-        // 创建 long-term memory collection
-        if !existing.contains(self.longterm_collection.as_str()) {
-            self.client
-                .create_collection(
-                    CreateCollectionBuilder::new(&self.longterm_collection)
-                        .vectors_config(VectorParamsBuilder::new(1536, Distance::Cosine)),
-                )
-                .await
-                .map_err(|e| {
-                    AppError::ExternalService(format!(
-                        "Failed to create collection '{}': {}",
-                        self.longterm_collection, e
-                    ))
-                })?;
-            debug!("Created Qdrant collection: {}", self.longterm_collection);
-        }
-
-        Ok(())
+        Ok(collections.collections.iter().any(|c| c.name == name))
     }
 
     pub async fn health_check(&self) -> Result<(), AppError> {
