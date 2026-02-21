@@ -53,14 +53,14 @@ pub trait StorageConnector: Send + Sync {
 - **Use Case**: Development, on-premise deployments
 - **Dependencies**: `std::fs`, `tokio::fs`
 - **Auth**: None
-- **Status**: ✅ Implemented (existing)
+- **Status**: ✅ Implemented
 
 #### 2. GitConnector
 - **Purpose**: Git repository cloning
 - **Providers**: GitHub, GitLab, Gitee, Bitbucket, Azure DevOps
 - **Dependencies**: `git2`
 - **Auth**: Token, SSH Key
-- **Status**: 🔄 In Progress
+- **Status**: ✅ Implemented
 
 #### 3. S3Connector
 - **Purpose**: S3-compatible object storage
