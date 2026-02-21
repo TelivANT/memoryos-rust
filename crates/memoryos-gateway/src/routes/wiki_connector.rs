@@ -9,6 +9,8 @@ use memoryos_wiki_gen::storage::{GitConnector, LocalConnector, StorageConnector}
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use uuid::Uuid;
 
 /// Connector field definition
@@ -76,7 +78,7 @@ pub struct BrowseDirectoryRequest {
 }
 
 /// Directory entry
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct DirectoryEntry {
     pub name: String,
     pub path: String,
@@ -220,11 +222,11 @@ async fn list_connectors(State(_state): State<super::wiki::WikiState>) -> impl I
 }
 
 async fn test_connection(
-    State(_state): State<super::wiki::WikiState>,
+    State(state): State<super::wiki::WikiState>,
     Json(req): Json<TestConnectionRequest>,
 ) -> impl IntoResponse {
     // Create connector based on type
-    let result = match req.connector_type.as_str() {
+    let connector: Box<dyn StorageConnector> = match req.connector_type.as_str() {
         "local" => {
             let path = req
                 .config
@@ -232,13 +234,17 @@ async fn test_connection(
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'path' field");
             match path {
-                Ok(p) => {
-                    let mut connector = LocalConnector::new(PathBuf::from(p));
-                    connector.connect().await
+                Ok(p) => Box::new(LocalConnector::new(PathBuf::from(p))),
+                Err(e) => {
+                    return Json(TestConnectionResponse {
+                        success: false,
+                        message: None,
+                        connector_id: None,
+                        metadata: None,
+                        error: Some(e.to_string()),
+                        error_code: Some("INVALID_CONFIG".to_string()),
+                    })
                 }
-                Err(e) => Err(memoryos_wiki_gen::error::WikiGenError::Storage(
-                    e.to_string(),
-                )),
             }
         }
         "git" => {
@@ -253,28 +259,57 @@ async fn test_connection(
                     if let Some(token) = req.config.get("token").and_then(|v| v.as_str()) {
                         connector = connector.with_token(token.to_string());
                     }
-                    connector.connect().await
+                    Box::new(connector)
                 }
-                Err(e) => Err(memoryos_wiki_gen::error::WikiGenError::Storage(
-                    e.to_string(),
-                )),
+                Err(e) => {
+                    return Json(TestConnectionResponse {
+                        success: false,
+                        message: None,
+                        connector_id: None,
+                        metadata: None,
+                        error: Some(e.to_string()),
+                        error_code: Some("INVALID_CONFIG".to_string()),
+                    })
+                }
             }
         }
-        _ => Err(memoryos_wiki_gen::error::WikiGenError::Storage(format!(
-            "Unsupported connector type: {}",
-            req.connector_type
-        ))),
+        _ => {
+            return Json(TestConnectionResponse {
+                success: false,
+                message: None,
+                connector_id: None,
+                metadata: None,
+                error: Some(format!(
+                    "Unsupported connector type: {}",
+                    req.connector_type
+                )),
+                error_code: Some("UNSUPPORTED_TYPE".to_string()),
+            })
+        }
     };
 
-    match result {
-        Ok(_) => Json(TestConnectionResponse {
-            success: true,
-            message: Some("Connection successful".to_string()),
-            connector_id: Some(Uuid::now_v7().to_string()),
-            metadata: Some(HashMap::new()),
-            error: None,
-            error_code: None,
-        }),
+    // Test connection
+    let mut connector = connector;
+    match connector.connect().await {
+        Ok(_) => {
+            let connector_id = Uuid::now_v7().to_string();
+
+            // Store in session
+            state
+                .connector_sessions
+                .write()
+                .await
+                .insert(connector_id.clone(), Arc::new(RwLock::new(connector)));
+
+            Json(TestConnectionResponse {
+                success: true,
+                message: Some("Connection successful".to_string()),
+                connector_id: Some(connector_id),
+                metadata: Some(HashMap::new()),
+                error: None,
+                error_code: None,
+            })
+        }
         Err(e) => Json(TestConnectionResponse {
             success: false,
             message: None,
@@ -287,13 +322,57 @@ async fn test_connection(
 }
 
 async fn browse_directory(
-    State(_state): State<super::wiki::WikiState>,
+    State(state): State<super::wiki::WikiState>,
     Json(req): Json<BrowseDirectoryRequest>,
 ) -> impl IntoResponse {
-    // TODO: Implement actual directory browsing
-    Json(BrowseDirectoryResponse {
-        path: req.path.clone(),
-        entries: vec![],
-        total: 0,
-    })
+    // Get connector from session
+    let sessions = state.connector_sessions.read().await;
+    let connector = match sessions.get(&req.connector_id) {
+        Some(c) => c.clone(),
+        None => {
+            return Json(BrowseDirectoryResponse {
+                path: req.path.clone(),
+                entries: vec![],
+                total: 0,
+            })
+        }
+    };
+    drop(sessions);
+
+    // List files
+    let connector = connector.read().await;
+    match connector.list_files(&req.path).await {
+        Ok(entries) => {
+            let dir_entries: Vec<DirectoryEntry> = entries
+                .into_iter()
+                .map(|e| {
+                    let name = std::path::Path::new(&e.path)
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or(&e.path)
+                        .to_string();
+
+                    DirectoryEntry {
+                        name,
+                        path: e.path,
+                        entry_type: if e.is_dir { "directory" } else { "file" }.to_string(),
+                        size: Some(e.size),
+                        modified: None,
+                        children_count: None,
+                    }
+                })
+                .collect();
+
+            Json(BrowseDirectoryResponse {
+                path: req.path,
+                entries: dir_entries.clone(),
+                total: dir_entries.len(),
+            })
+        }
+        Err(_) => Json(BrowseDirectoryResponse {
+            path: req.path,
+            entries: vec![],
+            total: 0,
+        }),
+    }
 }

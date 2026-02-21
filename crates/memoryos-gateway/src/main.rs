@@ -180,6 +180,9 @@ async fn main() -> Result<(), AppError> {
     let wiki_state = WikiState {
         llm_adapter: default_llm_adapter,
         jobs: std::sync::Arc::new(tokio::sync::RwLock::new(Vec::new())),
+        connector_sessions: std::sync::Arc::new(tokio::sync::RwLock::new(
+            std::collections::HashMap::new(),
+        )),
     };
     let wiki_routes = create_wiki_routes(wiki_state);
 
