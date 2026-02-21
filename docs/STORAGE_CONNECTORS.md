@@ -82,39 +82,27 @@ pub trait StorageConnector: Send + Sync {
 
 #### 5. OssConnector (阿里云)
 - **Purpose**: Aliyun OSS
-- **Dependencies**: `aliyun-oss-client`
+- **Dependencies**: `aws-sdk-s3` (S3-compatible)
 - **Auth**: AccessKeyId + AccessKeySecret
-- **Status**: 📋 Planned
+- **Status**: ✅ Implemented
 
 #### 6. CosConnector (腾讯云)
 - **Purpose**: Tencent Cloud COS
-- **Dependencies**: `cos-rust-sdk` or S3-compatible
+- **Dependencies**: `aws-sdk-s3` (S3-compatible)
 - **Auth**: SecretId + SecretKey
-- **Status**: 📋 Planned
+- **Status**: ✅ Implemented
 
 #### 7. ObsConnector (华为云)
 - **Purpose**: Huawei Cloud OBS
 - **Dependencies**: `aws-sdk-s3` (S3-compatible)
 - **Auth**: AccessKeyId + SecretAccessKey
-- **Status**: 📋 Planned
-
-#### 8. SmbConnector (Samba/CIFS)
-- **Purpose**: Windows file shares, NAS
-- **Dependencies**: `smbclient` or `pavao`
-- **Auth**: Username + Password
-- **Status**: 📋 Planned
-
-#### 9. NfsConnector
-- **Purpose**: NFS v3/v4 file shares
-- **Dependencies**: `nfs` or mount + local access
-- **Auth**: Optional (Kerberos)
-- **Status**: 📋 Planned
+- **Status**: ✅ Implemented
 
 #### 10. SftpConnector
 - **Purpose**: SSH File Transfer Protocol
 - **Dependencies**: `ssh2`
 - **Auth**: Password, SSH Key
-- **Status**: 📋 Planned
+- **Status**: ✅ Implemented
 
 ---
 
