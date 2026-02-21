@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use super::super::{StorageConnector, LocalConnector, GitConnector};
+    use super::super::{GitConnector, LocalConnector, StorageConnector};
     use tempfile::TempDir;
 
     #[tokio::test]
@@ -30,9 +30,9 @@ mod tests {
     #[ignore] // Requires network
     async fn test_git_connector_public_repo() {
         // Test with a small public repo (no auth needed)
-        let mut connector = GitConnector::new(
-            "https://github.com/rust-lang/rustlings.git".to_string()
-        ).with_branch("main".to_string());
+        let mut connector =
+            GitConnector::new("https://github.com/rust-lang/rustlings.git".to_string())
+                .with_branch("main".to_string());
 
         // This will clone the repo
         connector.connect().await.unwrap();
