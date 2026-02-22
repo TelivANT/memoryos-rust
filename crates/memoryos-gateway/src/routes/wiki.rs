@@ -8,7 +8,6 @@ use axum::{
 use memoryos_ports::LlmAdapter;
 use memoryos_wiki_gen::config::WikiGenConfig;
 use memoryos_wiki_gen::llm_adapter as wiki_llm;
-use memoryos_wiki_gen::storage::StorageConnector;
 use memoryos_wiki_gen::WikiGenerator;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -16,6 +15,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
+
+use super::wiki_connector::ConnectorSession;
 
 pub struct PortsLlmBridge {
     pub inner: Arc<dyn LlmAdapter>,
@@ -74,7 +75,7 @@ impl wiki_llm::WikiLlmAdapter for PortsLlmBridge {
 pub struct WikiState {
     pub llm_adapter: Option<Arc<dyn LlmAdapter>>,
     pub jobs: Arc<RwLock<Vec<WikiJob>>>,
-    pub connector_sessions: Arc<RwLock<HashMap<String, Arc<RwLock<Box<dyn StorageConnector>>>>>>,
+    pub connector_sessions: Arc<RwLock<HashMap<String, ConnectorSession>>>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -119,23 +120,8 @@ pub struct GenerateResponse {
 }
 
 #[derive(Debug, Serialize)]
-pub struct ParseResponse {
-    pub files: usize,
-    pub symbols: usize,
-    pub references: usize,
-    pub endpoints: usize,
-    pub diagnostics: usize,
-}
-
-#[derive(Debug, Serialize)]
 pub struct StatusResponse {
     pub jobs: Vec<WikiJob>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct PageResponse {
-    pub path: String,
-    pub content: String,
 }
 
 pub fn create_wiki_routes(wiki_state: WikiState) -> Router {
@@ -273,7 +259,26 @@ async fn parse_repo(
     }
 }
 
+const JOB_TTL_SECS: i64 = 86400;
+
+async fn cleanup_old_jobs(jobs: &Arc<RwLock<Vec<WikiJob>>>) {
+    let mut jobs_lock = jobs.write().await;
+    let now = chrono::Utc::now();
+    jobs_lock.retain(|j| {
+        if j.status == JobStatus::Pending || j.status == JobStatus::Running {
+            return true;
+        }
+        if let Some(completed) = &j.completed_at {
+            if let Ok(t) = chrono::DateTime::parse_from_rfc3339(completed) {
+                return (now - t.with_timezone(&chrono::Utc)).num_seconds() < JOB_TTL_SECS;
+            }
+        }
+        true
+    });
+}
+
 async fn get_status(State(state): State<WikiState>) -> impl IntoResponse {
+    cleanup_old_jobs(&state.jobs).await;
     let jobs = state.jobs.read().await;
     Json(StatusResponse { jobs: jobs.clone() })
 }

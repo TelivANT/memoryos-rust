@@ -3,6 +3,7 @@ use ssh2::Session;
 use std::io::Read;
 use std::net::TcpStream;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use crate::error::{Result, WikiGenError};
 
@@ -15,7 +16,7 @@ pub struct SftpConnector {
     username: String,
     password: Option<String>,
     key_path: Option<PathBuf>,
-    session: Option<Session>,
+    session: Option<Arc<Session>>,
 }
 
 impl SftpConnector {
@@ -50,24 +51,37 @@ impl SftpConnector {
 impl StorageConnector for SftpConnector {
     async fn connect(&mut self) -> Result<()> {
         let addr = format!("{}:{}", self.host, self.port);
-        let tcp = TcpStream::connect(&addr)
-            .map_err(|e| WikiGenError::Storage(format!("SFTP connect failed: {}", e)))?;
+        let username = self.username.clone();
+        let password = self.password.clone();
+        let key_path = self.key_path.clone();
 
-        let mut sess = Session::new()
-            .map_err(|e| WikiGenError::Storage(format!("SFTP session failed: {}", e)))?;
-        sess.set_tcp_stream(tcp);
-        sess.handshake()
-            .map_err(|e| WikiGenError::Storage(format!("SFTP handshake failed: {}", e)))?;
+        let sess =
+            tokio::task::spawn_blocking(move || -> std::result::Result<Session, WikiGenError> {
+                let tcp = TcpStream::connect(&addr)
+                    .map_err(|e| WikiGenError::Storage(format!("SFTP connect failed: {}", e)))?;
 
-        if let Some(password) = &self.password {
-            sess.userauth_password(&self.username, password)
-                .map_err(|e| WikiGenError::Storage(format!("SFTP auth failed: {}", e)))?;
-        } else if let Some(key_path) = &self.key_path {
-            sess.userauth_pubkey_file(&self.username, None, key_path, None)
-                .map_err(|e| WikiGenError::Storage(format!("SFTP key auth failed: {}", e)))?;
-        }
+                let mut sess = Session::new()
+                    .map_err(|e| WikiGenError::Storage(format!("SFTP session failed: {}", e)))?;
+                sess.set_tcp_stream(tcp);
+                sess.handshake()
+                    .map_err(|e| WikiGenError::Storage(format!("SFTP handshake failed: {}", e)))?;
 
-        self.session = Some(sess);
+                if let Some(password) = &password {
+                    sess.userauth_password(&username, password)
+                        .map_err(|e| WikiGenError::Storage(format!("SFTP auth failed: {}", e)))?;
+                } else if let Some(key_path) = &key_path {
+                    sess.userauth_pubkey_file(&username, None, key_path, None)
+                        .map_err(|e| {
+                            WikiGenError::Storage(format!("SFTP key auth failed: {}", e))
+                        })?;
+                }
+
+                Ok(sess)
+            })
+            .await
+            .map_err(|e| WikiGenError::Storage(format!("SFTP spawn_blocking failed: {}", e)))??;
+
+        self.session = Some(Arc::new(sess));
         Ok(())
     }
 
