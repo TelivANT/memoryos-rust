@@ -1,7 +1,7 @@
 # 设计原理与实现细节
 
-**版本**: 0.13.0  
-**更新**: 2026-02-20
+**版本**: 1.0.0-rc  
+**更新**: 2026-02-24
 
 本文档详细说明 MemoryOS-Rust 的设计原理、实现细节和关键决策。
 
@@ -578,23 +578,19 @@ MCP 是 HTTP API 的**补充**而非替代。两者共享同一套 Core/Ports/Ad
 ### 技术栈选型
 
 ```rust
-// Cargo.toml (memoryos-mcp)
+// Cargo.toml (memoryos-mcp) — 实际实现
 [dependencies]
-rmcp = { version = "0.16", features = ["server", "transport-sse", "transport-io"] }
-schemars = "0.8"           // JSON Schema 自动派生
+rmcp = { version = "0.3", features = ["server", "transport-io"] }
+schemars = "0.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+reqwest = { version = "0.12", features = ["json"] }
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 clap = { version = "4", features = ["derive"] }
-
-// 复用现有 crate
-memoryos-ports = { path = "../memoryos-ports" }
-memoryos-core = { path = "../memoryos-core" }
-memoryos-adapters = { path = "../memoryos-adapters" }
 ```
 
-**rmcp** 是 Anthropic 官方维护的 Rust MCP SDK（3000+ stars），基于 tokio，与项目技术栈完全一致。
+**rmcp** 是官方 Rust MCP SDK，基于 tokio，与项目技术栈一致。实际使用 v0.3 版本。
 
 ### Tool 实现模式
 
@@ -627,20 +623,19 @@ async fn add_memory(input: AddMemoryInput) -> Result<String, McpError> {
 }
 ```
 
-### Tool ↔ 现有 API 映射
+### Tool ↔ Gateway API 映射 (实际实现)
 
-| MCP Tool | Gateway 端点 | Ports trait 方法 |
-|----------|-------------|-----------------|
-| `add_memory` | `POST /v1/memory/add` | `VectorStorage::add_short_term_message` |
-| `search_memories` | `POST /v1/memory/retrieve` | `VectorStorage::search_segments` |
-| `get_memories` | `POST /v1/memory/retrieve` | `VectorStorage::get_short_term_messages` |
-| `get_memory` | `GET /v1/memory/:id/history` | `VectorStorage::get_long_term` |
-| `update_memory` | `POST /v1/memory/manage/tags` | `VectorStorage::store_segment` |
-| `delete_memory` | (GDPR delete) | `GdprManager::process_deletion` |
-| `search_faq` | `GET /v1/admin/faq/candidates` | `FaqMatcher::find_match` |
-| `query_graph` | `POST /v1/graph/query` | `KnowledgeGraph::query` |
-| `get_user_profile` | `POST /v1/memory/retrieve` | `VectorStorage::get_long_term` |
-| `generate_wiki` | `POST /v1/wiki/generate` | `WikiGenerator::generate` |
+MCP Server 采用 Gateway 代理模式，所有 tool call 转发到 Gateway HTTP API：
+
+| MCP Tool | Gateway 端点 | 功能 |
+|----------|-------------|------|
+| `add_memory` | `POST /v1/memory/add` | 存储消息到 STM |
+| `search_memories` | `POST /v1/memory/retrieve` | 语义搜索记忆 |
+| `get_memories` | `POST /v1/memory/retrieve` | 获取用户全部记忆 |
+| `delete_memory` | `POST /v1/security/gdpr/delete` | 删除用户数据 (GDPR) |
+| `query_graph` | `POST /v1/graph/query` | 知识图谱查询 |
+| `chat` | `POST /v1/chat` | 记忆增强对话 |
+| `health_check` | `GET /v1/health` | 系统健康检查 |
 
 ### Transport 实现
 
@@ -711,38 +706,26 @@ MCP 错误映射到 JSON-RPC error codes：
 - **认证**: MCP 协议本身不含认证，stdio 模式依赖本地权限，SSE 模式通过配置的 API Key 在 tool handler 内校验
 - **GDPR**: delete_memory tool 调用与 Gateway 相同的 GdprManager，审计记录统一
 
-### 部署架构
+### 部署架构 (实际实现)
 
 ```
 场景 1: 开发者本地使用 (stdio)
-┌──────────────┐     stdio      ┌──────────────┐
-│ Claude       │ ←────────────→ │ memoryos-mcp │
-│ Desktop      │  stdin/stdout  │ (binary)     │
-└──────────────┘                └──────┬───────┘
-                                       │
-                                ┌──────▼───────┐
-                                │ Qdrant+Redis │
-                                └──────────────┘
+┌──────────────┐     stdio      ┌──────────────┐     HTTP      ┌──────────────┐
+│ Claude       │ ←────────────→ │ memoryos-mcp │ ──────────→  │ Gateway:8080 │
+│ Desktop      │  stdin/stdout  │ (binary)     │              │              │
+└──────────────┘                └──────────────┘              └──────┬───────┘
+                                                                     │
+                                                              ┌──────▼───────┐
+                                                              │ Qdrant+Redis │
+                                                              └──────────────┘
 
-场景 2: 团队远程共享 (SSE)
+场景 2: Gateway + MCP 共存 (推荐生产部署)
 ┌──────────────┐                ┌──────────────┐
-│ Agent A      │───┐            │              │
-├──────────────┤   │  HTTP SSE  │ memoryos-mcp │
-│ Agent B      │───┼──────────→ │ :3001/mcp    │
-├──────────────┤   │            │              │
-│ Agent C      │───┘            └──────┬───────┘
-└──────────────┘                       │
-                                ┌──────▼───────┐
-                                │ Qdrant+Redis │
-                                └──────────────┘
-
-场景 3: Gateway + MCP 共存 (推荐生产部署)
-┌──────────────┐                ┌──────────────┐
-│ Web App      │──HTTP REST───→ │ Gateway:8080 │──┐
-└──────────────┘                └──────────────┘  │
-                                                   ├→ Core+Adapters
-┌──────────────┐                ┌──────────────┐  │   (shared)
-│ AI Agent     │──MCP stdio───→ │ MCP Server   │──┘
+│ Web App      │──HTTP REST───→ │ Gateway:8080 │──→ Core+Adapters
+└──────────────┘                └──────────────┘       ↑
+                                                       │ HTTP
+┌──────────────┐                ┌──────────────┐       │
+│ AI Agent     │──MCP stdio───→ │ MCP Server   │───────┘
 └──────────────┘                └──────────────┘
 ```
 

@@ -1,7 +1,7 @@
 # 产品路线图
 
-**版本**: 0.12.0  
-**更新**: 2026-02-20
+**版本**: 1.0.0-rc  
+**更新**: 2026-02-24
 
 ---
 
@@ -284,18 +284,19 @@
 **目标**: 让 AI 助手（Claude Desktop / Cursor / 自定义 Agent）通过 MCP 协议直接调用 MemoryOS
 
 **功能**:
-- [ ] 独立 crate `memoryos-mcp`（独立二进制）
-- [ ] rmcp SDK 集成（v0.16+, 官方 Rust MCP SDK）
-- [ ] 10 个 MCP Tools（add_memory / search_memories / get_memory / update_memory / delete_memory / search_faq / query_graph / get_user_profile / generate_wiki / get_memories）
-- [ ] 6 个 MCP Resources（memory://profile / recent / knowledge, faq://list, graph://entity, health://status）
-- [ ] stdio 传输（本地部署，Claude Desktop / Cursor 直接接入）
-- [ ] SSE 传输（远程部署，多客户端共享）
-- [ ] JSON Schema 自动生成（schemars）
-- [ ] 复用 Core / Ports / Adapters 全部业务逻辑
+- [x] 独立 crate `memoryos-mcp`（独立二进制） ✅
+- [x] rmcp SDK 集成（v0.3, 官方 Rust MCP SDK） ✅
+- [x] 7 个 MCP Tools（add_memory / search_memories / get_memories / delete_memory / query_graph / chat / health_check） ✅
+- [x] Gateway 代理模式（Thin Proxy，HTTP 转发） ✅
+- [x] stdio 传输（本地部署，Claude Desktop / Cursor 直接接入） ✅
+- [x] SSE 传输预留（远程部署） ✅
+- [x] JSON Schema 自动生成（schemars） ✅
+- [x] CLI 参数（--gateway-url / --api-key / --transport） ✅
 
 **优先级**: 最高  
-**状态**: 📐 设计完成，待实现  
-**预计发布**: 2026-03-15
+**状态**: ✅ 完成  
+**完成日期**: 2026-02-24  
+**PR**: #48
 
 ---
 
@@ -325,10 +326,15 @@
 - [x] 性能基准测试报告 ✅
 - [x] 安全审计报告 ✅
 - [ ] 生产环境验证
-- [ ] MCP Server 稳定运行 ✅
+- [x] MCP Server 稳定运行 ✅
+- [x] 配置验证 (AppConfig::validate()) ✅
+- [x] 生产级错误处理 (零 unwrap) ✅
+- [x] 真实 Embedding 集成 ✅
+- [x] LLM 摘要管线 ✅
+- [x] 测试覆盖 (303 tests) ✅
 
 **优先级**: 最高  
-**预计发布**: 2026-07-01
+**预计发布**: 2026-03
 
 ---
 
@@ -406,9 +412,9 @@
 | **v0.10.0** | 2026-02-20 | ✅ 完成 | Prometheus 可观测性 + LLM FAQ 分类 |
 | **v0.11.0** | 2026-02-20 | ✅ 完成 | 剩余问题修复 |
 | **v0.12.0** | 2026-02-20 | ✅ 完成 | 企业级: RBAC + 多租户 + Admin 服务 |
-| **v0.13.0** | 2026-03-15 | 📐 设计完成 | MCP Server 接入层 (rmcp + stdio/SSE) |
+| **v0.13.0** | 2026-02-24 | ✅ 完成 | MCP Server 接入层 (rmcp v0.3 + stdio + Gateway proxy) |
 | **v0.14.0** | 2026-04-01 | 📋 计划 | Wiki 预览系统 (内置浏览器) |
-| **v1.0.0** | 2026-07-01 | 📅 计划 | 正式发布 |
+| **v1.0.0** | 2026-03 | 📅 计划 | 正式发布 |
 
 ---
 
@@ -426,7 +432,7 @@ v0.6.0       ████████████████████ 100%
 v0.7.0       ██████████████████░░  90%
 v0.8.0       ████████████████████ 100%
 v0.9.0       ████████████████████ 100%
-v0.13.0      ██░░░░░░░░░░░░░░░░░░  10% (设计完成)
+v0.13.0      ████████████████████ 100% (MCP Server 完成)
 v0.14.0      ░░░░░░░░░░░░░░░░░░░░   0% (计划中)
 v1.0.0       ██████████████████░░  90%
 ```
@@ -480,6 +486,6 @@ v1.0.0       ██████████████████░░  90%
 
 ---
 
-**版本**: 0.13.0  
-**更新**: 2026-02-20  
-**下一个版本**: v0.13.0 (MCP Server)
+**版本**: 1.0.0-rc  
+**更新**: 2026-02-24  
+**下一个版本**: v1.0.0 (正式发布)

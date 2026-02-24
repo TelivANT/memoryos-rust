@@ -2,9 +2,9 @@
 
 | Metric | Value |
 | :--- | :--- |
-| **Version** | v0.12.6 |
+| **Version** | v1.0.0-rc |
 | **Build Status** | Passing |
-| **Overall Completion** | ~99% (core), Wiki Gen 10% (design complete) |
+| **Overall Completion** | ~99% (core + 1.0 tasks complete) |
 | **Documentation** | Aligned with code |
 | **Security Audit** | Passed (v0.12.6 - constant-time auth, nested route auth, CORS) |
 
@@ -18,13 +18,14 @@
 | **Qdrant** | 🟢 Stable | Vector search + multimodal storage active |
 | **Router** | 🟢 Active | Tier 0 FAQ direct hit implemented |
 | **Wiki Export** | 🟢 Active | Local + S3 + Confluence backends |
-| **Wiki Gen** | 🚧 Design Complete | memoryos-wiki-gen: Tree-sitter + LLM hybrid, multi-lang (Rust/Py/Java/Vue) |
+| **Wiki Gen** | ✅ Complete | memoryos-wiki-gen: Tree-sitter + LLM hybrid, multi-lang (Rust/Py/Java/Vue) |
 | **FAQ System** | 🟢 Active | HeatTracker + AutoPromoter + Management API |
 | **Knowledge Graph** | 🟢 Active | Entity/relation extraction, LLM extraction, graph query API |
 | **Multimodal** | 🟢 Active | Qdrant-backed storage, HTTP endpoints |
 | **Memory Manage** | 🟢 Active | Version control, tags, export/import |
 | **Memory History** | 🟢 Active | QdrantHistoryStorage wired into gateway |
 | **Security** | 🟢 Active | Encryption, pluggable audit/GDPR backends |
+| **MCP Server** | ✅ Complete | memoryos-mcp: rmcp v0.3, 7 tools, Gateway proxy, stdio transport |
 
 ## v0.4.0-v0.8.0 Features (completed 2026-02-20)
 
@@ -92,6 +93,7 @@
 - Design spec: [docs/specs/wiki_gen_spec.md](docs/specs/wiki_gen_spec.md)
 
 ## Recent Activity
+- **2026-02-24**: v1.0.0-rc: All 6 must-complete tasks done (PRs #42-#48). Config validation, error handling, embedding integration, LLM summary, 69 new tests, MCP server implemented.
 - **2026-02-20**: Wiki Generation System design complete. Spec published at docs/specs/wiki_gen_spec.md.
 - **2026-02-20**: Released v0.12.0-v0.12.6. Enterprise features (RBAC, multi-tenant, admin service) + security hardening.
 - **2026-02-20**: Released v0.11.0. All remaining issues fixed (tag search, history, redis, graph LLM, auth, audit/GDPR).

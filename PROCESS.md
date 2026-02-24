@@ -1,8 +1,8 @@
 # 项目进度跟踪 (Process Log)
 
 **项目**: MemoryOS-Rust  
-**当前版本**: v0.13.0 (设计阶段)  
-**更新**: 2026-02-20
+**当前版本**: v1.0.0-rc  
+**更新**: 2026-02-24
 
 ---
 
@@ -20,7 +20,7 @@
 | 企业功能 (RBAC/多租户/Admin) | ✅ 完成 | 100% | Devin |
 | Wiki 生成系统 (Tree-sitter + LLM) | ✅ 完成 | 100% | Devin |
 | Storage Connectors (17 种) | 🟢 进行中 | 47% | Kiro AI |
-| MCP Server (memoryos-mcp) | 📐 设计完成 | 10% | Devin |
+| MCP Server (memoryos-mcp) | ✅ 完成 | 100% | Kiro AI |
 | Wiki 预览系统 | 📋 计划中 | 0% | — |
 
 ---
@@ -116,19 +116,37 @@
 - benchmarks 空 crate 修复
 - unknown LLM provider panic → 错误返回
 
+#### PR #42 — Config Validation (1.0 Task #6)
+- AppConfig::validate() 全面配置验证
+- 覆盖 server/llm/storage/auth/security 所有配置段
+- 24 个单元测试
+
+#### PR #43 — Production Error Handling (1.0 Task #5)
+- 替换所有生产代码中的 unwrap() 为 expect() 或优雅错误处理
+- 涉及 4 个 crate: metrics, admin, graph, wiki-gen/webdav
+
+#### PR #45 — LLM Summary Pipeline (1.0 Task #4)
+- consolidate_memory() 调用 summarize_messages_internal() 替代简单文本拼接
+- 真实 LLM 摘要生成
+
+#### PR #46 — Real Embedding Integration (1.0 Task #3)
+- DefaultMemoryManager::with_embedding_config() 方法
+- Gateway 和 Worker 初始化时接入 embedding 配置
+
+#### PR #47 — End-to-End Test Coverage (1.0 Task #2)
+- 69 个新单元测试，覆盖 7 个模块 (234→303 总计)
+- Gateway middleware (21), core error (11), memory types (10), health (5), history (5), ports LLM (6), metrics (6), adapters LLM (2)
+
+#### PR #48 — MCP Server Implementation (1.0 Task #1)
+- memoryos-mcp 独立 crate
+- rmcp v0.3 (官方 Rust MCP SDK)
+- 7 个 MCP Tools: add_memory, search_memories, get_memories, delete_memory, query_graph, chat, health_check
+- Gateway 代理模式 (Thin Proxy)
+- stdio 传输 (Claude Desktop / Cursor 直接接入)
+
 ---
 
 ## 🟢 当前进行中
-
-### [Devin] — MCP Server 设计文档 + 文档整合
-- **开始时间**: 2026-02-20
-- **状态**: 🟢 进行中
-- **内容**:
-  - MCP Server 架构设计写入 ARCHITECTURE.md
-  - MCP Server 技术实现细节写入 DESIGN.md
-  - v0.13.0 MCP 里程碑写入 ROADMAP.md
-  - state.json / WORK_LOG.md / PROCESS.md 同步更新
-- **下一步**: 实现 memoryos-mcp crate
 
 ### [Kiro AI] — Storage Connectors 实现
 - **开始时间**: 2026-02-21
@@ -168,6 +186,7 @@
 | v0.11.0 | 2026-02-20 | 剩余问题修复 |
 | v0.12.0 ~ v0.12.6 | 2026-02-20 | 企业级 RBAC/多租户/Admin |
 | v0.13.0 | 进行中 | MCP Server 设计完成 |
+| v1.0.0-rc | 2026-02-24 | 1.0 全部 6 项任务完成 (PRs #42-#48) |
 
 ---
 
