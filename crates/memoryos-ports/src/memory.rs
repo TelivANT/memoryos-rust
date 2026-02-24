@@ -79,6 +79,24 @@ pub trait VectorStorage: Send + Sync {
         self.search_segments_by_tags(user_id, tags, limit).await
     }
 
+    /// List all segments for a user without requiring an embedding vector.
+    /// Uses scroll/filter instead of vector search.
+    async fn list_segments(
+        &self,
+        user_id: &str,
+        limit: usize,
+    ) -> Result<Vec<MidTermSegment>, AppError>;
+
+    /// Tenant-scoped list. Default falls back to user-only list.
+    async fn list_segments_for_tenant(
+        &self,
+        user_id: &str,
+        _tenant_id: &str,
+        limit: usize,
+    ) -> Result<Vec<MidTermSegment>, AppError> {
+        self.list_segments(user_id, limit).await
+    }
+
     // ========== Long-Term Memory ==========
 
     /// 存储 long-term memory

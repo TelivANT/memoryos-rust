@@ -108,18 +108,14 @@ async fn add_tags(
         req.tags, req.segment_id, req.user_id
     );
 
-    let dummy_embedding = vec![0.0_f32; 1536];
     let tenant_id = extract_validated_tenant_id(&headers, &state.tenant_manager).await?;
     let segments = if let Some(ref tid) = tenant_id {
         state
             .vector_store
-            .search_segments_for_tenant(&req.user_id, tid, dummy_embedding, 100)
+            .list_segments_for_tenant(&req.user_id, tid, 100)
             .await?
     } else {
-        state
-            .vector_store
-            .search_segments(&req.user_id, dummy_embedding, 100)
-            .await?
+        state.vector_store.list_segments(&req.user_id, 100).await?
     };
 
     let segment_id: Uuid = req
@@ -197,18 +193,14 @@ async fn export_memories(
 ) -> Result<impl IntoResponse, AppError> {
     info!("Exporting memories for user: {}", req.user_id);
 
-    let dummy_embedding = vec![0.0_f32; 1536];
     let tenant_id = extract_validated_tenant_id(&headers, &state.tenant_manager).await?;
     let segments = if let Some(ref tid) = tenant_id {
         state
             .vector_store
-            .search_segments_for_tenant(&req.user_id, tid, dummy_embedding, 1000)
+            .list_segments_for_tenant(&req.user_id, tid, 1000)
             .await?
     } else {
-        state
-            .vector_store
-            .search_segments(&req.user_id, dummy_embedding, 1000)
-            .await?
+        state.vector_store.list_segments(&req.user_id, 1000).await?
     };
 
     let exported: Vec<ExportedSegment> = segments
@@ -314,18 +306,14 @@ async fn get_version_history(
     headers: HeaderMap,
     Json(req): Json<VersionHistoryRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let dummy_embedding = vec![0.0_f32; 1536];
     let tenant_id = extract_validated_tenant_id(&headers, &state.tenant_manager).await?;
     let segments = if let Some(ref tid) = tenant_id {
         state
             .vector_store
-            .search_segments_for_tenant(&req.user_id, tid, dummy_embedding, 200)
+            .list_segments_for_tenant(&req.user_id, tid, 200)
             .await?
     } else {
-        state
-            .vector_store
-            .search_segments(&req.user_id, dummy_embedding, 200)
-            .await?
+        state.vector_store.list_segments(&req.user_id, 200).await?
     };
 
     let segment_id: Uuid = req

@@ -94,7 +94,6 @@ pub fn create_faq_routes(faq_state: FaqState) -> Router {
 
 /// GET /admin/faq/candidates - 获取候选 FAQ
 async fn get_candidates(State(state): State<FaqState>, headers: HeaderMap) -> impl IntoResponse {
-    let dummy_embedding = vec![0.0_f32; 1536];
     let tenant_id = extract_validated_tenant_id(&headers, &state.tenant_manager)
         .await
         .ok()
@@ -102,13 +101,10 @@ async fn get_candidates(State(state): State<FaqState>, headers: HeaderMap) -> im
     let segments = match if let Some(ref tid) = tenant_id {
         state
             .vector_store
-            .search_segments_for_tenant("__global__", tid, dummy_embedding, 50)
+            .list_segments_for_tenant("__global__", tid, 50)
             .await
     } else {
-        state
-            .vector_store
-            .search_segments("__global__", dummy_embedding, 50)
-            .await
+        state.vector_store.list_segments("__global__", 50).await
     } {
         Ok(segs) => segs,
         Err(e) => {
@@ -137,7 +133,6 @@ async fn promote_to_faq(
 ) -> impl IntoResponse {
     info!("Promoting memory {} to FAQ", req.memory_id);
 
-    let dummy_embedding = vec![0.0_f32; 1536];
     let tenant_id = extract_validated_tenant_id(&headers, &state.tenant_manager)
         .await
         .ok()
@@ -145,13 +140,10 @@ async fn promote_to_faq(
     let segments = match if let Some(ref tid) = tenant_id {
         state
             .vector_store
-            .search_segments_for_tenant("__global__", tid, dummy_embedding, 100)
+            .list_segments_for_tenant("__global__", tid, 100)
             .await
     } else {
-        state
-            .vector_store
-            .search_segments("__global__", dummy_embedding, 100)
-            .await
+        state.vector_store.list_segments("__global__", 100).await
     } {
         Ok(segs) => segs,
         Err(e) => {
@@ -225,7 +217,6 @@ async fn delete_faq(
 ) -> impl IntoResponse {
     info!("Demoting FAQ {} back to QA", id);
 
-    let dummy_embedding = vec![0.0_f32; 1536];
     let tenant_id = extract_validated_tenant_id(&headers, &state.tenant_manager)
         .await
         .ok()
@@ -233,13 +224,10 @@ async fn delete_faq(
     let segments = match if let Some(ref tid) = tenant_id {
         state
             .vector_store
-            .search_segments_for_tenant("__global__", tid, dummy_embedding, 100)
+            .list_segments_for_tenant("__global__", tid, 100)
             .await
     } else {
-        state
-            .vector_store
-            .search_segments("__global__", dummy_embedding, 100)
-            .await
+        state.vector_store.list_segments("__global__", 100).await
     } {
         Ok(segs) => segs,
         Err(e) => {

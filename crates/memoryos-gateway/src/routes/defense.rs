@@ -34,13 +34,12 @@ pub fn create_defense_routes(defense: Arc<IpDefenseSystem>) -> Router {
         .with_state(defense)
 }
 
-#[allow(dead_code)]
-async fn get_stats(State(_defense): State<Arc<IpDefenseSystem>>) -> impl IntoResponse {
-    // TODO: 实现统计
+async fn get_stats(State(defense): State<Arc<IpDefenseSystem>>) -> impl IntoResponse {
+    let stats = defense.get_stats().await;
     Json(DefenseStats {
-        total_bans: 0,
-        temp_bans: 0,
-        permanent_bans: 0,
+        total_bans: stats.temp_ban_count + stats.blacklist_count,
+        temp_bans: stats.temp_ban_count,
+        permanent_bans: stats.blacklist_count,
     })
 }
 
@@ -68,11 +67,25 @@ async fn add_whitelist(
     }
 }
 
-#[allow(dead_code)]
 async fn unban_ip(
-    State(_defense): State<Arc<IpDefenseSystem>>,
-    Path(_ip): Path<String>,
+    State(defense): State<Arc<IpDefenseSystem>>,
+    Path(ip_str): Path<String>,
 ) -> impl IntoResponse {
-    // TODO: 实现解封
-    (StatusCode::OK, Json(serde_json::json!({"success": true})))
+    let ip: std::net::IpAddr = match ip_str.parse() {
+        Ok(ip) => ip,
+        Err(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "Invalid IP address"})),
+            )
+        }
+    };
+
+    match defense.unban(ip).await {
+        Ok(()) => (StatusCode::OK, Json(serde_json::json!({"success": true}))),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error": e.to_string()})),
+        ),
+    }
 }

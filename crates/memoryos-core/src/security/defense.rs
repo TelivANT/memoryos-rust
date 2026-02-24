@@ -353,6 +353,53 @@ impl IpDefenseSystem {
         Ok(())
     }
 
+    pub async fn get_stats(&self) -> DefenseStats {
+        let conn_result = self.redis_client.get_multiplexed_async_connection().await;
+
+        let mut conn = match conn_result {
+            Ok(c) => c,
+            Err(_) => {
+                return DefenseStats {
+                    blacklist_count: 0,
+                    temp_ban_count: 0,
+                    whitelist_count: 0,
+                }
+            }
+        };
+
+        let temp_ban_pattern = format!("{}ban:temp:*", self.key_prefix);
+        let temp_ban_count: usize = redis::cmd("KEYS")
+            .arg(&temp_ban_pattern)
+            .query_async::<Vec<String>>(&mut conn)
+            .await
+            .map(|keys| keys.len())
+            .unwrap_or(0);
+
+        let wl_key = format!("{}whitelist", self.key_prefix);
+        let whitelist_count: usize = redis::cmd("SCARD")
+            .arg(&wl_key)
+            .query_async::<usize>(&mut conn)
+            .await
+            .unwrap_or(0);
+
+        let blacklist_count: usize = self
+            .qdrant_client
+            .collection_info(&self.collection_name)
+            .await
+            .map(|info| {
+                info.result
+                    .map(|r| r.points_count.unwrap_or(0) as usize)
+                    .unwrap_or(0)
+            })
+            .unwrap_or(0);
+
+        DefenseStats {
+            blacklist_count,
+            temp_ban_count,
+            whitelist_count,
+        }
+    }
+
     pub async fn unban(&self, ip: IpAddr) -> Result<()> {
         let mut conn = self
             .redis_client
