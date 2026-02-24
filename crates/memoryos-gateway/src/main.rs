@@ -221,7 +221,8 @@ async fn main() -> Result<(), AppError> {
             state_arc.clone(),
             middleware::rbac_middleware,
         ))
-        .layer(axum::middleware::from_fn(middleware::metrics_middleware));
+        .layer(axum::middleware::from_fn(middleware::metrics_middleware))
+        .layer(axum::middleware::from_fn(middleware::rate_limit_middleware));
 
     if config.auth.enabled {
         tracing::info!("API Key authentication enabled");

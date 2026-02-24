@@ -1,0 +1,40 @@
+# MemoryOS Docker Compose Configuration
+# This config is auto-mounted into the gateway container.
+# Override values via environment variables or mount your own config.toml.
+
+[server]
+host = "0.0.0.0"
+port = 8080
+worker_threads = 4
+timeout_seconds = 60
+
+[llm]
+default_provider = "openai"
+default_model = "gpt-4"
+
+[llm.providers.openai]
+type = "openai"
+api_key = "${OPENAI_API_KEY}"
+base_url = "https://api.openai.com/v1"
+
+[storage.redis]
+url = "redis://redis:6379"
+
+[storage.vector]
+url = "http://qdrant:6334"
+
+[router]
+enable = false
+hot_threshold = 0.7
+max_local_tokens = 2000
+local_backends = []
+sensitive_keywords = []
+
+[embedding]
+api_key = ""
+base_url = "https://api.openai.com/v1"
+model = "text-embedding-3-small"
+
+[auth]
+enabled = false
+api_keys = []
