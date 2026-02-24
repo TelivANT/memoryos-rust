@@ -66,31 +66,59 @@ impl StorageConnector for WebDavConnector {
             )));
         }
 
-        // Simple parsing - in production, use proper XML parser
         let body = resp
             .text()
             .await
             .map_err(|e| WikiGenError::Storage(format!("WebDAV read failed: {}", e)))?;
 
         let mut entries = Vec::new();
-        // Basic XML parsing (simplified)
-        for line in body.lines() {
-            if line.contains("<d:href>") {
-                if let Some(href) = line
-                    .split("<d:href>")
-                    .nth(1)
-                    .and_then(|s| s.split("</d:href>").next())
-                {
-                    let path = href.trim_start_matches('/').to_string();
-                    if !path.is_empty() && path != path.trim_end_matches('/') {
-                        entries.push(FileEntry {
-                            path,
-                            is_dir: href.ends_with('/'),
-                            size: 0,
-                        });
+        let mut reader = quick_xml::Reader::from_str(&body);
+        let mut in_href = false;
+        let mut href_buf = String::new();
+
+        loop {
+            match reader.read_event() {
+                Ok(quick_xml::events::Event::Start(e) | quick_xml::events::Event::Empty(e)) => {
+                    let local_name = e.local_name();
+                    if local_name.as_ref() == b"href" {
+                        in_href = true;
+                        href_buf.clear();
                     }
                 }
+                Ok(quick_xml::events::Event::Text(e)) => {
+                    if in_href {
+                        if let Ok(text) = e.unescape() {
+                            href_buf.push_str(&text);
+                        }
+                    }
+                }
+                Ok(quick_xml::events::Event::End(e)) => {
+                    let local_name = e.local_name();
+                    if local_name.as_ref() == b"href" && in_href {
+                        in_href = false;
+                        let trimmed = href_buf.trim_start_matches('/').to_string();
+                        if !trimmed.is_empty() {
+                            entries.push(FileEntry {
+                                path: trimmed,
+                                is_dir: href_buf.ends_with('/'),
+                                size: 0,
+                            });
+                        }
+                    }
+                }
+                Ok(quick_xml::events::Event::Eof) => break,
+                Err(e) => {
+                    return Err(WikiGenError::Storage(format!(
+                        "WebDAV XML parse error: {}",
+                        e
+                    )));
+                }
+                _ => {}
             }
+        }
+
+        if !entries.is_empty() {
+            entries.remove(0);
         }
 
         Ok(entries)
