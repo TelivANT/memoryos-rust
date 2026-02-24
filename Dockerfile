@@ -1,5 +1,5 @@
 # MemoryOS Gateway Dockerfile
-FROM rust:1.85-slim-bookworm AS chef
+FROM rust:slim-bookworm AS chef
 
 RUN apt-get update && apt-get install -y \
     pkg-config \
