@@ -40,7 +40,6 @@ anyhow = "1.0"
 # HTTP Client
 reqwest = { version = "0.11", features = ["json", "stream"] }
 # Database
-sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "postgres", "uuid", "time"] }
 redis = { version = "0.32.7", features = ["tokio-comp", "cluster"] }
 qdrant-client = "1.7"
 # Utils
