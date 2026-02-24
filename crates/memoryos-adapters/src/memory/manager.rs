@@ -201,6 +201,37 @@ impl DefaultMemoryManager {
         self
     }
 
+    pub fn with_embedding_config(
+        mut self,
+        config: &memoryos_core::config::EmbeddingConfig,
+    ) -> Self {
+        if !config.api_key.is_empty() {
+            self.embedding_api_key = config.api_key.clone();
+        }
+        if !config.base_url.is_empty() {
+            self.embedding_base_url = config.base_url.clone();
+        }
+        if !config.model.is_empty() {
+            self.embedding_model = config.model.clone();
+        }
+
+        if self.embedding_api_key.is_empty() {
+            tracing::warn!(
+                "⚠️  Embedding API key not configured. Memory retrieval will use hash-based \
+                 fallback (not semantic). Set [embedding].api_key in config.toml or \
+                 OPENAI_API_KEY env var for production use."
+            );
+        } else {
+            tracing::info!(
+                "Embedding configured: model={}, base_url={}",
+                self.embedding_model,
+                self.embedding_base_url
+            );
+        }
+
+        self
+    }
+
     pub fn new_with_coordinator(
         vector_store: Arc<dyn VectorStorage>,
         llm: Arc<dyn LlmAdapter>,
