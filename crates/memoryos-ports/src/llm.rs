@@ -87,3 +87,105 @@ pub trait LlmAdapter: Send + Sync {
     /// 获取 Adapter 名称（用于日志和监控）
     fn name(&self) -> &str;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn chat_request_serialization() {
+        let req = ChatRequest {
+            model: "gpt-4".to_string(),
+            messages: vec![ChatMessage {
+                role: "user".to_string(),
+                content: "Hello".to_string(),
+            }],
+            temperature: Some(0.7),
+            max_tokens: Some(100),
+            stream: false,
+            extra: HashMap::new(),
+        };
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(json.contains("gpt-4"));
+        assert!(json.contains("Hello"));
+        let deserialized: ChatRequest = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.model, "gpt-4");
+        assert_eq!(deserialized.messages.len(), 1);
+    }
+
+    #[test]
+    fn chat_request_extra_fields_preserved() {
+        let json = r#"{
+            "model": "gpt-4",
+            "messages": [{"role": "user", "content": "hi"}],
+            "stream": false,
+            "top_p": 0.9,
+            "frequency_penalty": 0.5
+        }"#;
+        let req: ChatRequest = serde_json::from_str(json).unwrap();
+        assert!(req.extra.contains_key("top_p"));
+        assert!(req.extra.contains_key("frequency_penalty"));
+    }
+
+    #[test]
+    fn chat_request_optional_fields_skipped() {
+        let req = ChatRequest {
+            model: "gpt-4".to_string(),
+            messages: vec![],
+            temperature: None,
+            max_tokens: None,
+            stream: false,
+            extra: HashMap::new(),
+        };
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(!json.contains("temperature"));
+        assert!(!json.contains("max_tokens"));
+    }
+
+    #[test]
+    fn chat_response_deserialization() {
+        let json = r#"{
+            "id": "chatcmpl-123",
+            "object": "chat.completion",
+            "model": "gpt-4",
+            "choices": [{
+                "index": 0,
+                "message": {"role": "assistant", "content": "Hello!"},
+                "finish_reason": "stop"
+            }]
+        }"#;
+        let resp: ChatResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(resp.id, "chatcmpl-123");
+        assert_eq!(resp.choices.len(), 1);
+        assert_eq!(resp.choices[0].message.content, "Hello!");
+        assert_eq!(resp.choices[0].finish_reason, "stop");
+    }
+
+    #[test]
+    fn chat_stream_chunk_deserialization() {
+        let json = r#"{
+            "id": "chatcmpl-123",
+            "object": "chat.completion.chunk",
+            "model": "gpt-4",
+            "choices": [{
+                "index": 0,
+                "delta": {"content": "Hello"},
+                "finish_reason": null
+            }]
+        }"#;
+        let chunk: ChatStreamChunk = serde_json::from_str(json).unwrap();
+        assert_eq!(chunk.choices[0].delta.content, Some("Hello".to_string()));
+        assert!(chunk.choices[0].finish_reason.is_none());
+    }
+
+    #[test]
+    fn chat_delta_optional_fields() {
+        let delta = ChatDelta {
+            role: None,
+            content: Some("test".to_string()),
+        };
+        let json = serde_json::to_string(&delta).unwrap();
+        assert!(!json.contains("role"));
+        assert!(json.contains("test"));
+    }
+}

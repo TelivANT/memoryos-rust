@@ -96,3 +96,105 @@ impl IntoResponse for AppError {
 
 /// Result type alias
 pub type Result<T> = std::result::Result<T, AppError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn config_error_status_code() {
+        let err = AppError::Config("bad config".into());
+        assert_eq!(err.status_code(), 500);
+        assert_eq!(err.error_code(), "config_error");
+    }
+
+    #[test]
+    fn bad_request_status_code() {
+        let err = AppError::BadRequest("missing field".into());
+        assert_eq!(err.status_code(), 400);
+        assert_eq!(err.error_code(), "bad_request");
+    }
+
+    #[test]
+    fn unauthorized_status_code() {
+        let err = AppError::Unauthorized("invalid token".into());
+        assert_eq!(err.status_code(), 401);
+        assert_eq!(err.error_code(), "unauthorized");
+    }
+
+    #[test]
+    fn forbidden_status_code() {
+        let err = AppError::Forbidden("ip banned".into());
+        assert_eq!(err.status_code(), 403);
+        assert_eq!(err.error_code(), "forbidden");
+    }
+
+    #[test]
+    fn not_found_status_code() {
+        let err = AppError::NotFound("user not found".into());
+        assert_eq!(err.status_code(), 404);
+        assert_eq!(err.error_code(), "not_found");
+    }
+
+    #[test]
+    fn rate_limited_status_code() {
+        let err = AppError::RateLimited("too fast".into());
+        assert_eq!(err.status_code(), 429);
+        assert_eq!(err.error_code(), "rate_limited");
+    }
+
+    #[test]
+    fn external_service_status_code() {
+        let err = AppError::ExternalService("redis down".into());
+        assert_eq!(err.status_code(), 503);
+        assert_eq!(err.error_code(), "service_unavailable");
+    }
+
+    #[test]
+    fn internal_error_status_code() {
+        let err = AppError::Internal("unexpected".into());
+        assert_eq!(err.status_code(), 500);
+        assert_eq!(err.error_code(), "internal_error");
+    }
+
+    #[test]
+    fn error_display_includes_message() {
+        let err = AppError::BadRequest("missing user_id".into());
+        let display = format!("{}", err);
+        assert!(display.contains("missing user_id"));
+    }
+
+    #[test]
+    fn to_json_value_structure() {
+        let err = AppError::NotFound("memory not found".into());
+        let json = err.to_json_value();
+        assert_eq!(json["status"], "error");
+        assert_eq!(json["error"]["code"], "not_found");
+        assert!(json["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("memory not found"));
+    }
+
+    #[test]
+    fn all_variants_have_unique_error_codes() {
+        let variants = vec![
+            AppError::Config("".into()),
+            AppError::BadRequest("".into()),
+            AppError::Unauthorized("".into()),
+            AppError::Forbidden("".into()),
+            AppError::NotFound("".into()),
+            AppError::RateLimited("".into()),
+            AppError::ExternalService("".into()),
+            AppError::Internal("".into()),
+        ];
+        let codes: Vec<&str> = variants.iter().map(|e| e.error_code()).collect();
+        let unique: std::collections::HashSet<&str> = codes.iter().copied().collect();
+        // Config and Internal both map to 500 but have different error codes
+        assert_eq!(
+            codes.len(),
+            unique.len(),
+            "All error codes should be unique"
+        );
+    }
+}

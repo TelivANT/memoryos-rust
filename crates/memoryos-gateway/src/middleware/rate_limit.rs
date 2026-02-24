@@ -1,12 +1,6 @@
 //! Rate limiting middleware
 
-use axum::{
-    extract::Request,
-    http::StatusCode,
-    middleware::Next,
-    response::Response,
-    Json,
-};
+use axum::{extract::Request, http::StatusCode, middleware::Next, response::Response, Json};
 use serde_json::json;
 use std::collections::HashMap;
 use std::net::IpAddr;

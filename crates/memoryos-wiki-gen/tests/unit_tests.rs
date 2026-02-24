@@ -3,7 +3,9 @@ use std::path::PathBuf;
 
 use memoryos_wiki_gen::cache::{compute_hash, CacheStore};
 use memoryos_wiki_gen::config::WikiGenConfig;
-use memoryos_wiki_gen::evidence::{build_evidence_pack, format_evidence_prompt, LlmDocResult};
+use memoryos_wiki_gen::evidence::{
+    build_evidence_pack, format_evidence_prompt, EvidenceRef, LlmDocResult,
+};
 use memoryos_wiki_gen::graph::CodeGraph;
 use memoryos_wiki_gen::ir::*;
 use memoryos_wiki_gen::page_builder::PageBuilder;
