@@ -1,288 +1,192 @@
 # 快速开始
 
-5 分钟快速上手 MemoryOS-Rust
+5 分钟快速上手 MemoryOS-Rust 单节点本地部署。
+
+**版本**: v0.13.0
+**仓库**: [TelivANT/memoryos-rust](https://github.com/TelivANT/memoryos-rust)
 
 ---
 
-## 📋 环境要求
+## 环境要求
 
-- **Rust**: 1.93+
+- **Rust**: 1.75+（推荐 stable 最新版）
 - **Docker**: 20.10+
 - **Docker Compose**: 2.0+
+- **LLM API Key**: OpenAI / Deepseek / Ollama 等任意一个
 
 ---
 
-## 🚀 快速开始
-
-### 1. 启动依赖服务
+## 第一步：启动依赖服务
 
 ```bash
-# 启动 Redis 和 Qdrant
-docker-compose up -d redis qdrant
+# 启动 Redis（协调层）和 Qdrant（向量存储）
+docker compose up -d redis qdrant
 
-# 验证服务
-docker ps
+# 验证服务就绪
+docker compose ps
+# redis   ... Up (healthy)
+# qdrant  ... Up (healthy)
 ```
 
-### 2. 配置
+默认端口：Redis `:6379`、Qdrant `:6333`（gRPC）/ `:6334`（HTTP）。
+
+---
+
+## 第二步：配置
 
 ```bash
 # 复制配置模板
 cp config.example.toml config.toml
-
-# 编辑配置，填入 API Key
-vim config.toml
 ```
 
-**最小配置**:
+编辑 `config.toml`，填入你的 LLM API Key：
+
 ```toml
 [server]
 host = "0.0.0.0"
 port = 8080
+worker_threads = 4
+timeout_seconds = 60
 
 [llm]
-provider = "openai"
-api_key = "sk-your-key"  # 替换为你的 API Key
-base_url = "https://api.openai.com/v1"
-model = "gpt-4o-mini"
+default_provider = "openai"
+default_model = "gpt-4o-mini"
 
-[redis]
+[llm.providers.openai]
+type = "openai"
+base_url = "https://api.openai.com/v1"
+api_key = "sk-your-openai-key"
+
+[storage.redis]
 url = "redis://localhost:6379"
+ttl_seconds = 3600
+max_messages = 20
 
-[qdrant]
+[storage.vector]
 url = "http://localhost:6334"
+
+[auth]
+enabled = false
 ```
 
-### 3. 运行
+> **使用 Ollama？** 将 provider 改为 ollama：
+> ```toml
+> [llm]
+> default_provider = "ollama"
+> default_model = "llama3"
+>
+> [llm.providers.ollama]
+> type = "ollama"
+> base_url = "http://localhost:11434/v1"
+> api_key = ""
+> ```
+
+---
+
+## 第三步：启动 Gateway
 
 ```bash
-# 开发模式
-cargo run
-
-# 生产模式
-cargo run --release
+# 编译并运行
+cargo run --bin memoryos-gateway
 ```
 
-### 4. 测试
-
-```bash
-# 健康检查
-curl http://localhost:8080/health/status
-
-# 聊天测试
-curl -X POST http://localhost:8080/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gpt-4o-mini",
-    "messages": [
-      {"role": "user", "content": "Hello!"}
-    ]
-  }'
+看到以下日志表示启动成功：
+```
+INFO memoryos_gateway: MemoryOS Gateway listening on 0.0.0.0:8080
 ```
 
 ---
 
-## 🔧 配置说明
+## 第四步：验证
 
-### LLM 提供商
-
-支持 7 种 LLM 提供商：
-
-```toml
-# OpenAI
-[llm]
-provider = "openai"
-api_key = "sk-..."
-base_url = "https://api.openai.com/v1"
-
-# Gemini
-[llm]
-provider = "gemini"
-api_key = "..."
-base_url = "https://generativelanguage.googleapis.com/v1beta"
-
-# Claude
-[llm]
-provider = "claude"
-api_key = "..."
-base_url = "https://api.anthropic.com/v1"
-
-# Ollama (本地)
-[llm]
-provider = "ollama"
-api_key = ""
-base_url = "http://localhost:11434/v1"
-```
-
-### Embedding 配置（可选）
+### 健康检查
 
 ```bash
-# 环境变量方式
-export OPENAI_API_KEY="sk-your-key"
-export EMBEDDING_MODEL="text-embedding-3-small"
+curl http://localhost:8080/health
+# {"status":"ok"}
 
-# 不配置则使用 fallback embedding
-```
-
----
-
-## 📊 验证部署
-
-### 1. 健康检查
-
-```bash
-# Liveness
-curl http://localhost:8080/health/live
-
-# Readiness
-curl http://localhost:8080/health/ready
-
-# 详细状态
 curl http://localhost:8080/health/status
+# {"mode":"ready","redis":"up","qdrant":"up"}
 ```
 
-**正常响应**:
-```json
-{
-  "mode": "ready",
-  "redis": "up",
-  "qdrant": "up"
-}
-```
-
-### 2. 聊天测试
+### 添加记忆
 
 ```bash
-curl -X POST http://localhost:8080/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gpt-4o-mini",
-    "messages": [
-      {"role": "system", "content": "You are a helpful assistant."},
-      {"role": "user", "content": "What is MemoryOS?"}
-    ],
-    "temperature": 0.7
-  }'
-```
-
-### 3. 记忆测试
-
-```bash
-# 添加记忆
 curl -X POST http://localhost:8080/v1/memory/add \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": "test_user",
-    "message": {
-      "role": "user",
-      "content": "My name is Alice"
-    }
+    "role": "user",
+    "content": "My name is Alice and I work as a data scientist at Google."
   }'
+# {"status":"ok"}
+```
 
-# 检索记忆
-curl "http://localhost:8080/v1/memory/retrieve?user_id=test_user&query=name"
+### 检索记忆
 
-# 获取用户画像
-curl "http://localhost:8080/v1/memory/profile?user_id=test_user"
+```bash
+curl -X POST http://localhost:8080/v1/memory/retrieve \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "test_user",
+    "query": "What do you know about me?"
+  }'
+```
+
+### 带记忆的聊天
+
+```bash
+curl -X POST http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4o-mini",
+    "messages": [
+      {"role": "user", "content": "What is my name and where do I work?"}
+    ]
+  }'
+```
+
+MemoryOS 会自动将之前存储的记忆注入到 LLM 上下文中，模型会知道你是 Alice，在 Google 做数据科学。
+
+---
+
+## 可选：启用认证
+
+生产环境必须启用认证：
+
+```toml
+[auth]
+enabled = true
+admin_keys = ["admin-secret-key-change-me"]
+api_keys = ["user-api-key-1"]
+```
+
+之后所有 `/v1/*` 请求需要携带 API Key：
+
+```bash
+curl -X POST http://localhost:8080/v1/memory/add \
+  -H "Authorization: Bearer user-api-key-1" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "test_user", "role": "user", "content": "Hello"}'
 ```
 
 ---
 
-## ❓ 常见问题
+## 可选：Docker 一键部署
 
-### 1. Redis 连接失败
-
-**错误**: `Failed to connect to Redis`
-
-**解决**:
 ```bash
-# 检查 Redis 是否运行
-docker ps | grep redis
+# 构建并启动所有服务
+docker compose up -d --build
 
-# 重启 Redis
-docker-compose restart redis
-
-# 检查配置
-cat config.toml | grep redis
-```
-
-### 2. Qdrant 连接失败
-
-**错误**: `Failed to connect to Qdrant`
-
-**解决**:
-```bash
-# 检查 Qdrant 是否运行
-docker ps | grep qdrant
-
-# 重启 Qdrant
-docker-compose restart qdrant
-
-# 访问 Qdrant UI
-open http://localhost:6333/dashboard
-```
-
-### 3. LLM API 调用失败
-
-**错误**: `OpenAI API error 401`
-
-**解决**:
-```bash
-# 检查 API Key
-echo $OPENAI_API_KEY
-
-# 或检查配置文件
-cat config.toml | grep api_key
-
-# 测试 API Key
-curl https://api.openai.com/v1/models \
-  -H "Authorization: Bearer $OPENAI_API_KEY"
-```
-
-### 4. 编译失败
-
-**错误**: `error: could not compile`
-
-**解决**:
-```bash
-# 清理并重新编译
-cargo clean
-cargo build
-
-# 更新依赖
-cargo update
-```
-
-### 5. 端口被占用
-
-**错误**: `Address already in use`
-
-**解决**:
-```bash
-# 查找占用端口的进程
-lsof -i :8080
-
-# 杀死进程
-kill -9 <PID>
-
-# 或修改配置文件端口
-vim config.toml
-# 修改 port = 8081
+# 查看日志
+docker compose logs -f memoryos-gateway
 ```
 
 ---
 
-## 🎯 下一步
+## 下一步
 
-- 📖 [架构设计](./ARCHITECTURE.md) - 了解系统架构
-- 📡 [API 文档](./API.md) - 查看完整 API
-- 🛠️ [开发指南](./DEVELOPMENT.md) - 参与开发
-- 🚀 [部署指南](./DEPLOYMENT.md) - 生产部署
-
----
-
-## 🆘 获取帮助
-
-- **GitHub Issues**: https://github.com/BAI-LAB/MemoryOS/issues
-- **Discord**: https://discord.gg/SqVj7QvZ
-- **文档**: https://bai-lab.github.io/MemoryOS/docs
+- [API 文档](API.md) — 完整的 47 个端点说明
+- [部署文档](DEPLOYMENT.md) — 生产部署、K8s、监控
+- [用户手册](USER_MANUAL.md) — 功能使用指南
+- [架构设计](ARCHITECTURE.md) — 系统架构详解
