@@ -1,6 +1,6 @@
 # 设计原理与实现细节
 
-**版本**: 0.12.0  
+**版本**: 0.13.0  
 **更新**: 2026-02-20
 
 本文档详细说明 MemoryOS-Rust 的设计原理、实现细节和关键决策。
@@ -15,6 +15,9 @@
 - [数据流详解](#数据流详解)
 - [性能优化](#性能优化)
 - [设计决策](#设计决策)
+- [MCP Server 设计](#-mcp-server-设计-memoryos-mcp)
+- [企业级功能设计](#-企业级功能设计-v0120)
+- [FAQ 系统设计](#-faq-系统设计-v020)
 
 ---
 
@@ -537,17 +540,227 @@ let (stm, mtm, ltm) = tokio::join!(
 
 ---
 
+---
+
+## 🔌 MCP Server 设计 (memoryos-mcp)
+
+### 设计目标
+
+将 MemoryOS 的全部记忆管理能力通过 MCP (Model Context Protocol) 标准协议暴露给 AI 助手，使 Claude Desktop、Cursor、自定义 Agent 等客户端无需手写 HTTP 集成即可调用。
+
+### 为什么选择 MCP
+
+| 对比维度 | HTTP REST (Gateway) | MCP Server |
+|---------|---------------------|------------|
+| **协议** | HTTP/JSON | JSON-RPC 2.0 over stdio/SSE |
+| **发现** | 需要阅读 API 文档 | 客户端自动发现 tools/resources |
+| **类型安全** | 手动校验 | JSON Schema 自动生成 (schemars) |
+| **适用客户端** | Web/Mobile/Backend | AI Agent (Claude, Cursor, etc.) |
+| **集成成本** | 手写 HTTP client | 零代码，配置文件即接入 |
+
+MCP 是 HTTP API 的**补充**而非替代。两者共享同一套 Core/Ports/Adapters 业务逻辑。
+
+### 为什么选择独立 crate (Approach A)
+
+```
+方案 A: 独立 crate memoryos-mcp (推荐)
+  ✅ 独立二进制，按需部署
+  ✅ stdio 传输支持（Claude Desktop 必需）
+  ✅ 不影响 Gateway 代码
+  ✅ 可独立测试和发布
+
+方案 B: 嵌入 Gateway 的 /mcp 端点
+  ❌ Gateway 启动时必须初始化 MCP
+  ❌ 无法支持 stdio 传输
+  ❌ 增加 Gateway 复杂度
+```
+
+### 技术栈选型
+
+```rust
+// Cargo.toml (memoryos-mcp)
+[dependencies]
+rmcp = { version = "0.16", features = ["server", "transport-sse", "transport-io"] }
+schemars = "0.8"           // JSON Schema 自动派生
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+clap = { version = "4", features = ["derive"] }
+
+// 复用现有 crate
+memoryos-ports = { path = "../memoryos-ports" }
+memoryos-core = { path = "../memoryos-core" }
+memoryos-adapters = { path = "../memoryos-adapters" }
+```
+
+**rmcp** 是 Anthropic 官方维护的 Rust MCP SDK（3000+ stars），基于 tokio，与项目技术栈完全一致。
+
+### Tool 实现模式
+
+每个 MCP Tool 通过 `#[tool]` 宏注册，rmcp 自动生成 JSON Schema：
+
+```rust
+use rmcp::tool;
+use schemars::JsonSchema;
+
+#[derive(Debug, serde::Deserialize, JsonSchema)]
+pub struct AddMemoryInput {
+    pub user_id: String,
+    pub content: String,
+    #[serde(default)]
+    pub metadata: Option<serde_json::Value>,
+}
+
+#[tool(
+    name = "add_memory",
+    description = "存储对话或事实到短期记忆 (STM)"
+)]
+async fn add_memory(input: AddMemoryInput) -> Result<String, McpError> {
+    let storage = get_storage().await;
+    storage.add_short_term_message(
+        &input.user_id,
+        &input.content,
+        input.metadata,
+    ).await?;
+    Ok(format!("Memory stored for user {}", input.user_id))
+}
+```
+
+### Tool ↔ 现有 API 映射
+
+| MCP Tool | Gateway 端点 | Ports trait 方法 |
+|----------|-------------|-----------------|
+| `add_memory` | `POST /v1/memory/add` | `VectorStorage::add_short_term_message` |
+| `search_memories` | `POST /v1/memory/retrieve` | `VectorStorage::search_segments` |
+| `get_memories` | `POST /v1/memory/retrieve` | `VectorStorage::get_short_term_messages` |
+| `get_memory` | `GET /v1/memory/:id/history` | `VectorStorage::get_long_term` |
+| `update_memory` | `POST /v1/memory/manage/tags` | `VectorStorage::store_segment` |
+| `delete_memory` | (GDPR delete) | `GdprManager::process_deletion` |
+| `search_faq` | `GET /v1/admin/faq/candidates` | `FaqMatcher::find_match` |
+| `query_graph` | `POST /v1/graph/query` | `KnowledgeGraph::query` |
+| `get_user_profile` | `POST /v1/memory/retrieve` | `VectorStorage::get_long_term` |
+| `generate_wiki` | `POST /v1/wiki/generate` | `WikiGenerator::generate` |
+
+### Transport 实现
+
+```rust
+// stdio 模式（本地部署）
+async fn run_stdio() -> Result<()> {
+    let transport = rmcp::transport::stdio();
+    let server = McpServer::new(build_tools(), build_resources());
+    server.serve(transport).await
+}
+
+// SSE 模式（远程部署）
+async fn run_sse(addr: SocketAddr) -> Result<()> {
+    let transport = rmcp::transport::sse::SseServer::new(addr);
+    let server = McpServer::new(build_tools(), build_resources());
+    server.serve(transport).await
+}
+
+// CLI 入口
+#[derive(clap::Parser)]
+struct Cli {
+    #[arg(long, default_value = "stdio")]
+    transport: TransportMode,
+
+    #[arg(long, default_value = "127.0.0.1:3001")]
+    sse_addr: SocketAddr,
+
+    #[arg(long, default_value = "config.toml")]
+    config: PathBuf,
+}
+```
+
+### 资源 (Resources) 设计
+
+MCP Resources 提供只读数据订阅，客户端可以 list + read：
+
+```rust
+use rmcp::resource;
+
+#[resource(
+    uri = "memory://{user_id}/profile",
+    name = "User Profile",
+    description = "用户长期画像数据",
+    mime_type = "application/json"
+)]
+async fn user_profile(user_id: String) -> Result<String, McpError> {
+    let storage = get_storage().await;
+    let profile = storage.get_long_term(&user_id, "profile").await?;
+    Ok(serde_json::to_string(&profile)?)
+}
+```
+
+### 错误处理
+
+MCP 错误映射到 JSON-RPC error codes：
+
+| 场景 | JSON-RPC Code | 说明 |
+|------|---------------|------|
+| 参数缺失/非法 | -32602 | Invalid params |
+| 用户未找到 | -32001 | 自定义业务错误 |
+| 存储不可用 | -32002 | 降级返回缓存数据 |
+| 认证失败 | -32003 | API Key 无效 |
+| 内部错误 | -32603 | 兜底错误 |
+
+### 并发与安全
+
+- **共享状态**: 通过 `Arc<AppState>` 共享存储连接池，与 Gateway 相同模式
+- **认证**: MCP 协议本身不含认证，stdio 模式依赖本地权限，SSE 模式通过配置的 API Key 在 tool handler 内校验
+- **GDPR**: delete_memory tool 调用与 Gateway 相同的 GdprManager，审计记录统一
+
+### 部署架构
+
+```
+场景 1: 开发者本地使用 (stdio)
+┌──────────────┐     stdio      ┌──────────────┐
+│ Claude       │ ←────────────→ │ memoryos-mcp │
+│ Desktop      │  stdin/stdout  │ (binary)     │
+└──────────────┘                └──────┬───────┘
+                                       │
+                                ┌──────▼───────┐
+                                │ Qdrant+Redis │
+                                └──────────────┘
+
+场景 2: 团队远程共享 (SSE)
+┌──────────────┐                ┌──────────────┐
+│ Agent A      │───┐            │              │
+├──────────────┤   │  HTTP SSE  │ memoryos-mcp │
+│ Agent B      │───┼──────────→ │ :3001/mcp    │
+├──────────────┤   │            │              │
+│ Agent C      │───┘            └──────┬───────┘
+└──────────────┘                       │
+                                ┌──────▼───────┐
+                                │ Qdrant+Redis │
+                                └──────────────┘
+
+场景 3: Gateway + MCP 共存 (推荐生产部署)
+┌──────────────┐                ┌──────────────┐
+│ Web App      │──HTTP REST───→ │ Gateway:8080 │──┐
+└──────────────┘                └──────────────┘  │
+                                                   ├→ Core+Adapters
+┌──────────────┐                ┌──────────────┐  │   (shared)
+│ AI Agent     │──MCP stdio───→ │ MCP Server   │──┘
+└──────────────┘                └──────────────┘
+```
+
+---
+
 ## 📚 参考资料
 
 - [六边形架构](https://alistair.cockburn.us/hexagonal-architecture/)
 - [Qdrant 文档](https://qdrant.tech/documentation/)
 - [Redis 文档](https://redis.io/documentation)
 - [Tokio 文档](https://tokio.rs/)
+- [MCP 规范](https://modelcontextprotocol.io/)
+- [rmcp Rust SDK](https://github.com/anthropics/rust-sdk)
 
 ---
 
 **更新时间**: 2026-02-20  
-**版本**: 0.12.0
+**版本**: 0.13.0
 
 
 ---
