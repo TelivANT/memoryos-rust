@@ -271,6 +271,39 @@ impl DefaultMemoryManager {
         }
     }
 
+    /// Configure embedding settings from EmbeddingConfig.
+    /// This allows using config.toml settings instead of environment variables.
+    pub fn with_embedding_config(
+        mut self,
+        config: &memoryos_core::config::EmbeddingConfig,
+    ) -> Self {
+        // Config values take priority; fall back to env vars if config is empty
+        if !config.api_key.is_empty() {
+            self.embedding_api_key = config.api_key.clone();
+        }
+        if !config.base_url.is_empty() {
+            self.embedding_base_url = config.base_url.clone();
+        }
+        if !config.model.is_empty() {
+            self.embedding_model = config.model.clone();
+        }
+
+        if self.embedding_api_key.is_empty() {
+            tracing::warn!(
+                "⚠️  Embedding API key not configured. Memory retrieval will use hash-based fallback (not semantic). \
+                 Set [embedding].api_key in config.toml or OPENAI_API_KEY env var for production use."
+            );
+        } else {
+            tracing::info!(
+                "Embedding configured: model={}, base_url={}",
+                self.embedding_model,
+                self.embedding_base_url
+            );
+        }
+
+        self
+    }
+
     /// Generate embedding with caching
     async fn generate_embedding(&self, text: &str) -> Result<Vec<f32>, AppError> {
         // 1. 检查缓存
