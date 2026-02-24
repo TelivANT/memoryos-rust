@@ -10,8 +10,10 @@ use axum::{
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use memoryos_wiki_gen::storage::{
-    CosConnector, GitConnector, LocalConnector, ObsConnector, OssConnector, S3Connector,
-    SftpConnector, StorageConnector, WebDavConnector,
+    AliyunDriveConnector, AzureBlobConnector, BaiduPanConnector, CosConnector, DropboxConnector,
+    GcsConnector, GitConnector, GoogleDriveConnector, LocalConnector, NfsConnector, ObsConnector,
+    OneDriveConnector, OssConnector, S3Connector, SftpConnector, SmbConnector, StorageConnector,
+    WebDavConnector,
 };
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
@@ -472,6 +474,116 @@ fn build_connector(
             }
             Ok(Box::new(conn))
         }
+        "gcs" => {
+            let bucket = get_str(config, "bucket");
+            let access_key = get_str(config, "access_key");
+            let secret_key = get_str(config, "secret_key");
+            if bucket.is_empty() || access_key.is_empty() || secret_key.is_empty() {
+                return Err("bucket, access_key, secret_key are required".to_string());
+            }
+            let mut conn = GcsConnector::new(bucket, access_key, secret_key);
+            let prefix = get_str(config, "prefix");
+            if !prefix.is_empty() {
+                conn = conn.with_prefix(prefix);
+            }
+            Ok(Box::new(conn))
+        }
+        "azure_blob" => {
+            let account = get_str(config, "account");
+            let container = get_str(config, "container");
+            let sas_token = get_str(config, "sas_token");
+            if account.is_empty() || container.is_empty() || sas_token.is_empty() {
+                return Err("account, container, sas_token are required".to_string());
+            }
+            let mut conn = AzureBlobConnector::new(account, container, sas_token);
+            let prefix = get_str(config, "prefix");
+            if !prefix.is_empty() {
+                conn = conn.with_prefix(prefix);
+            }
+            Ok(Box::new(conn))
+        }
+        "smb" => {
+            let server = get_str(config, "server");
+            let share = get_str(config, "share");
+            let mount_path = get_str(config, "mount_path");
+            if server.is_empty() || share.is_empty() || mount_path.is_empty() {
+                return Err("server, share, mount_path are required".to_string());
+            }
+            Ok(Box::new(SmbConnector::new(
+                server,
+                share,
+                PathBuf::from(mount_path),
+            )))
+        }
+        "nfs" => {
+            let server = get_str(config, "server");
+            let export_path = get_str(config, "export_path");
+            let mount_path = get_str(config, "mount_path");
+            if server.is_empty() || export_path.is_empty() || mount_path.is_empty() {
+                return Err("server, export_path, mount_path are required".to_string());
+            }
+            Ok(Box::new(NfsConnector::new(
+                server,
+                export_path,
+                PathBuf::from(mount_path),
+            )))
+        }
+        "onedrive" => {
+            let access_token = get_str(config, "access_token");
+            if access_token.is_empty() {
+                return Err("access_token is required".to_string());
+            }
+            let mut conn = OneDriveConnector::new(access_token);
+            let drive_id = get_str(config, "drive_id");
+            if !drive_id.is_empty() {
+                conn = conn.with_drive_id(drive_id);
+            }
+            Ok(Box::new(conn))
+        }
+        "google_drive" => {
+            let access_token = get_str(config, "access_token");
+            if access_token.is_empty() {
+                return Err("access_token is required".to_string());
+            }
+            let mut conn = GoogleDriveConnector::new(access_token);
+            let folder_id = get_str(config, "folder_id");
+            if !folder_id.is_empty() {
+                conn = conn.with_folder_id(folder_id);
+            }
+            Ok(Box::new(conn))
+        }
+        "dropbox" => {
+            let access_token = get_str(config, "access_token");
+            if access_token.is_empty() {
+                return Err("access_token is required".to_string());
+            }
+            Ok(Box::new(DropboxConnector::new(access_token)))
+        }
+        "baidu_pan" => {
+            let access_token = get_str(config, "access_token");
+            if access_token.is_empty() {
+                return Err("access_token is required".to_string());
+            }
+            let mut conn = BaiduPanConnector::new(access_token);
+            let app_path = get_str(config, "app_path");
+            if !app_path.is_empty() {
+                conn = conn.with_app_path(app_path);
+            }
+            Ok(Box::new(conn))
+        }
+        "aliyun_drive" => {
+            let access_token = get_str(config, "access_token");
+            let drive_id = get_str(config, "drive_id");
+            if access_token.is_empty() || drive_id.is_empty() {
+                return Err("access_token and drive_id are required".to_string());
+            }
+            let mut conn = AliyunDriveConnector::new(access_token, drive_id);
+            let root_folder = get_str(config, "root_folder_id");
+            if !root_folder.is_empty() {
+                conn = conn.with_root_folder(root_folder);
+            }
+            Ok(Box::new(conn))
+        }
         _ => Err(format!("Unknown connector type: {}", connector_type)),
     }
 }
@@ -571,6 +683,125 @@ async fn list_connectors() -> impl IntoResponse {
                 field("access_key_id", "string", true, "Access key ID"),
                 sensitive_field("secret_access_key", "string", true, "Secret access key"),
                 field("prefix", "string", false, "Key prefix filter"),
+            ],
+        },
+        ConnectorMetadata {
+            connector_type: "gcs".to_string(),
+            name: "Google Cloud Storage".to_string(),
+            description: "Connect to Google Cloud Storage (S3-compatible HMAC)".to_string(),
+            auth_required: true,
+            fields: vec![
+                field("bucket", "string", true, "GCS bucket name"),
+                field("access_key", "string", true, "HMAC access key"),
+                sensitive_field("secret_key", "string", true, "HMAC secret key"),
+                field("prefix", "string", false, "Key prefix filter"),
+            ],
+        },
+        ConnectorMetadata {
+            connector_type: "azure_blob".to_string(),
+            name: "Azure Blob Storage".to_string(),
+            description: "Connect to Azure Blob Storage via SAS token".to_string(),
+            auth_required: true,
+            fields: vec![
+                field("account", "string", true, "Storage account name"),
+                field("container", "string", true, "Container name"),
+                sensitive_field("sas_token", "string", true, "SAS token"),
+                field("prefix", "string", false, "Blob prefix filter"),
+            ],
+        },
+        ConnectorMetadata {
+            connector_type: "smb".to_string(),
+            name: "SMB/CIFS".to_string(),
+            description: "Access SMB/CIFS share via local mount point".to_string(),
+            auth_required: false,
+            fields: vec![
+                field("server", "string", true, "SMB server hostname"),
+                field("share", "string", true, "Share name"),
+                field("mount_path", "string", true, "Local mount path"),
+            ],
+        },
+        ConnectorMetadata {
+            connector_type: "nfs".to_string(),
+            name: "NFS".to_string(),
+            description: "Access NFS export via local mount point".to_string(),
+            auth_required: false,
+            fields: vec![
+                field("server", "string", true, "NFS server hostname"),
+                field("export_path", "string", true, "NFS export path"),
+                field("mount_path", "string", true, "Local mount path"),
+            ],
+        },
+        ConnectorMetadata {
+            connector_type: "onedrive".to_string(),
+            name: "Microsoft OneDrive".to_string(),
+            description: "Connect to OneDrive via Microsoft Graph API".to_string(),
+            auth_required: true,
+            fields: vec![
+                sensitive_field("access_token", "string", true, "OAuth2 access token"),
+                field(
+                    "drive_id",
+                    "string",
+                    false,
+                    "Drive ID (default: user drive)",
+                ),
+            ],
+        },
+        ConnectorMetadata {
+            connector_type: "google_drive".to_string(),
+            name: "Google Drive".to_string(),
+            description: "Connect to Google Drive via Drive API v3".to_string(),
+            auth_required: true,
+            fields: vec![
+                sensitive_field("access_token", "string", true, "OAuth2 access token"),
+                field(
+                    "folder_id",
+                    "string",
+                    false,
+                    "Root folder ID (default: root)",
+                ),
+            ],
+        },
+        ConnectorMetadata {
+            connector_type: "dropbox".to_string(),
+            name: "Dropbox".to_string(),
+            description: "Connect to Dropbox via API v2".to_string(),
+            auth_required: true,
+            fields: vec![sensitive_field(
+                "access_token",
+                "string",
+                true,
+                "OAuth2 access token",
+            )],
+        },
+        ConnectorMetadata {
+            connector_type: "baidu_pan".to_string(),
+            name: "Baidu Pan (百度网盘)".to_string(),
+            description: "Connect to Baidu Pan via Open Platform API".to_string(),
+            auth_required: true,
+            fields: vec![
+                sensitive_field("access_token", "string", true, "OAuth2 access token"),
+                field(
+                    "app_path",
+                    "string",
+                    false,
+                    "App path (default: /apps/memoryos)",
+                ),
+            ],
+        },
+        ConnectorMetadata {
+            connector_type: "aliyun_drive".to_string(),
+            name: "Aliyun Drive (阿里云盘)".to_string(),
+            description: "Connect to Aliyun Drive via Open API".to_string(),
+            auth_required: true,
+            fields: vec![
+                sensitive_field("access_token", "string", true, "OAuth2 access token"),
+                field("drive_id", "string", true, "Drive ID"),
+                field(
+                    "root_folder_id",
+                    "string",
+                    false,
+                    "Root folder ID (default: root)",
+                ),
             ],
         },
     ];
