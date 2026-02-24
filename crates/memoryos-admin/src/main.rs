@@ -73,7 +73,9 @@ async fn main() {
     let cors = if allowed_origins.is_empty() {
         CorsLayer::new()
             .allow_origin(tower_http::cors::AllowOrigin::exact(
-                "http://localhost:3000".parse().unwrap(),
+                "http://localhost:3000"
+                    .parse()
+                    .expect("Failed to parse default CORS origin"),
             ))
             .allow_methods(Any)
             .allow_headers(Any)

@@ -20,49 +20,57 @@ static RELATION_PATTERNS: Lazy<Vec<(Regex, &'static str)>> = Lazy::new(|| {
     vec![
         (
             Regex::new(r"(?i)(.+?)\s+(?:works?\s+(?:at|for)|employed\s+(?:at|by))\s+(.+)")
-                .unwrap(),
+                .expect("BUG: Invalid works_at regex"),
             "works_at",
         ),
         (
             Regex::new(r"(?i)(.+?)\s+(?:lives?\s+in|(?:is|are)\s+from|(?:is|are)\s+located\s+in|located\s+in)\s+(.+)")
-                .unwrap(),
+                .expect("BUG: Invalid located_in regex"),
             "located_in",
         ),
         (
-            Regex::new(r"(?i)(.+?)\s+(?:is|are)\s+friends?\s+(?:with|of)\s+(.+)").unwrap(),
+            Regex::new(r"(?i)(.+?)\s+(?:is|are)\s+friends?\s+(?:with|of)\s+(.+)")
+                .expect("BUG: Invalid friends_with regex"),
             "friends_with",
         ),
         (
-            Regex::new(r"(?i)(.+?)\s+(?:(?:is|are)\s+(?:a|an|the)\s+)?(?:friend|partner|colleague|spouse|wife|husband)\s+(?:of|with)\s+(.+)").unwrap(),
+            Regex::new(r"(?i)(.+?)\s+(?:(?:is|are)\s+(?:a|an|the)\s+)?(?:friend|partner|colleague|spouse|wife|husband)\s+(?:of|with)\s+(.+)")
+                .expect("BUG: Invalid related_to regex"),
             "related_to",
         ),
         (
-            Regex::new(r"(?i)(.+?)\s+(?:likes?|loves?|enjoys?|prefers?)\s+(.+)").unwrap(),
+            Regex::new(r"(?i)(.+?)\s+(?:likes?|loves?|enjoys?|prefers?)\s+(.+)")
+                .expect("BUG: Invalid likes regex"),
             "likes",
         ),
         (
-            Regex::new(r"(?i)(.+?)\s+(?:uses?|utilizes?)\s+(.+)").unwrap(),
+            Regex::new(r"(?i)(.+?)\s+(?:uses?|utilizes?)\s+(.+)")
+                .expect("BUG: Invalid uses regex"),
             "uses",
         ),
         (
             Regex::new(r"(?i)(.+?)\s+(?:(?:is|are)\s+(?:part|member)\s+of|belongs?\s+to)\s+(.+)")
-                .unwrap(),
+                .expect("BUG: Invalid member_of regex"),
             "member_of",
         ),
         (
-            Regex::new(r"(?i)(.+?)\s+(?:created?|built|made|developed|authored)\s+(.+)").unwrap(),
+            Regex::new(r"(?i)(.+?)\s+(?:created?|built|made|developed|authored)\s+(.+)")
+                .expect("BUG: Invalid created regex"),
             "created",
         ),
         (
-            Regex::new(r"(?i)(.+?)\s+(?:manages?|leads?|heads?|directs?)\s+(.+)").unwrap(),
+            Regex::new(r"(?i)(.+?)\s+(?:manages?|leads?|heads?|directs?)\s+(.+)")
+                .expect("BUG: Invalid manages regex"),
             "manages",
         ),
         (
-            Regex::new(r"(?i)(.+?)\s+(?:owns?|has|have)\s+(?:a\s+)?(.+)").unwrap(),
+            Regex::new(r"(?i)(.+?)\s+(?:owns?|has|have)\s+(?:a\s+)?(.+)")
+                .expect("BUG: Invalid owns regex"),
             "owns",
         ),
         (
-            Regex::new(r"(?i)(.+?)\s+(?:studies?|learns?|majors?\s+in|studying)\s+(.+)").unwrap(),
+            Regex::new(r"(?i)(.+?)\s+(?:studies?|learns?|majors?\s+in|studying)\s+(.+)")
+                .expect("BUG: Invalid studies regex"),
             "studies",
         ),
     ]

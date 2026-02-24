@@ -16,7 +16,7 @@ lazy_static! {
         "Total HTTP requests",
         &["method", "path", "status"]
     )
-    .unwrap();
+    .expect("Failed to register HTTP_REQUESTS_TOTAL metric");
 
     pub static ref HTTP_REQUEST_DURATION: HistogramVec = register_histogram_vec!(
         "memoryos_http_request_duration_seconds",
@@ -24,7 +24,7 @@ lazy_static! {
         &["method", "path"],
         vec![0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]
     )
-    .unwrap();
+    .expect("Failed to register HTTP_REQUEST_DURATION metric");
 
     // ── Memory operation metrics ──────────────────────────────────
     pub static ref MEMORY_OPERATIONS_TOTAL: CounterVec = register_counter_vec!(
@@ -32,14 +32,14 @@ lazy_static! {
         "Total memory operations",
         &["operation", "tier", "status"]
     )
-    .unwrap();
+    .expect("Failed to register MEMORY_OPERATIONS_TOTAL metric");
 
     pub static ref MEMORY_OPERATION_DURATION: HistogramVec = register_histogram_vec!(
         "memoryos_memory_operation_duration_seconds",
         "Memory operation duration in seconds",
         &["operation", "tier"]
     )
-    .unwrap();
+    .expect("Failed to register MEMORY_OPERATION_DURATION metric");
 
     // ── Vector DB metrics ─────────────────────────────────────────
     pub static ref VECTOR_DB_OPERATIONS_TOTAL: CounterVec = register_counter_vec!(
@@ -47,14 +47,14 @@ lazy_static! {
         "Total vector DB operations",
         &["db_type", "operation", "status"]
     )
-    .unwrap();
+    .expect("Failed to register VECTOR_DB_OPERATIONS_TOTAL metric");
 
     pub static ref VECTOR_DB_LATENCY: HistogramVec = register_histogram_vec!(
         "memoryos_vector_db_latency_seconds",
         "Vector DB operation latency in seconds",
         &["db_type", "operation"]
     )
-    .unwrap();
+    .expect("Failed to register VECTOR_DB_LATENCY metric");
 
     // ── Router metrics ────────────────────────────────────────────
     pub static ref ROUTER_DECISIONS_TOTAL: IntCounterVec = register_int_counter_vec!(
@@ -62,14 +62,14 @@ lazy_static! {
         "Total router decisions by tier",
         &["tier"]
     )
-    .unwrap();
+    .expect("Failed to register ROUTER_DECISIONS_TOTAL metric");
 
     pub static ref ROUTER_DECISION_DURATION: HistogramVec = register_histogram_vec!(
         "memoryos_router_decision_duration_seconds",
         "Router decision latency in seconds",
         &["tier"]
     )
-    .unwrap();
+    .expect("Failed to register ROUTER_DECISION_DURATION metric");
 
     // ── FAQ metrics ───────────────────────────────────────────────
     pub static ref FAQ_DIRECT_HITS_TOTAL: IntCounterVec = register_int_counter_vec!(
@@ -77,21 +77,21 @@ lazy_static! {
         "Total FAQ direct hit (Tier 0) responses",
         &["matched"]
     )
-    .unwrap();
+    .expect("Failed to register FAQ_DIRECT_HITS_TOTAL metric");
 
     pub static ref FAQ_PROMOTIONS_TOTAL: IntCounterVec = register_int_counter_vec!(
         "memoryos_faq_promotions_total",
         "Total FAQ promotions",
         &["from", "to"]
     )
-    .unwrap();
+    .expect("Failed to register FAQ_PROMOTIONS_TOTAL metric");
 
     pub static ref FAQ_CLASSIFICATIONS_TOTAL: IntCounterVec = register_int_counter_vec!(
         "memoryos_faq_classifications_total",
         "Total LLM FAQ classification calls",
         &["status"]
     )
-    .unwrap();
+    .expect("Failed to register FAQ_CLASSIFICATIONS_TOTAL metric");
 
     // ── LLM metrics ──────────────────────────────────────────────
     pub static ref LLM_REQUESTS_TOTAL: CounterVec = register_counter_vec!(
@@ -99,7 +99,7 @@ lazy_static! {
         "Total LLM adapter requests",
         &["provider", "status"]
     )
-    .unwrap();
+    .expect("Failed to register LLM_REQUESTS_TOTAL metric");
 
     pub static ref LLM_REQUEST_DURATION: HistogramVec = register_histogram_vec!(
         "memoryos_llm_request_duration_seconds",
@@ -107,49 +107,62 @@ lazy_static! {
         &["provider"],
         vec![0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0]
     )
-    .unwrap();
+    .expect("Failed to register LLM_REQUEST_DURATION metric");
 
     pub static ref LLM_TOKENS_TOTAL: CounterVec = register_counter_vec!(
         "memoryos_llm_tokens_total",
         "Total LLM tokens processed (estimated)",
         &["provider", "direction"]
     )
-    .unwrap();
+    .expect("Failed to register LLM_TOKENS_TOTAL metric");
 
     // ── System gauges ─────────────────────────────────────────────
     pub static ref ACTIVE_USERS: IntGauge = register_int_gauge!(
         "memoryos_active_users",
         "Number of active users"
     )
-    .unwrap();
+    .expect("Failed to register ACTIVE_USERS metric");
 
     pub static ref SHORT_TERM_MESSAGES: IntGauge = register_int_gauge!(
         "memoryos_short_term_messages_total",
         "Total short-term messages stored"
     )
-    .unwrap();
+    .expect("Failed to register SHORT_TERM_MESSAGES metric");
 
     pub static ref MID_TERM_SEGMENTS: IntGauge = register_int_gauge!(
         "memoryos_mid_term_segments_total",
         "Total mid-term segments stored"
     )
-    .unwrap();
+    .expect("Failed to register MID_TERM_SEGMENTS metric");
 
     pub static ref LONG_TERM_MEMORIES: IntGauge = register_int_gauge!(
         "memoryos_long_term_memories_total",
         "Total long-term memories stored"
     )
-    .unwrap();
+    .expect("Failed to register LONG_TERM_MEMORIES metric");
 }
 
 /// Encode all registered Prometheus metrics into the text exposition format.
+///
+/// Returns an error string if encoding fails (should be extremely rare).
 pub fn gather_metrics() -> String {
     use prometheus::{Encoder, TextEncoder};
     let encoder = TextEncoder::new();
     let metric_families = prometheus::gather();
     let mut buffer = Vec::new();
-    encoder.encode(&metric_families, &mut buffer).unwrap();
-    String::from_utf8(buffer).unwrap()
+
+    if let Err(e) = encoder.encode(&metric_families, &mut buffer) {
+        eprintln!("[memoryos-metrics] Failed to encode metrics: {}", e);
+        return format!("# ERROR: Failed to encode metrics: {}\n", e);
+    }
+
+    String::from_utf8(buffer).unwrap_or_else(|e| {
+        eprintln!(
+            "[memoryos-metrics] Failed to convert metrics to UTF-8: {}",
+            e
+        );
+        format!("# ERROR: Failed to convert metrics to UTF-8: {}\n", e)
+    })
 }
 
 #[cfg(test)]
