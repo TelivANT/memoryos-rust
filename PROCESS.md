@@ -156,9 +156,7 @@
 
 | 任务 | 优先级 | 预计版本 | 说明 |
 |------|--------|---------|------|
-| MCP Server 实现 | P0 | v0.13.0 | memoryos-mcp crate (rmcp + stdio/SSE) |
-| Wiki 预览系统 | P1 | v0.14.0 | 内置 HTTP 浏览器 + Mermaid 渲染 |
-| Storage Connectors P2 | P2 | v0.13.x | OneDrive / Google Drive / Dropbox 等云盘 |
+| Wiki 预览系统 | P1 | v1.1.0 | 内置 HTTP 浏览器 + Mermaid 渲染 |
 | 生产环境验证 | P0 | v1.0.0 | 端到端性能测试 + 用户案例 |
 | 分布式增强 | P2 | v2.0+ | 多区域部署 + 数据同步 |
 
@@ -180,8 +178,8 @@
 | v0.10.0 | 2026-02-20 | Prometheus + LLM FAQ |
 | v0.11.0 | 2026-02-20 | 剩余问题修复 |
 | v0.12.0 ~ v0.12.6 | 2026-02-20 | 企业级 RBAC/多租户/Admin |
-| v0.13.0 | 进行中 | MCP Server 设计完成 |
-| v1.0.0-rc | 2026-02-24 | 1.0 全部 6 项任务完成 (PRs #42-#48) |
+| v0.13.0 | 2026-02-24 | MCP Server 实现 + Storage Connectors 17/17 |
+| v1.0.0-rc | 2026-02-24 | 1.0 全部 6 项任务完成 (PRs #42-#48), Storage Connectors (PR #51) |
 
 ---
 
