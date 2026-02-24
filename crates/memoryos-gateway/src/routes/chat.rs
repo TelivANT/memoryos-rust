@@ -66,13 +66,9 @@ pub async fn chat_completions(
                     .enumerate()
                     .find(|(_, seg)| seg.memory_type == memoryos_core::MemoryType::Faq);
                 match faq_match {
-                    Some((pos, seg)) => {
-                        let estimated_similarity = match pos {
-                            0 => 0.98_f32,
-                            1 => 0.93,
-                            _ => 0.80,
-                        };
-                        (true, estimated_similarity, Some(seg.summary.clone()))
+                    Some((_pos, seg)) => {
+                        let similarity = seg.score.unwrap_or(seg.heat_score);
+                        (true, similarity, Some(seg.summary.clone()))
                     }
                     None => (false, 0.0, None),
                 }

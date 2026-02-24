@@ -1084,6 +1084,14 @@ mod tests {
             Ok(())
         }
 
+        async fn list_segments(
+            &self,
+            _user_id: &str,
+            _limit: usize,
+        ) -> Result<Vec<MidTermSegment>, AppError> {
+            Ok(vec![])
+        }
+
         async fn get_long_term(&self, _user_id: &str) -> Result<Option<LongTermMemory>, AppError> {
             Ok(None)
         }

@@ -1,6 +1,7 @@
 use crate::AppError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum RouteTier {
@@ -38,9 +39,9 @@ pub trait ModelRouter: Send + Sync {
     async fn route(&self, ctx: &RouterContext) -> Result<RouteDecision, AppError>;
 }
 
-/// Standard implementation of the Intelligent Tiering Algorithm
 pub struct TieredRouter {
     config: RouterConfig,
+    rr_counter: AtomicUsize,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -68,17 +69,19 @@ impl Default for RouterConfig {
 
 impl TieredRouter {
     pub fn new(config: RouterConfig) -> Self {
-        Self { config }
+        Self {
+            config,
+            rr_counter: AtomicUsize::new(0),
+        }
     }
 
     fn select_local_backend(&self) -> String {
-        // Simple Round-Robin (Placeholder)
-        // In prod, use AtomicUsize counter
-        self.config
-            .local_backends
-            .first()
-            .cloned()
-            .unwrap_or_default()
+        if self.config.local_backends.is_empty() {
+            return String::new();
+        }
+        let idx =
+            self.rr_counter.fetch_add(1, Ordering::Relaxed) % self.config.local_backends.len();
+        self.config.local_backends[idx].clone()
     }
 }
 

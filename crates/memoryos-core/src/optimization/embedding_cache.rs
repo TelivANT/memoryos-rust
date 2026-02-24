@@ -11,6 +11,8 @@ struct LruCache {
     map: HashMap<String, CacheEntry>,
     capacity: usize,
     access_order: Vec<String>,
+    hits: u64,
+    misses: u64,
 }
 
 struct CacheEntry {
@@ -25,6 +27,8 @@ impl EmbeddingCache {
                 map: HashMap::new(),
                 capacity,
                 access_order: Vec::new(),
+                hits: 0,
+                misses: 0,
             })),
         }
     }
@@ -34,13 +38,12 @@ impl EmbeddingCache {
 
         if let Some(entry) = cache.map.get(query) {
             let embedding = entry.embedding.clone();
+            cache.hits += 1;
 
-            // Update access count
             if let Some(e) = cache.map.get_mut(query) {
                 e.access_count += 1;
             }
 
-            // Update LRU order
             if let Some(pos) = cache.access_order.iter().position(|k| k == query) {
                 cache.access_order.remove(pos);
             }
@@ -49,6 +52,7 @@ impl EmbeddingCache {
             return Some(embedding);
         }
 
+        cache.misses += 1;
         None
     }
 
@@ -87,10 +91,16 @@ impl EmbeddingCache {
 
     pub async fn stats(&self) -> CacheStats {
         let cache = self.cache.read().await;
+        let total = cache.hits + cache.misses;
+        let hit_rate = if total > 0 {
+            cache.hits as f64 / total as f64
+        } else {
+            0.0
+        };
         CacheStats {
             size: cache.map.len(),
             capacity: cache.capacity,
-            hit_rate: 0.0, // TODO: track hits/misses
+            hit_rate,
         }
     }
 }

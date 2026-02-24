@@ -28,8 +28,6 @@ pub trait ContextInjector: Send + Sync {
     ) -> Result<InjectionStats, AppError>;
 }
 
-/// Minimal placeholder injector.
-/// Current implementation keeps request unchanged and reports zero-injection.
 pub struct StandardInjector {
     max_context_tokens: usize,
 }
@@ -38,19 +36,39 @@ impl StandardInjector {
     pub fn new(max_context_tokens: usize) -> Self {
         Self { max_context_tokens }
     }
+
+    fn estimate_tokens(text: &str) -> usize {
+        text.len() / 4
+    }
 }
 
 #[async_trait]
 impl ContextInjector for StandardInjector {
     async fn inject(
         &self,
-        _request: &mut ChatRequest,
+        request: &mut ChatRequest,
         _user_id: &str,
     ) -> Result<InjectionStats, AppError> {
+        let mut total_tokens: usize = 0;
+        let mut kept_messages = Vec::new();
+
+        for msg in request.messages.iter().rev() {
+            let msg_tokens = Self::estimate_tokens(&msg.content);
+            if total_tokens + msg_tokens > self.max_context_tokens {
+                break;
+            }
+            total_tokens += msg_tokens;
+            kept_messages.push(msg.clone());
+        }
+
+        kept_messages.reverse();
+        let stm_count = kept_messages.len();
+        request.messages = kept_messages;
+
         Ok(InjectionStats {
-            stm_count: 0,
+            stm_count,
             mtm_count: 0,
-            total_tokens: self.max_context_tokens.min(0),
+            total_tokens,
         })
     }
 }

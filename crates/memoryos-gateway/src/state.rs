@@ -58,7 +58,10 @@ impl AppState {
                 "gemini" => Arc::new(GeminiAdapter::new(api_key, cfg.base_url.clone())),
                 "claude" => Arc::new(ClaudeAdapter::new(api_key, cfg.base_url.clone())),
                 "ollama" => Arc::new(OllamaAdapter::new(cfg.base_url.clone())),
-                _ => panic!("Unsupported provider type: {}", cfg.provider_type),
+                other => {
+                    tracing::warn!("Skipping unsupported provider type: {}", other);
+                    continue;
+                }
             };
             providers.insert(name.clone(), adapter);
         }

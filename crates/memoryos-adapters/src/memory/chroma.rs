@@ -347,6 +347,14 @@ impl VectorStorage for ChromaStorage {
         Ok(filtered)
     }
 
+    async fn list_segments(
+        &self,
+        user_id: &str,
+        limit: usize,
+    ) -> Result<Vec<MidTermSegment>, AppError> {
+        self.search_segments(user_id, vec![0.0; 1536], limit).await
+    }
+
     async fn store_long_term(&self, memory: LongTermMemory) -> Result<(), AppError> {
         let mut metadata = HashMap::new();
         metadata.insert("user_id".to_string(), json!(memory.user_id));

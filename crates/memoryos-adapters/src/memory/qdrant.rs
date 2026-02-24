@@ -552,6 +552,81 @@ impl VectorStorage for QdrantStorage {
         Ok(segments)
     }
 
+    async fn list_segments(
+        &self,
+        user_id: &str,
+        limit: usize,
+    ) -> Result<Vec<MidTermSegment>, AppError> {
+        use qdrant_client::qdrant::ScrollPointsBuilder;
+
+        let filter = Filter::must([Condition::matches("user_id", user_id.to_string())]);
+
+        let scroll_result = self
+            .client
+            .scroll(
+                ScrollPointsBuilder::new(&self.segment_collection)
+                    .filter(filter)
+                    .limit(limit as u32)
+                    .with_payload(true)
+                    .with_vectors(true),
+            )
+            .await
+            .map_err(|e| {
+                AppError::ExternalService(format!("Qdrant scroll segments failed: {}", e))
+            })?;
+
+        let segments = scroll_result
+            .result
+            .into_iter()
+            .map(|point| {
+                let payload = point.payload;
+                self.build_mid_term_segment(user_id, payload, point.id, point.vectors, None)
+            })
+            .collect::<Vec<_>>();
+
+        debug!("Listed {} segments for user: {}", segments.len(), user_id);
+        Ok(segments)
+    }
+
+    async fn list_segments_for_tenant(
+        &self,
+        user_id: &str,
+        tenant_id: &str,
+        limit: usize,
+    ) -> Result<Vec<MidTermSegment>, AppError> {
+        use qdrant_client::qdrant::ScrollPointsBuilder;
+
+        let filter = Filter::must([
+            Condition::matches("user_id", user_id.to_string()),
+            Condition::matches("tenant_id", tenant_id.to_string()),
+        ]);
+
+        let scroll_result = self
+            .client
+            .scroll(
+                ScrollPointsBuilder::new(&self.segment_collection)
+                    .filter(filter)
+                    .limit(limit as u32)
+                    .with_payload(true)
+                    .with_vectors(true),
+            )
+            .await
+            .map_err(|e| {
+                AppError::ExternalService(format!("Qdrant scroll segments failed: {}", e))
+            })?;
+
+        let segments = scroll_result
+            .result
+            .into_iter()
+            .map(|point| {
+                let payload = point.payload;
+                self.build_mid_term_segment(user_id, payload, point.id, point.vectors, None)
+            })
+            .collect::<Vec<_>>();
+
+        Ok(segments)
+    }
+
     async fn store_long_term(&self, memory: LongTermMemory) -> Result<(), AppError> {
         self.store_long_term_with_fencing(memory, None).await
     }
