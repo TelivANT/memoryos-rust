@@ -115,9 +115,7 @@
       "v0.12.5: PR #18 Review Security Hardening (tenant ID validation, FAQ tenant wiring, multi_thread tests, add+delete edge test)",
       "v0.12.6: Comprehensive Audit Fixes (constant-time auth, nested route auth, CORS restriction, rate limiter leak fix, dedup tenant util, user ID from header, cache eviction)"
     ],
-                "in_progress": [
-                  "Storage Connectors: P0+P1 complete (8/17), P2 pending"
-                ],
+                "in_progress": [],
                 "todo": [
                   "v0.14.0: Wiki preview system (built-in HTTP browser + Mermaid rendering)",
                   "v1.0.0: Production release (user cases, production validation)",
