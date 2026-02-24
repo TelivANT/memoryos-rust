@@ -52,6 +52,16 @@ mod s3;
 mod sftp;
 mod webdav;
 
+mod aliyun_drive;
+mod azure_blob;
+mod baidu_pan;
+mod dropbox;
+mod gcs;
+mod google_drive;
+mod nfs;
+mod onedrive;
+mod smb;
+
 #[cfg(test)]
 mod tests;
 
@@ -63,3 +73,13 @@ pub use oss::OssConnector;
 pub use s3::S3Connector;
 pub use sftp::SftpConnector;
 pub use webdav::WebDavConnector;
+
+pub use aliyun_drive::AliyunDriveConnector;
+pub use azure_blob::AzureBlobConnector;
+pub use baidu_pan::BaiduPanConnector;
+pub use dropbox::DropboxConnector;
+pub use gcs::GcsConnector;
+pub use google_drive::GoogleDriveConnector;
+pub use nfs::NfsConnector;
+pub use onedrive::OneDriveConnector;
+pub use smb::SmbConnector;
