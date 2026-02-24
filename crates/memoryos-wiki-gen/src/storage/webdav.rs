@@ -44,11 +44,9 @@ impl StorageConnector for WebDavConnector {
 
     async fn list_files(&self, path: &str) -> Result<Vec<FileEntry>> {
         let url = self.build_url(path);
-        let method = reqwest::Method::from_bytes(b"PROPFIND")
-            .expect("PROPFIND is a valid HTTP method");
-        let mut req = self
-            .client
-            .request(method, &url);
+        let method =
+            reqwest::Method::from_bytes(b"PROPFIND").expect("PROPFIND is a valid HTTP method");
+        let mut req = self.client.request(method, &url);
 
         if let (Some(user), Some(pass)) = (&self.username, &self.password) {
             req = req.basic_auth(user, Some(pass));

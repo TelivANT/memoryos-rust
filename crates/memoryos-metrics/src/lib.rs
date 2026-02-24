@@ -143,21 +143,24 @@ lazy_static! {
 }
 
 /// Encode all registered Prometheus metrics into the text exposition format.
-/// 
+///
 /// Returns an error string if encoding fails (should be extremely rare).
 pub fn gather_metrics() -> String {
     use prometheus::{Encoder, TextEncoder};
     let encoder = TextEncoder::new();
     let metric_families = prometheus::gather();
     let mut buffer = Vec::new();
-    
+
     if let Err(e) = encoder.encode(&metric_families, &mut buffer) {
         eprintln!("[memoryos-metrics] Failed to encode metrics: {}", e);
         return format!("# ERROR: Failed to encode metrics: {}\n", e);
     }
-    
+
     String::from_utf8(buffer).unwrap_or_else(|e| {
-        eprintln!("[memoryos-metrics] Failed to convert metrics to UTF-8: {}", e);
+        eprintln!(
+            "[memoryos-metrics] Failed to convert metrics to UTF-8: {}",
+            e
+        );
         format!("# ERROR: Failed to convert metrics to UTF-8: {}\n", e)
     })
 }
