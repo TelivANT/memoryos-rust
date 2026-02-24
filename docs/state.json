@@ -1,18 +1,18 @@
 {
   "project_name": "MemoryOS-Rust",
-  "version": "0.13.0",
+  "version": "1.0.0-rc",
   "edition": "Personal/Enterprise Single-Tenant Edition",
   "last_updated": "2026-02-24",
   "status": {
         "phase": "1.0 Release - All Tasks Complete",
-        "progress_percentage": 95,
+        "progress_percentage": 99,
         "current_task": "All 6 must-complete tasks done. PRs #42-#48 merged. Ready for v1.0.0 release.",
     "is_blocked": false
   },
   "branches": {
     "main": {
       "description": "Personal/Enterprise Single-Tenant Edition",
-      "current_version": "v0.12.6",
+      "current_version": "v1.0.0-rc",
       "target_users": "Individual developers, single enterprise deployments"
     },
     "feature/saas-multi-tenant": {
@@ -113,7 +113,15 @@
       "v0.12.3: PR #16 Review Gap Fixes (Qdrant tenant search filter, serial persist queue, build_mid_term_segment helper)",
       "v0.12.4: PR #17 Review Follow-up (dedup search methods, atomic persist, gateway tenant wiring, concurrent persist test)",
       "v0.12.5: PR #18 Review Security Hardening (tenant ID validation, FAQ tenant wiring, multi_thread tests, add+delete edge test)",
-      "v0.12.6: Comprehensive Audit Fixes (constant-time auth, nested route auth, CORS restriction, rate limiter leak fix, dedup tenant util, user ID from header, cache eviction)"
+      "v0.12.6: Comprehensive Audit Fixes (constant-time auth, nested route auth, CORS restriction, rate limiter leak fix, dedup tenant util, user ID from header, cache eviction)",
+      "v0.13.0: MCP Server Implementation (memoryos-mcp crate, rmcp v0.3, 7 tools, Gateway proxy, stdio transport) - PR #48",
+      "v0.13.0: Storage Connectors 17/17 (GCS, Azure Blob, SMB, NFS, OneDrive, Google Drive, Dropbox, Baidu Pan, Aliyun Drive) - PR #51",
+      "v1.0.0-rc Task #6: Config Validation (AppConfig::validate(), 24 unit tests) - PR #42",
+      "v1.0.0-rc Task #5: Production Error Handling (all unwrap() replaced) - PR #43",
+      "v1.0.0-rc Task #4: LLM Summary Pipeline (real summarize_messages_internal) - PR #45",
+      "v1.0.0-rc Task #3: Real Embedding Integration (with_embedding_config) - PR #46",
+      "v1.0.0-rc Task #2: End-to-End Test Coverage (69 new tests, 303 total) - PR #47",
+      "v1.0.0-rc Task #1: MCP Server Implementation (memoryos-mcp, 7 tools) - PR #48"
     ],
                 "in_progress": [],
                 "todo": [
