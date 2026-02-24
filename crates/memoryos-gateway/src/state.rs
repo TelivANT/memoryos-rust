@@ -102,12 +102,14 @@ impl AppState {
             .expect("Failed to init Redis storage"),
         );
 
-        let memory_manager: Arc<dyn MemoryManager> =
-            Arc::new(DefaultMemoryManager::new_with_coordinator(
+        let memory_manager: Arc<dyn MemoryManager> = Arc::new(
+            DefaultMemoryManager::new_with_coordinator(
                 vector_store.clone(),
                 default_llm,
                 redis_storage.clone(),
-            ));
+            )
+            .with_embedding_config(&config.embedding),
+        );
 
         // 5. Init History Storage (uses same Qdrant client)
         let history_storage: Option<Arc<dyn HistoryStorage>> =
