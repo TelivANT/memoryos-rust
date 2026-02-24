@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use sqlx::SqlitePool;
+use std::path::Path;
+use std::str::FromStr;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tenant {
@@ -25,86 +25,77 @@ pub struct TenantContext {
 
 #[derive(Clone)]
 pub struct TenantManager {
-    tenants: Arc<RwLock<HashMap<String, Tenant>>>,
-    persist_path: Option<PathBuf>,
-    persist_lock: Arc<tokio::sync::Mutex<()>>,
+    pool: SqlitePool,
 }
 
 impl TenantManager {
-    pub fn new() -> Self {
-        Self {
-            tenants: Arc::new(RwLock::new(HashMap::new())),
-            persist_path: None,
-            persist_lock: Arc::new(tokio::sync::Mutex::new(())),
+    pub async fn new(db_path: impl AsRef<Path>) -> Result<Self, String> {
+        let path = db_path.as_ref();
+        if let Some(parent) = path.parent() {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|e| format!("Failed to create DB dir: {}", e))?;
         }
-    }
 
-    pub fn with_persistence(persist_path: impl AsRef<Path>) -> Self {
-        let path = persist_path.as_ref().to_path_buf();
-        let tenants = if path.exists() {
-            match std::fs::read_to_string(&path) {
-                Ok(data) => match serde_json::from_str::<Vec<Tenant>>(&data) {
-                    Ok(records) => {
-                        let mut map = HashMap::new();
-                        for t in records {
-                            map.insert(t.id.clone(), t);
-                        }
-                        tracing::info!("Loaded {} tenants from {}", map.len(), path.display());
-                        map
-                    }
-                    Err(e) => {
-                        tracing::warn!("Failed to parse tenant data: {}", e);
-                        HashMap::new()
-                    }
-                },
-                Err(e) => {
-                    tracing::warn!("Failed to read tenant file: {}", e);
-                    HashMap::new()
-                }
-            }
-        } else {
-            HashMap::new()
-        };
-        Self {
-            tenants: Arc::new(RwLock::new(tenants)),
-            persist_path: Some(path),
-            persist_lock: Arc::new(tokio::sync::Mutex::new(())),
-        }
-    }
+        let url = format!("sqlite:{}?mode=rwc", path.display());
+        let opts = SqliteConnectOptions::from_str(&url)
+            .map_err(|e| format!("Invalid DB path: {}", e))?
+            .create_if_missing(true);
 
-    async fn persist_snapshot(&self) {
-        let _guard = self.persist_lock.lock().await;
-        if let Some(ref path) = self.persist_path {
-            let snapshot: Vec<Tenant> = {
-                let tenants = self.tenants.read().await;
-                tenants.values().cloned().collect()
-            };
-            if let Ok(data) = serde_json::to_string_pretty(&snapshot) {
-                if let Some(parent) = path.parent() {
-                    let _ = tokio::fs::create_dir_all(parent).await;
-                }
-                if let Err(e) = tokio::fs::write(path, data).await {
-                    tracing::error!("Failed to persist tenant data: {}", e);
-                }
-            }
-        }
+        let pool = SqlitePoolOptions::new()
+            .max_connections(5)
+            .connect_with(opts)
+            .await
+            .map_err(|e| format!("Failed to open tenant DB: {}", e))?;
+
+        sqlx::query(
+            "CREATE TABLE IF NOT EXISTS tenants (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                max_users INTEGER NOT NULL DEFAULT 100,
+                storage_quota_mb INTEGER NOT NULL DEFAULT 1024,
+                api_rate_limit INTEGER NOT NULL DEFAULT 1000,
+                enabled INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )",
+        )
+        .execute(&pool)
+        .await
+        .map_err(|e| format!("Failed to create tenants table: {}", e))?;
+
+        Ok(Self { pool })
     }
 
     pub async fn create_tenant(&self, tenant: Tenant) -> Result<(), String> {
-        {
-            let mut tenants = self.tenants.write().await;
-            if tenants.contains_key(&tenant.id) {
-                return Err(format!("Tenant '{}' already exists", tenant.id));
-            }
-            tenants.insert(tenant.id.clone(), tenant);
-        }
-        self.persist_snapshot().await;
+        sqlx::query(
+            "INSERT INTO tenants (id, name, description, max_users, storage_quota_mb, api_rate_limit, enabled, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(&tenant.id)
+        .bind(&tenant.name)
+        .bind(&tenant.description)
+        .bind(tenant.max_users)
+        .bind(tenant.storage_quota_mb as i64)
+        .bind(tenant.api_rate_limit)
+        .bind(tenant.enabled)
+        .bind(&tenant.created_at)
+        .bind(&tenant.updated_at)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| format!("Tenant '{}' already exists or DB error: {}", tenant.id, e))?;
         Ok(())
     }
 
     pub async fn get_tenant(&self, tenant_id: &str) -> Option<Tenant> {
-        let tenants = self.tenants.read().await;
-        tenants.get(tenant_id).cloned()
+        sqlx::query_as::<_, TenantRow>("SELECT * FROM tenants WHERE id = ?")
+            .bind(tenant_id)
+            .fetch_optional(&self.pool)
+            .await
+            .ok()
+            .flatten()
+            .map(|r| r.into())
     }
 
     pub async fn update_tenant(
@@ -117,66 +108,94 @@ impl TenantManager {
         api_rate_limit: Option<u32>,
         enabled: Option<bool>,
     ) -> bool {
-        {
-            let mut tenants = self.tenants.write().await;
-            if let Some(tenant) = tenants.get_mut(tenant_id) {
-                if let Some(n) = name {
-                    tenant.name = n;
-                }
-                if let Some(d) = description {
-                    tenant.description = d;
-                }
-                if let Some(m) = max_users {
-                    tenant.max_users = m;
-                }
-                if let Some(s) = storage_quota_mb {
-                    tenant.storage_quota_mb = s;
-                }
-                if let Some(r) = api_rate_limit {
-                    tenant.api_rate_limit = r;
-                }
-                if let Some(e) = enabled {
-                    tenant.enabled = e;
-                }
-                tenant.updated_at = chrono::Utc::now().to_rfc3339();
-            } else {
-                return false;
-            }
-        }
-        self.persist_snapshot().await;
-        true
+        let now = chrono::Utc::now().to_rfc3339();
+        let result = sqlx::query(
+            "UPDATE tenants SET
+                name = COALESCE(?, name),
+                description = COALESCE(?, description),
+                max_users = COALESCE(?, max_users),
+                storage_quota_mb = COALESCE(?, storage_quota_mb),
+                api_rate_limit = COALESCE(?, api_rate_limit),
+                enabled = COALESCE(?, enabled),
+                updated_at = ?
+             WHERE id = ?",
+        )
+        .bind(name)
+        .bind(description)
+        .bind(max_users.map(|v| v as i32))
+        .bind(storage_quota_mb.map(|v| v as i64))
+        .bind(api_rate_limit.map(|v| v as i32))
+        .bind(enabled)
+        .bind(&now)
+        .bind(tenant_id)
+        .execute(&self.pool)
+        .await;
+
+        matches!(result, Ok(r) if r.rows_affected() > 0)
     }
 
     pub async fn delete_tenant(&self, tenant_id: &str) -> bool {
-        {
-            let mut tenants = self.tenants.write().await;
-            if tenants.remove(tenant_id).is_none() {
-                return false;
-            }
-        }
-        self.persist_snapshot().await;
-        true
+        let result = sqlx::query("DELETE FROM tenants WHERE id = ?")
+            .bind(tenant_id)
+            .execute(&self.pool)
+            .await;
+        matches!(result, Ok(r) if r.rows_affected() > 0)
     }
 
     pub async fn list_tenants(&self) -> Vec<Tenant> {
-        let tenants = self.tenants.read().await;
-        tenants.values().cloned().collect()
+        sqlx::query_as::<_, TenantRow>("SELECT * FROM tenants")
+            .fetch_all(&self.pool)
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .map(|r| r.into())
+            .collect()
     }
 
     pub async fn is_tenant_enabled(&self, tenant_id: &str) -> bool {
-        let tenants = self.tenants.read().await;
-        tenants.get(tenant_id).map(|t| t.enabled).unwrap_or(false)
+        sqlx::query_scalar::<_, bool>("SELECT enabled FROM tenants WHERE id = ?")
+            .bind(tenant_id)
+            .fetch_optional(&self.pool)
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or(false)
     }
 
     pub async fn tenant_count(&self) -> usize {
-        let tenants = self.tenants.read().await;
-        tenants.len()
+        sqlx::query_scalar::<_, i32>("SELECT COUNT(*) FROM tenants")
+            .fetch_one(&self.pool)
+            .await
+            .unwrap_or(0) as usize
     }
 }
 
-impl Default for TenantManager {
-    fn default() -> Self {
-        Self::new()
+#[derive(sqlx::FromRow)]
+struct TenantRow {
+    id: String,
+    name: String,
+    description: String,
+    max_users: i32,
+    storage_quota_mb: i64,
+    api_rate_limit: i32,
+    enabled: bool,
+    created_at: String,
+    updated_at: String,
+}
+
+impl From<TenantRow> for Tenant {
+    fn from(r: TenantRow) -> Self {
+        Tenant {
+            id: r.id,
+            name: r.name,
+            description: r.description,
+            max_users: r.max_users as u32,
+            storage_quota_mb: r.storage_quota_mb as u64,
+            api_rate_limit: r.api_rate_limit as u32,
+            enabled: r.enabled,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+        }
     }
 }
 
@@ -199,9 +218,14 @@ mod tests {
         }
     }
 
+    async fn temp_manager() -> TenantManager {
+        let dir = std::env::temp_dir().join(format!("tenant_db_{}", uuid::Uuid::now_v7()));
+        TenantManager::new(dir.join("tenants.db")).await.unwrap()
+    }
+
     #[tokio::test]
     async fn test_create_and_get_tenant() {
-        let mgr = TenantManager::new();
+        let mgr = temp_manager().await;
         mgr.create_tenant(make_tenant("t1")).await.unwrap();
 
         let t = mgr.get_tenant("t1").await;
@@ -211,7 +235,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_duplicate_tenant() {
-        let mgr = TenantManager::new();
+        let mgr = temp_manager().await;
         mgr.create_tenant(make_tenant("t1")).await.unwrap();
         let result = mgr.create_tenant(make_tenant("t1")).await;
         assert!(result.is_err());
@@ -219,7 +243,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_tenant() {
-        let mgr = TenantManager::new();
+        let mgr = temp_manager().await;
         mgr.create_tenant(make_tenant("t1")).await.unwrap();
 
         mgr.update_tenant(
@@ -238,7 +262,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_tenant() {
-        let mgr = TenantManager::new();
+        let mgr = temp_manager().await;
         mgr.create_tenant(make_tenant("t1")).await.unwrap();
         assert!(mgr.delete_tenant("t1").await);
         assert!(mgr.get_tenant("t1").await.is_none());
@@ -247,7 +271,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_list_tenants() {
-        let mgr = TenantManager::new();
+        let mgr = temp_manager().await;
         mgr.create_tenant(make_tenant("t1")).await.unwrap();
         mgr.create_tenant(make_tenant("t2")).await.unwrap();
         assert_eq!(mgr.list_tenants().await.len(), 2);
@@ -255,7 +279,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_tenant_enabled() {
-        let mgr = TenantManager::new();
+        let mgr = temp_manager().await;
         mgr.create_tenant(make_tenant("t1")).await.unwrap();
         assert!(mgr.is_tenant_enabled("t1").await);
 
@@ -266,7 +290,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_tenant_count() {
-        let mgr = TenantManager::new();
+        let mgr = temp_manager().await;
         assert_eq!(mgr.tenant_count().await, 0);
         mgr.create_tenant(make_tenant("t1")).await.unwrap();
         mgr.create_tenant(make_tenant("t2")).await.unwrap();
@@ -275,18 +299,18 @@ mod tests {
 
     #[tokio::test]
     async fn test_persistence_roundtrip() {
-        let dir = std::env::temp_dir().join(format!("tenant_test_{}", uuid::Uuid::now_v7()));
-        let path = dir.join("tenants.json");
+        let dir = std::env::temp_dir().join(format!("tenant_db_rt_{}", uuid::Uuid::now_v7()));
+        let path = dir.join("tenants.db");
 
         {
-            let mgr = TenantManager::with_persistence(&path);
+            let mgr = TenantManager::new(&path).await.unwrap();
             mgr.create_tenant(make_tenant("pt1")).await.unwrap();
             mgr.create_tenant(make_tenant("pt2")).await.unwrap();
             assert_eq!(mgr.tenant_count().await, 2);
         }
 
         {
-            let mgr = TenantManager::with_persistence(&path);
+            let mgr = TenantManager::new(&path).await.unwrap();
             assert_eq!(mgr.tenant_count().await, 2);
             let t = mgr.get_tenant("pt1").await.unwrap();
             assert_eq!(t.name, "Tenant pt1");
@@ -297,11 +321,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_persistence_survives_mutation() {
-        let dir = std::env::temp_dir().join(format!("tenant_mut_{}", uuid::Uuid::now_v7()));
-        let path = dir.join("tenants.json");
+        let dir = std::env::temp_dir().join(format!("tenant_db_mut_{}", uuid::Uuid::now_v7()));
+        let path = dir.join("tenants.db");
 
         {
-            let mgr = TenantManager::with_persistence(&path);
+            let mgr = TenantManager::new(&path).await.unwrap();
             mgr.create_tenant(make_tenant("mt1")).await.unwrap();
             mgr.create_tenant(make_tenant("mt2")).await.unwrap();
             mgr.update_tenant(
@@ -318,7 +342,7 @@ mod tests {
         }
 
         {
-            let mgr = TenantManager::with_persistence(&path);
+            let mgr = TenantManager::new(&path).await.unwrap();
             assert_eq!(mgr.tenant_count().await, 1);
             let t = mgr.get_tenant("mt1").await.unwrap();
             assert_eq!(t.name, "Renamed");

@@ -47,8 +47,8 @@ async fn main() {
         ..AuditConfig::default()
     }));
 
-    let rbac_path = data_dir.join("rbac_users.json");
-    let tenant_path = data_dir.join("tenants.json");
+    let rbac_path = data_dir.join("rbac.db");
+    let tenant_path = data_dir.join("tenants.db");
 
     let admin_token = std::env::var("ADMIN_TOKEN").unwrap_or_default();
     if admin_token.is_empty() {
@@ -59,8 +59,12 @@ async fn main() {
     }
 
     let state = AdminState {
-        rbac_manager: RbacManager::with_persistence(&rbac_path),
-        tenant_manager: TenantManager::with_persistence(&tenant_path),
+        rbac_manager: RbacManager::new(&rbac_path)
+            .await
+            .expect("Failed to init RBAC manager"),
+        tenant_manager: TenantManager::new(&tenant_path)
+            .await
+            .expect("Failed to init Tenant manager"),
         audit_logger,
         admin_token: admin_token.clone(),
     };
