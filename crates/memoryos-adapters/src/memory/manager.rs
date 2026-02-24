@@ -367,12 +367,8 @@ impl DefaultMemoryManager {
             .unwrap_or_default();
 
         if recent.len() >= self.short_term_limit {
-            let summary = recent
-                .iter()
-                .take(3)
-                .map(|m| format!("{}: {}", m.role, m.content))
-                .collect::<Vec<_>>()
-                .join("\n");
+            // Use LLM to generate a real summary instead of simple concatenation
+            let summary = self.summarize_messages_internal(&recent).await?;
             let embedding = self
                 .generate_embedding(&summary)
                 .await
@@ -835,7 +831,10 @@ impl DefaultMemoryManager {
             .join("\n");
 
         let prompt = format!(
-            "Summarize the following conversation into a concise paragraph that captures the key topics, decisions, and context. Output ONLY the summary, no preamble.\n\n{}",
+            "Summarize the following conversation into a concise paragraph. \
+             Capture: key topics discussed, any decisions made, user preferences revealed, \
+             and important context for future reference. \
+             Output ONLY the summary text, no preamble or formatting.\n\n{}",
             conversation
         );
 
