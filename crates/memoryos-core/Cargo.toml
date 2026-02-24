@@ -23,4 +23,3 @@ aes-gcm = "0.10"
 rand = "0.8"
 redis.workspace = true
 qdrant-client = "1.7"
-sqlx = { workspace = true, features = ["runtime-tokio-rustls", "sqlite"] }

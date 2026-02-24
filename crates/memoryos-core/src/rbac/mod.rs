@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
-use sqlx::SqlitePool;
-use std::path::Path;
-use std::str::FromStr;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use tokio::sync::RwLock;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -117,103 +116,87 @@ pub struct UserRecord {
 
 #[derive(Clone)]
 pub struct RbacManager {
-    pool: SqlitePool,
+    users: std::sync::Arc<RwLock<HashMap<String, UserRecord>>>,
+    persist_path: PathBuf,
 }
 
 impl RbacManager {
     pub async fn new(db_path: impl AsRef<Path>) -> Result<Self, String> {
-        let path = db_path.as_ref();
+        let path = db_path.as_ref().to_path_buf();
         if let Some(parent) = path.parent() {
             tokio::fs::create_dir_all(parent)
                 .await
-                .map_err(|e| format!("Failed to create RBAC DB dir: {}", e))?;
+                .map_err(|e| format!("Failed to create RBAC dir: {}", e))?;
         }
 
-        let url = format!("sqlite:{}?mode=rwc", path.display());
-        let opts = SqliteConnectOptions::from_str(&url)
-            .map_err(|e| format!("Invalid RBAC DB path: {}", e))?
-            .create_if_missing(true);
+        let users = if path.exists() {
+            let data = tokio::fs::read_to_string(&path)
+                .await
+                .map_err(|e| format!("Failed to read RBAC file: {}", e))?;
+            let list: Vec<UserRecord> = serde_json::from_str(&data).unwrap_or_default();
+            list.into_iter().map(|u| (u.user_id.clone(), u)).collect()
+        } else {
+            HashMap::new()
+        };
 
-        let pool = SqlitePoolOptions::new()
-            .max_connections(5)
-            .connect_with(opts)
-            .await
-            .map_err(|e| format!("Failed to open RBAC DB: {}", e))?;
+        Ok(Self {
+            users: std::sync::Arc::new(RwLock::new(users)),
+            persist_path: path,
+        })
+    }
 
-        sqlx::query(
-            "CREATE TABLE IF NOT EXISTS rbac_users (
-                user_id TEXT PRIMARY KEY,
-                tenant_id TEXT NOT NULL,
-                role TEXT NOT NULL DEFAULT 'user',
-                display_name TEXT NOT NULL DEFAULT '',
-                email TEXT NOT NULL DEFAULT '',
-                is_active INTEGER NOT NULL DEFAULT 1,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )",
-        )
-        .execute(&pool)
-        .await
-        .map_err(|e| format!("Failed to create rbac_users table: {}", e))?;
-
-        Ok(Self { pool })
+    async fn persist(&self) {
+        let users = self.users.read().await;
+        let list: Vec<&UserRecord> = users.values().collect();
+        if let Ok(data) = serde_json::to_string_pretty(&list) {
+            let _ = tokio::fs::write(&self.persist_path, data).await;
+        }
     }
 
     pub async fn add_user(&self, user: UserRecord) {
-        let _ = sqlx::query(
-            "INSERT OR REPLACE INTO rbac_users (user_id, tenant_id, role, display_name, email, is_active, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        )
-        .bind(&user.user_id)
-        .bind(&user.tenant_id)
-        .bind(user.role.as_str())
-        .bind(&user.display_name)
-        .bind(&user.email)
-        .bind(user.is_active)
-        .bind(&user.created_at)
-        .bind(&user.updated_at)
-        .execute(&self.pool)
-        .await;
+        {
+            let mut users = self.users.write().await;
+            users.insert(user.user_id.clone(), user);
+        }
+        self.persist().await;
     }
 
     pub async fn remove_user(&self, user_id: &str) -> bool {
-        let result = sqlx::query("DELETE FROM rbac_users WHERE user_id = ?")
-            .bind(user_id)
-            .execute(&self.pool)
-            .await;
-        matches!(result, Ok(r) if r.rows_affected() > 0)
+        let removed = {
+            let mut users = self.users.write().await;
+            users.remove(user_id).is_some()
+        };
+        if removed {
+            self.persist().await;
+        }
+        removed
     }
 
     pub async fn get_user(&self, user_id: &str) -> Option<UserRecord> {
-        sqlx::query_as::<_, UserRow>("SELECT * FROM rbac_users WHERE user_id = ?")
-            .bind(user_id)
-            .fetch_optional(&self.pool)
-            .await
-            .ok()
-            .flatten()
-            .map(|r| r.into())
+        let users = self.users.read().await;
+        users.get(user_id).cloned()
     }
 
     pub async fn get_user_role(&self, user_id: &str) -> Option<Role> {
-        sqlx::query_scalar::<_, String>("SELECT role FROM rbac_users WHERE user_id = ?")
-            .bind(user_id)
-            .fetch_optional(&self.pool)
-            .await
-            .ok()
-            .flatten()
-            .and_then(|s| Role::from_str(&s))
+        let users = self.users.read().await;
+        users.get(user_id).map(|u| u.role)
     }
 
     pub async fn assign_role(&self, user_id: &str, role: Role) -> bool {
-        let now = chrono::Utc::now().to_rfc3339();
-        let result =
-            sqlx::query("UPDATE rbac_users SET role = ?, updated_at = ? WHERE user_id = ?")
-                .bind(role.as_str())
-                .bind(&now)
-                .bind(user_id)
-                .execute(&self.pool)
-                .await;
-        matches!(result, Ok(r) if r.rows_affected() > 0)
+        let found = {
+            let mut users = self.users.write().await;
+            if let Some(user) = users.get_mut(user_id) {
+                user.role = role;
+                user.updated_at = chrono::Utc::now().to_rfc3339();
+                true
+            } else {
+                false
+            }
+        };
+        if found {
+            self.persist().await;
+        }
+        found
     }
 
     pub async fn check_permission(&self, user_id: &str, permission: Permission) -> bool {
@@ -228,23 +211,16 @@ impl RbacManager {
     }
 
     pub async fn list_users(&self) -> Vec<UserRecord> {
-        sqlx::query_as::<_, UserRow>("SELECT * FROM rbac_users")
-            .fetch_all(&self.pool)
-            .await
-            .unwrap_or_default()
-            .into_iter()
-            .map(|r| r.into())
-            .collect()
+        let users = self.users.read().await;
+        users.values().cloned().collect()
     }
 
     pub async fn list_users_by_tenant(&self, tenant_id: &str) -> Vec<UserRecord> {
-        sqlx::query_as::<_, UserRow>("SELECT * FROM rbac_users WHERE tenant_id = ?")
-            .bind(tenant_id)
-            .fetch_all(&self.pool)
-            .await
-            .unwrap_or_default()
-            .into_iter()
-            .map(|r| r.into())
+        let users = self.users.read().await;
+        users
+            .values()
+            .filter(|u| u.tenant_id == tenant_id)
+            .cloned()
             .collect()
     }
 
@@ -255,65 +231,38 @@ impl RbacManager {
         email: Option<String>,
         is_active: Option<bool>,
     ) -> bool {
-        let now = chrono::Utc::now().to_rfc3339();
-        let result = sqlx::query(
-            "UPDATE rbac_users SET
-                display_name = COALESCE(?, display_name),
-                email = COALESCE(?, email),
-                is_active = COALESCE(?, is_active),
-                updated_at = ?
-             WHERE user_id = ?",
-        )
-        .bind(display_name)
-        .bind(email)
-        .bind(is_active)
-        .bind(&now)
-        .bind(user_id)
-        .execute(&self.pool)
-        .await;
-        matches!(result, Ok(r) if r.rows_affected() > 0)
+        let found = {
+            let mut users = self.users.write().await;
+            if let Some(user) = users.get_mut(user_id) {
+                if let Some(name) = display_name {
+                    user.display_name = name;
+                }
+                if let Some(e) = email {
+                    user.email = e;
+                }
+                if let Some(active) = is_active {
+                    user.is_active = active;
+                }
+                user.updated_at = chrono::Utc::now().to_rfc3339();
+                true
+            } else {
+                false
+            }
+        };
+        if found {
+            self.persist().await;
+        }
+        found
     }
 
     pub async fn user_count(&self) -> usize {
-        sqlx::query_scalar::<_, i32>("SELECT COUNT(*) FROM rbac_users")
-            .fetch_one(&self.pool)
-            .await
-            .unwrap_or(0) as usize
+        let users = self.users.read().await;
+        users.len()
     }
 
     pub async fn user_count_by_tenant(&self, tenant_id: &str) -> usize {
-        sqlx::query_scalar::<_, i32>("SELECT COUNT(*) FROM rbac_users WHERE tenant_id = ?")
-            .bind(tenant_id)
-            .fetch_one(&self.pool)
-            .await
-            .unwrap_or(0) as usize
-    }
-}
-
-#[derive(sqlx::FromRow)]
-struct UserRow {
-    user_id: String,
-    tenant_id: String,
-    role: String,
-    display_name: String,
-    email: String,
-    is_active: bool,
-    created_at: String,
-    updated_at: String,
-}
-
-impl From<UserRow> for UserRecord {
-    fn from(r: UserRow) -> Self {
-        UserRecord {
-            user_id: r.user_id,
-            tenant_id: r.tenant_id,
-            role: Role::from_str(&r.role).unwrap_or(Role::ReadOnly),
-            display_name: r.display_name,
-            email: r.email,
-            is_active: r.is_active,
-            created_at: r.created_at,
-            updated_at: r.updated_at,
-        }
+        let users = self.users.read().await;
+        users.values().filter(|u| u.tenant_id == tenant_id).count()
     }
 }
 
@@ -336,8 +285,8 @@ mod tests {
     }
 
     async fn temp_manager() -> RbacManager {
-        let dir = std::env::temp_dir().join(format!("rbac_db_{}", uuid::Uuid::now_v7()));
-        RbacManager::new(dir.join("rbac.db")).await.unwrap()
+        let dir = std::env::temp_dir().join(format!("rbac_json_{}", uuid::Uuid::now_v7()));
+        RbacManager::new(dir.join("rbac_users.json")).await.unwrap()
     }
 
     #[tokio::test]
@@ -443,8 +392,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_persistence_roundtrip() {
-        let dir = std::env::temp_dir().join(format!("rbac_db_rt_{}", uuid::Uuid::now_v7()));
-        let path = dir.join("rbac.db");
+        let dir = std::env::temp_dir().join(format!("rbac_json_rt_{}", uuid::Uuid::now_v7()));
+        let path = dir.join("rbac_users.json");
 
         {
             let mgr = RbacManager::new(&path).await.unwrap();
@@ -465,8 +414,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_persistence_survives_mutation() {
-        let dir = std::env::temp_dir().join(format!("rbac_db_mut_{}", uuid::Uuid::now_v7()));
-        let path = dir.join("rbac.db");
+        let dir = std::env::temp_dir().join(format!("rbac_json_mut_{}", uuid::Uuid::now_v7()));
+        let path = dir.join("rbac_users.json");
 
         {
             let mgr = RbacManager::new(&path).await.unwrap();
@@ -489,8 +438,8 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
     async fn test_concurrent_persist_no_data_loss() {
-        let dir = std::env::temp_dir().join(format!("rbac_db_conc_{}", uuid::Uuid::now_v7()));
-        let path = dir.join("rbac.db");
+        let dir = std::env::temp_dir().join(format!("rbac_json_conc_{}", uuid::Uuid::now_v7()));
+        let path = dir.join("rbac_users.json");
         let mgr = std::sync::Arc::new(RbacManager::new(&path).await.unwrap());
 
         let mut handles = Vec::new();
@@ -515,8 +464,8 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
     async fn test_concurrent_add_delete_persist() {
-        let dir = std::env::temp_dir().join(format!("rbac_db_addel_{}", uuid::Uuid::now_v7()));
-        let path = dir.join("rbac.db");
+        let dir = std::env::temp_dir().join(format!("rbac_json_addel_{}", uuid::Uuid::now_v7()));
+        let path = dir.join("rbac_users.json");
         let mgr = std::sync::Arc::new(RbacManager::new(&path).await.unwrap());
 
         for i in 0..10 {
