@@ -200,16 +200,16 @@ impl AppConfig {
     pub fn validate(&self) -> Result<()> {
         // Server validation
         self.validate_server()?;
-        
+
         // LLM validation
         self.validate_llm()?;
-        
+
         // Storage validation
         self.validate_storage()?;
-        
+
         // Auth validation
         self.validate_auth()?;
-        
+
         Ok(())
     }
 
@@ -217,19 +217,21 @@ impl AppConfig {
         if self.server.port == 0 {
             return Err(AppError::Config("server.port cannot be 0".into()));
         }
-        
+
         if self.server.host.is_empty() {
             return Err(AppError::Config("server.host cannot be empty".into()));
         }
-        
+
         if self.server.worker_threads == 0 {
             return Err(AppError::Config("server.worker_threads must be > 0".into()));
         }
-        
+
         if self.server.timeout_seconds == 0 {
-            return Err(AppError::Config("server.timeout_seconds must be > 0".into()));
+            return Err(AppError::Config(
+                "server.timeout_seconds must be > 0".into(),
+            ));
         }
-        
+
         Ok(())
     }
 
@@ -239,30 +241,43 @@ impl AppConfig {
             return Err(AppError::Config(format!(
                 "llm.default_provider '{}' not found in llm.providers. Available providers: {}",
                 self.llm.default_provider,
-                self.llm.providers.keys().map(|k| k.as_str()).collect::<Vec<_>>().join(", ")
+                self.llm
+                    .providers
+                    .keys()
+                    .map(|k| k.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
             )));
         }
-        
+
         // Check default model is not empty
         if self.llm.default_model.is_empty() {
             return Err(AppError::Config("llm.default_model cannot be empty".into()));
         }
-        
+
         // Validate each provider
         for (name, provider) in &self.llm.providers {
             self.validate_provider(name, provider)?;
         }
-        
+
         Ok(())
     }
 
     fn validate_provider(&self, name: &str, provider: &ProviderConfig) -> Result<()> {
         // Check provider type is valid
         let valid_types = [
-            "openai", "gemini", "claude", "ollama", "deepseek", 
-            "openrouter", "azure-openai", "cohere", "groq", "mistral"
+            "openai",
+            "gemini",
+            "claude",
+            "ollama",
+            "deepseek",
+            "openrouter",
+            "azure-openai",
+            "cohere",
+            "groq",
+            "mistral",
         ];
-        
+
         if !valid_types.contains(&provider.provider_type.as_str()) {
             return Err(AppError::Config(format!(
                 "llm.providers.{}.type '{}' is invalid. Valid types: {}",
@@ -271,7 +286,7 @@ impl AppConfig {
                 valid_types.join(", ")
             )));
         }
-        
+
         // Check base_url is not empty
         if provider.base_url.is_empty() {
             return Err(AppError::Config(format!(
@@ -279,7 +294,7 @@ impl AppConfig {
                 name
             )));
         }
-        
+
         // Check base_url is valid URL
         if !provider.base_url.starts_with("http://") && !provider.base_url.starts_with("https://") {
             return Err(AppError::Config(format!(
@@ -287,7 +302,7 @@ impl AppConfig {
                 name
             )));
         }
-        
+
         // Check API key is configured (either directly or via env var)
         let api_key = provider.resolve_api_key();
         if api_key.is_empty() && provider.provider_type != "ollama" {
@@ -296,7 +311,7 @@ impl AppConfig {
                 name
             )));
         }
-        
+
         Ok(())
     }
 
@@ -305,32 +320,42 @@ impl AppConfig {
         if self.storage.redis.url.is_empty() {
             return Err(AppError::Config("storage.redis.url cannot be empty".into()));
         }
-        
-        if !self.storage.redis.url.starts_with("redis://") && !self.storage.redis.url.starts_with("rediss://") {
+
+        if !self.storage.redis.url.starts_with("redis://")
+            && !self.storage.redis.url.starts_with("rediss://")
+        {
             return Err(AppError::Config(
-                "storage.redis.url must start with redis:// or rediss://".into()
+                "storage.redis.url must start with redis:// or rediss://".into(),
             ));
         }
-        
+
         if self.storage.redis.ttl_seconds == 0 {
-            return Err(AppError::Config("storage.redis.ttl_seconds must be > 0".into()));
+            return Err(AppError::Config(
+                "storage.redis.ttl_seconds must be > 0".into(),
+            ));
         }
-        
+
         if self.storage.redis.max_messages == 0 {
-            return Err(AppError::Config("storage.redis.max_messages must be > 0".into()));
+            return Err(AppError::Config(
+                "storage.redis.max_messages must be > 0".into(),
+            ));
         }
-        
+
         // Qdrant validation
         if self.storage.vector.url.is_empty() {
-            return Err(AppError::Config("storage.vector.url cannot be empty".into()));
-        }
-        
-        if !self.storage.vector.url.starts_with("http://") && !self.storage.vector.url.starts_with("https://") {
             return Err(AppError::Config(
-                "storage.vector.url must start with http:// or https://".into()
+                "storage.vector.url cannot be empty".into(),
             ));
         }
-        
+
+        if !self.storage.vector.url.starts_with("http://")
+            && !self.storage.vector.url.starts_with("https://")
+        {
+            return Err(AppError::Config(
+                "storage.vector.url must start with http:// or https://".into(),
+            ));
+        }
+
         Ok(())
     }
 
@@ -338,14 +363,14 @@ impl AppConfig {
         if !self.auth.enabled {
             return Ok(());
         }
-        
+
         // If auth is enabled, check that at least one admin key is configured
         if self.auth.admin_keys.is_empty() && self.auth.admin_key.is_none() {
             return Err(AppError::Config(
-                "auth.enabled is true but no admin_keys or admin_key configured".into()
+                "auth.enabled is true but no admin_keys or admin_key configured".into(),
             ));
         }
-        
+
         // Validate admin keys are not empty strings
         for (i, key) in self.auth.admin_keys.iter().enumerate() {
             if key.is_empty() {
@@ -355,7 +380,7 @@ impl AppConfig {
                 )));
             }
         }
-        
+
         // Validate API keys are not empty strings
         for (i, key) in self.auth.api_keys.iter().enumerate() {
             if key.is_empty() {
@@ -365,7 +390,7 @@ impl AppConfig {
                 )));
             }
         }
-        
+
         Ok(())
     }
 }
@@ -554,7 +579,8 @@ mod tests {
     #[test]
     fn test_invalid_base_url_scheme() {
         let mut config = create_valid_config();
-        config.llm.providers.get_mut("openai").unwrap().base_url = "ftp://api.openai.com".to_string();
+        config.llm.providers.get_mut("openai").unwrap().base_url =
+            "ftp://api.openai.com".to_string();
         let result = config.validate();
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("http"));
