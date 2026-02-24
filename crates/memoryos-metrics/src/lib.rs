@@ -206,4 +206,73 @@ mod tests {
         let output = gather_metrics();
         assert!(output.contains("memoryos_faq_classifications_total"));
     }
+
+    #[test]
+    fn test_system_gauges() {
+        ACTIVE_USERS.set(42);
+        SHORT_TERM_MESSAGES.set(100);
+        MID_TERM_SEGMENTS.set(50);
+        LONG_TERM_MEMORIES.set(10);
+        let output = gather_metrics();
+        assert!(output.contains("memoryos_active_users"));
+        assert!(output.contains("memoryos_short_term_messages_total"));
+        assert!(output.contains("memoryos_mid_term_segments_total"));
+        assert!(output.contains("memoryos_long_term_memories_total"));
+    }
+
+    #[test]
+    fn test_vector_db_metrics() {
+        VECTOR_DB_OPERATIONS_TOTAL
+            .with_label_values(&["qdrant", "search", "success"])
+            .inc();
+        VECTOR_DB_LATENCY
+            .with_label_values(&["qdrant", "search"])
+            .observe(0.05);
+        let output = gather_metrics();
+        assert!(output.contains("memoryos_vector_db_operations_total"));
+        assert!(output.contains("memoryos_vector_db_latency_seconds"));
+    }
+
+    #[test]
+    fn test_memory_operation_metrics() {
+        MEMORY_OPERATIONS_TOTAL
+            .with_label_values(&["store", "stm", "success"])
+            .inc();
+        MEMORY_OPERATION_DURATION
+            .with_label_values(&["store", "stm"])
+            .observe(0.01);
+        let output = gather_metrics();
+        assert!(output.contains("memoryos_memory_operations_total"));
+        assert!(output.contains("memoryos_memory_operation_duration_seconds"));
+    }
+
+    #[test]
+    fn test_http_request_duration_histogram() {
+        HTTP_REQUEST_DURATION
+            .with_label_values(&["POST", "/v1/memory"])
+            .observe(0.123);
+        let output = gather_metrics();
+        assert!(output.contains("memoryos_http_request_duration_seconds"));
+    }
+
+    #[test]
+    fn test_faq_promotions_metric() {
+        FAQ_PROMOTIONS_TOTAL
+            .with_label_values(&["qa", "faq_candidate"])
+            .inc();
+        let output = gather_metrics();
+        assert!(output.contains("memoryos_faq_promotions_total"));
+    }
+
+    #[test]
+    fn test_llm_tokens_metric() {
+        LLM_TOKENS_TOTAL
+            .with_label_values(&["openai", "input"])
+            .inc_by(150.0);
+        LLM_TOKENS_TOTAL
+            .with_label_values(&["openai", "output"])
+            .inc_by(50.0);
+        let output = gather_metrics();
+        assert!(output.contains("memoryos_llm_tokens_total"));
+    }
 }

@@ -10,7 +10,7 @@ use subtle::ConstantTimeEq;
 
 use crate::AppState;
 
-fn extract_bearer_token(headers: &HeaderMap) -> &str {
+pub(crate) fn extract_bearer_token(headers: &HeaderMap) -> &str {
     headers
         .get("Authorization")
         .and_then(|h| h.to_str().ok())
@@ -19,7 +19,7 @@ fn extract_bearer_token(headers: &HeaderMap) -> &str {
         .unwrap_or("")
 }
 
-fn constant_time_contains(haystack: &[String], needle: &str) -> bool {
+pub(crate) fn constant_time_contains(haystack: &[String], needle: &str) -> bool {
     let needle_bytes = needle.as_bytes();
     let mut found = false;
     for candidate in haystack {

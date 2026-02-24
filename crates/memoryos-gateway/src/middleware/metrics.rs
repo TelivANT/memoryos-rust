@@ -12,7 +12,7 @@ use tracing::info;
 
 /// Normalize request path to avoid high-cardinality labels.
 /// Replaces UUIDs and numeric IDs with placeholders.
-fn normalize_path(path: &str) -> String {
+pub(crate) fn normalize_path(path: &str) -> String {
     let segments: Vec<&str> = path.split('/').collect();
     let normalized: Vec<String> = segments
         .iter()
