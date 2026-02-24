@@ -1,6 +1,6 @@
 # MemoryOS-Rust 架构设计
 
-**版本**: v0.13.0
+**版本**: v1.0.0-rc
 **仓库**: [TelivANT/memoryos-rust](https://github.com/TelivANT/memoryos-rust)
 
 ## 系统架构概览
@@ -9,7 +9,7 @@
 graph TB
     subgraph "Driving Adapters 接入层"
         GW["Gateway<br/>Axum HTTP :8080<br/>REST API"]
-        MCP["MCP Server<br/>rmcp stdio + SSE<br/>AI Agent 接入"]
+        MCP["MCP Server<br/>rmcp stdio<br/>→ Gateway 代理"]
         WK["Worker<br/>Redis Stream Consumer<br/>异步管道"]
         MW["Middleware<br/>Auth / Defense / Metrics"]
         ADM["Admin<br/>:9090 内网管理"]
@@ -46,7 +46,7 @@ graph TB
     end
 
     GW --> MM
-    MCP --> MM
+    MCP -->|"HTTP 转发"| GW
     WK --> MM
     MW --> GW
     ADM --> SEC
@@ -300,6 +300,7 @@ enabled = false
 | v0.11.0 | Tag 搜索 Qdrant filter + Memory History + Redis 0.32 + 审计/GDPR 可插拔 |
 | v0.12.0 | 企业级: Admin 服务 + RBAC + 多租户 |
 | v0.13.0 | Wiki-gen (Tree-sitter + LLM) + Storage Connectors + MCP 设计 |
+| v1.0.0-rc | MCP Server 实现 + 配置验证 + 错误处理 + Embedding 集成 + 测试覆盖 |
 
 **待完善**:
 - CLIP/Whisper 实际模型集成（当前多模态使用 embedding 向量输入）
@@ -388,104 +389,58 @@ graph TB
 
 ## MCP Server 接入层 (memoryos-mcp)
 
-> 设计阶段，代码实现待启动。
+> ✅ 已实现 (PR #48)。Gateway 代理模式，7 个 MCP Tools。
 
 ### 系统定位
 
 独立 crate `memoryos-mcp`，作为 MemoryOS 的 MCP (Model Context Protocol) 接入层。让 AI 助手（Claude Desktop、Cursor、自定义 Agent）通过标准化 MCP 协议直接调用 MemoryOS 的记忆管理能力。
 
-### 与 Gateway 的关系
+### 架构模式：Gateway 代理
+
+MCP Server 采用**薄代理 (Thin Proxy)** 模式：接收 MCP tool call → 转发到 Gateway HTTP API → 返回结果。不直接访问 Core/Ports/Adapters，所有业务逻辑复用 Gateway。
 
 ```mermaid
 graph LR
     subgraph "HTTP API"
-        APP["前端/后端应用"] -->|"HTTP REST"| GW["memoryos-gateway<br/>OpenAI 兼容协议"]
+        APP["前端/后端应用"] -->|"HTTP REST"| GW["memoryos-gateway<br/>:8080"]
     end
 
     subgraph "MCP"
-        AI["AI Agent"] -->|"JSON-RPC 2.0<br/>stdio / SSE"| MCPS["memoryos-mcp<br/>Claude Desktop / Cursor"]
+        AI["AI Agent"] -->|"JSON-RPC 2.0<br/>stdio"| MCPS["memoryos-mcp"]
     end
 
-    GW --> CORE["共享层<br/>Core / Ports / Adapters"]
-    MCPS --> CORE
+    MCPS -->|"HTTP 转发"| GW
+    GW --> CORE["Core / Ports / Adapters"]
 ```
 
-### MCP 架构设计
+### MCP Tools (7 个)
 
-```mermaid
-graph TD
-    subgraph "MCP Clients"
-        Claude[Claude Desktop]
-        Cursor[Cursor IDE]
-        Agent[Custom Agent]
-    end
-
-    subgraph "memoryos-mcp"
-        Transport["Transport Layer<br/>stdio / SSE"]
-        Router["MCP Router<br/>JSON-RPC 2.0"]
-        Tools["Tool Handlers<br/>10 MCP Tools"]
-        Resources["Resource Providers"]
-    end
-
-    subgraph "Shared Core"
-        Ports["memoryos-ports"]
-        Core["memoryos-core"]
-        Adapters["memoryos-adapters"]
-    end
-
-    Claude -->|stdio| Transport
-    Cursor -->|stdio| Transport
-    Agent -->|SSE/HTTP| Transport
-    Transport --> Router
-    Router --> Tools
-    Router --> Resources
-    Tools --> Ports
-    Resources --> Ports
-    Ports --> Core
-    Core --> Adapters
-```
-
-### MCP Tools (10 个)
-
-| 分类 | 工具名 | 功能 |
-|------|--------|------|
-| 记忆管理 | `add_memory` | 存储对话/事实到 STM |
-| | `search_memories` | 语义搜索记忆 (向量相似度) |
-| | `get_memories` | 列出记忆 (分页 + 过滤) |
-| | `get_memory` | 按 ID 获取单条记忆 |
-| | `update_memory` | 修改记忆内容 |
-| | `delete_memory` | 删除单条记忆 (GDPR 合规) |
-| 知识查询 | `search_faq` | 搜索高频 Q&A |
-| | `query_graph` | 知识图谱查询 (实体/关系/路径) |
-| | `get_user_profile` | 获取用户长期画像 (LTM) |
-| 代码文档 | `generate_wiki` | 触发代码仓库 Wiki 生成 |
-
-### MCP Resources (只读数据)
-
-| URI | 说明 |
-|-----|------|
-| `memory://{user_id}/profile` | 用户画像 |
-| `memory://{user_id}/recent` | 最近对话 |
-| `memory://{user_id}/knowledge` | 知识库 |
-| `faq://list` | FAQ 列表 |
-| `graph://{entity_id}` | 图谱实体详情 |
-| `health://status` | 系统健康状态 |
+| 分类 | 工具名 | Gateway 端点 | 功能 |
+|------|--------|-------------|------|
+| 记忆管理 | `add_memory` | `POST /v1/memory/add` | 存储消息到 STM |
+| | `search_memories` | `POST /v1/memory/retrieve` | 语义搜索记忆 |
+| | `get_memories` | `POST /v1/memory/retrieve` | 获取用户全部记忆 |
+| | `delete_memory` | `POST /v1/security/gdpr/delete` | 删除用户数据 (GDPR) |
+| 知识查询 | `query_graph` | `POST /v1/graph/query` | 知识图谱查询 |
+| 对话 | `chat` | `POST /v1/chat` | 记忆增强对话 |
+| 运维 | `health_check` | `GET /v1/health` | 系统健康检查 |
 
 ### MCP 技术栈
 
 | 分类 | 技术 |
 |------|------|
-| Protocol | rmcp v0.16+ (官方 Rust MCP SDK) |
-| Transport | stdio (本地) + SSE (远程) |
+| Protocol | rmcp v0.3 (官方 Rust MCP SDK) |
+| Transport | stdio (已实现) + SSE (预留) |
 | Schema | schemars (JSON Schema 自动生成) |
-| 复用 | memoryos-ports / memoryos-core / memoryos-adapters / AppConfig |
+| HTTP Client | reqwest (转发到 Gateway) |
+| CLI | clap (`--gateway-url`, `--api-key`, `--transport`) |
 
 ### 传输方式
 
-| 方式 | 场景 | 说明 |
+| 方式 | 场景 | 状态 |
 |------|------|------|
-| **stdio** (推荐) | 本地部署 | AI Client spawn memoryos-mcp，零网络延迟 |
-| **SSE** | 远程部署 | HTTP SSE，支持远程访问和多客户端共享 |
+| **stdio** (推荐) | 本地部署，Claude Desktop / Cursor 直接接入 | ✅ 已实现 |
+| **SSE** | 远程部署，多客户端共享 | 📋 预留 |
 
 ### 客户端配置示例
 
@@ -495,10 +450,9 @@ graph TD
   "mcpServers": {
     "memoryos": {
       "command": "./memoryos-mcp",
-      "args": ["--config", "config.toml"],
+      "args": ["--gateway-url", "http://127.0.0.1:8080"],
       "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "REDIS_URL": "redis://localhost:6379"
+        "MEMORYOS_API_KEY": "your-api-key"
       }
     }
   }
@@ -511,7 +465,7 @@ graph TD
   "mcpServers": {
     "memoryos": {
       "command": "./memoryos-mcp",
-      "args": ["--config", "config.toml"]
+      "args": ["--gateway-url", "http://127.0.0.1:8080"]
     }
   }
 }

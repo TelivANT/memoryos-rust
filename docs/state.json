@@ -2,11 +2,11 @@
   "project_name": "MemoryOS-Rust",
   "version": "0.13.0",
   "edition": "Personal/Enterprise Single-Tenant Edition",
-  "last_updated": "2026-02-20",
+  "last_updated": "2026-02-24",
   "status": {
-        "phase": "MCP Server - Design Complete",
-        "progress_percentage": 50,
-        "current_task": "MCP Server design docs integrated into ARCHITECTURE.md + DESIGN.md, implementation pending",
+        "phase": "1.0 Release - All Tasks Complete",
+        "progress_percentage": 95,
+        "current_task": "All 6 must-complete tasks done. PRs #42-#48 merged. Ready for v1.0.0 release.",
     "is_blocked": false
   },
   "branches": {
@@ -37,7 +37,7 @@
       },
             "wiki": ["S3", "Confluence", "Local FS"],
             "wiki_gen": "memoryos-wiki-gen (Tree-sitter + LLM hybrid, CLI + API dual-path)",
-            "mcp": "memoryos-mcp (planned: rmcp v0.16+ SDK, stdio + SSE transport, 10 tools)"
+            "mcp": "memoryos-mcp (implemented: rmcp v0.3, stdio transport, 7 tools, Gateway proxy pattern)"
     },
     "format_constraints": {
       "file_naming": "snake_case (strictly functional naming)",
@@ -116,11 +116,9 @@
       "v0.12.6: Comprehensive Audit Fixes (constant-time auth, nested route auth, CORS restriction, rate limiter leak fix, dedup tenant util, user ID from header, cache eviction)"
     ],
                 "in_progress": [
-                  "MCP Server: memoryos-mcp crate design complete, implementation pending (rmcp + stdio/SSE, 10 tools)",
                   "Storage Connectors: P0+P1 complete (8/17), P2 pending"
                 ],
                 "todo": [
-                  "v0.13.0: MCP Server implementation (memoryos-mcp crate)",
                   "v0.14.0: Wiki preview system (built-in HTTP browser + Mermaid rendering)",
                   "v1.0.0: Production release (user cases, production validation)",
           "CLIP/Whisper integration for multimodal (P2 backlog)",
@@ -135,6 +133,20 @@
     ]
   },
   "recent_changes": [
+    {
+      "date": "2026-02-24",
+      "author": "Kiro AI",
+      "description": "v1.0.0-rc: All 6 Must-Complete Tasks Done (PRs #42-#48)",
+      "changes": [
+        "PR #42: Config validation - AppConfig::validate() with comprehensive checks for all config sections, 24 unit tests",
+        "PR #43: Production error handling - replaced all unwrap() with expect() or graceful error handling across 4 crates",
+        "PR #45: LLM summary pipeline - consolidate_memory() now calls summarize_messages_internal() instead of text concatenation",
+        "PR #46: Real embedding integration - with_embedding_config() method, wired into gateway and worker initialization",
+        "PR #47: End-to-end test coverage - 69 new unit tests across 7 modules (234→303 total)",
+        "PR #48: MCP Server implementation - memoryos-mcp crate, rmcp v0.3, 7 tools, Gateway proxy pattern, stdio transport",
+        "Documentation: Updated ARCHITECTURE.md, DESIGN.md, README.md, STATUS.md, ROADMAP.md, state.json, PROCESS.md"
+      ]
+    },
     {
       "date": "2026-02-24",
       "author": "Devin",
