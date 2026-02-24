@@ -2780,7 +2780,7 @@ checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 
 [[package]]
 name = "memoryos-adapters"
-version = "0.1.0"
+version = "1.0.0-rc"
 dependencies = [
  "async-nats",
  "async-trait",
@@ -2800,7 +2800,7 @@ dependencies = [
 
 [[package]]
 name = "memoryos-admin"
-version = "0.1.0"
+version = "1.0.0-rc"
 dependencies = [
  "axum 0.7.9",
  "chrono",
@@ -2817,7 +2817,7 @@ dependencies = [
 
 [[package]]
 name = "memoryos-core"
-version = "0.1.0"
+version = "1.0.0-rc"
 dependencies = [
  "aes-gcm",
  "arc-swap",
@@ -2842,7 +2842,7 @@ dependencies = [
 
 [[package]]
 name = "memoryos-gateway"
-version = "0.1.0"
+version = "1.0.0-rc"
 dependencies = [
  "aes-gcm",
  "async-trait",
@@ -2872,7 +2872,7 @@ dependencies = [
 
 [[package]]
 name = "memoryos-mcp"
-version = "0.1.0"
+version = "1.0.0-rc"
 dependencies = [
  "chrono",
  "clap",
@@ -2891,7 +2891,7 @@ dependencies = [
 
 [[package]]
 name = "memoryos-metrics"
-version = "0.1.0"
+version = "1.0.0-rc"
 dependencies = [
  "lazy_static",
  "prometheus",
@@ -2899,7 +2899,7 @@ dependencies = [
 
 [[package]]
 name = "memoryos-ports"
-version = "0.1.0"
+version = "1.0.0-rc"
 dependencies = [
  "async-trait",
  "chrono",
@@ -2911,7 +2911,7 @@ dependencies = [
 
 [[package]]
 name = "memoryos-wiki-gen"
-version = "0.1.0"
+version = "1.0.0-rc"
 dependencies = [
  "async-trait",
  "aws-config",
@@ -2950,7 +2950,7 @@ dependencies = [
 
 [[package]]
 name = "memoryos-worker"
-version = "0.1.0"
+version = "1.0.0-rc"
 dependencies = [
  "chrono",
  "memoryos-adapters",

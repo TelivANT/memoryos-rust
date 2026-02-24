@@ -31,10 +31,11 @@ api_key = ""
 base_url = "https://api.openai.com/v1"
 model = "text-embedding-3-small"
 
-# API Key 认证配置
+# API Key authentication
+# Generate your own keys before deploying to production:
+#   openssl rand -hex 32
 [auth]
 enabled = true
 api_keys = [
-    "memoryos-secret-key-12345",
-    "memoryos-backup-key-67890"
+    "REPLACE_WITH_YOUR_OWN_KEY"
 ]
