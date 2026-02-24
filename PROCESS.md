@@ -19,7 +19,7 @@
 | 知识图谱 (GraphRAG) | ✅ 完成 | 100% | — |
 | 企业功能 (RBAC/多租户/Admin) | ✅ 完成 | 100% | Devin |
 | Wiki 生成系统 (Tree-sitter + LLM) | ✅ 完成 | 100% | Devin |
-| Storage Connectors (17 种) | 🟢 进行中 | 47% | Kiro AI |
+| Storage Connectors (17 种) | ✅ 完成 | 100% | Kiro AI |
 | MCP Server (memoryos-mcp) | ✅ 完成 | 100% | Kiro AI |
 | Wiki 预览系统 | 📋 计划中 | 0% | — |
 
@@ -148,12 +148,7 @@
 
 ## 🟢 当前进行中
 
-### [Kiro AI] — Storage Connectors 实现
-- **开始时间**: 2026-02-21
-- **状态**: 🟢 进行中 (P0+P1 完成, 47%)
-- **内容**: 为 wiki-gen 实现 17 种统一存储连接器
-- **已完成**: Local / Git / S3 / WebDAV / OSS / COS / OBS / SFTP
-- **待完成**: SMB / NFS / OneDrive / Google Drive / Dropbox / GCS / Azure / 百度网盘 / 阿里云盘
+无。所有模块已完成。
 
 ---
 

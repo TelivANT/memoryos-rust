@@ -206,7 +206,7 @@ graph TD
 | Phase 12 | LLM FAQ | Done | LLM-based FAQ classification + /v1/admin/faq/classify |
 | Phase 13 | Enterprise | Done | RBAC + multi-tenant + Admin service + SQLite persistence |
 | Phase 14 | Wiki Generation | Done | Tree-sitter + LLM hybrid, multi-language (Rust/Python/Java/Vue) |
-| Phase 15 | Storage Connectors | In Progress | 17 connectors (Local/Git/S3/WebDAV/OSS/COS/OBS/SFTP/...) |
+| Phase 15 | Storage Connectors | Done | 17 connectors (Local/Git/S3/WebDAV/OSS/COS/OBS/SFTP/GCS/Azure/SMB/NFS/OneDrive/Google Drive/Dropbox/Baidu Pan/Aliyun Drive) |
 | Phase 16 | MCP Server | Done | MCP protocol support (rmcp + stdio, Gateway proxy) |
 
 > **Note**: End-to-end performance claims (QPS, latency) have not been independently validated yet. Criterion microbenchmark results are available in `docs/PERFORMANCE_REPORT.md`.
