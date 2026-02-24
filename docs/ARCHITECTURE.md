@@ -9,13 +9,19 @@
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│                          Gateway Layer                           │
+│                       Driving Adapters (接入层)                  │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │   Axum HTTP  │  │  Middleware  │  │    Routes    │          │
-│  │   Server     │  │  - Auth      │  │  - Memory    │          │
-│  │              │  │  - Defense   │  │  - Chat      │          │
-│  │              │  │  - Metrics   │  │  - Admin     │          │
+│  │   Gateway    │  │   MCP Server │  │    Worker    │          │
+│  │  Axum HTTP   │  │  rmcp (stdio │  │  Redis Stream│          │
+│  │  port 8080   │  │   + SSE)     │  │  Consumer    │          │
+│  │  REST API    │  │  AI Agent 接入│  │  异步管道    │          │
 │  └──────────────┘  └──────────────┘  └──────────────┘          │
+│  ┌──────────────┐  ┌──────────────┐                            │
+│  │  Middleware   │  │    Admin     │                            │
+│  │  - Auth      │  │  port 9090   │                            │
+│  │  - Defense   │  │  内网管理     │                            │
+│  │  - Metrics   │  │              │                            │
+│  └──────────────┘  └──────────────┘                            │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -584,6 +590,201 @@ Code Repository
 │  Export:     WikiExportBackend (S3/Confluence/Local, reused) │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
+```
+
+## MCP Server 接入层 (memoryos-mcp)
+
+### 系统定位
+
+独立 crate `memoryos-mcp`，作为 MemoryOS 的 MCP (Model Context Protocol) 接入层。让 AI 助手（Claude Desktop、Cursor、自定义 Agent）通过标准化 MCP 协议直接调用 MemoryOS 的记忆管理能力，无需手写 HTTP 集成。
+
+### 与 Gateway 的关系
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   MemoryOS 接入层对比                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  接入方式 1: HTTP API (Gateway)                              │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │  前端/后端应用 → HTTP REST → memoryos-gateway      │     │
+│  │  • OpenAI 兼容协议                                 │     │
+│  │  • 适用: Web 应用、移动端、服务间调用              │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+│  接入方式 2: MCP (memoryos-mcp)                              │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │  AI Agent → MCP 协议 → memoryos-mcp               │     │
+│  │  • JSON-RPC 2.0 over stdio / SSE                   │     │
+│  │  • 适用: Claude Desktop, Cursor, 自定义 Agent      │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+│  共享层: Core / Ports / Adapters (业务逻辑完全复用)          │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 架构设计
+
+```mermaid
+graph TD
+    subgraph "MCP Clients"
+        Claude[Claude Desktop]
+        Cursor[Cursor IDE]
+        Agent[Custom Agent]
+    end
+
+    subgraph "memoryos-mcp"
+        Transport["Transport Layer<br/>stdio / SSE"]
+        Router["MCP Router<br/>(JSON-RPC 2.0)"]
+        Tools["Tool Handlers<br/>(10 MCP Tools)"]
+        Resources["Resource Providers<br/>(Memory Resources)"]
+    end
+
+    subgraph "Shared Core"
+        Ports["memoryos-ports<br/>(trait interfaces)"]
+        Core["memoryos-core<br/>(business logic)"]
+        Adapters["memoryos-adapters<br/>(implementations)"]
+    end
+
+    Claude -->|stdio| Transport
+    Cursor -->|stdio| Transport
+    Agent -->|SSE/HTTP| Transport
+    Transport --> Router
+    Router --> Tools
+    Router --> Resources
+    Tools --> Ports
+    Resources --> Ports
+    Ports --> Core
+    Core --> Adapters
+```
+
+### MCP Tools 定义
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     MCP Tools (10 个)                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  记忆管理:                                                   │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │  add_memory      — 存储对话/事实到 STM             │     │
+│  │  search_memories — 语义搜索记忆 (向量相似度)        │     │
+│  │  get_memories    — 列出记忆 (分页 + 过滤)           │     │
+│  │  get_memory      — 按 ID 获取单条记忆              │     │
+│  │  update_memory   — 修改记忆内容                     │     │
+│  │  delete_memory   — 删除单条记忆 (GDPR 合规)        │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+│  知识查询:                                                   │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │  search_faq      — 搜索高频 Q&A (Tier 0 直接命中)  │     │
+│  │  query_graph     — 知识图谱查询 (实体/关系/路径)    │     │
+│  │  get_user_profile— 获取用户长期画像 (LTM)          │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+│  代码文档:                                                   │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │  generate_wiki   — 触发代码仓库 Wiki 生成          │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### MCP Resources 定义
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   MCP Resources (只读数据)                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  memory://{user_id}/profile    — 用户画像                    │
+│  memory://{user_id}/recent     — 最近对话                    │
+│  memory://{user_id}/knowledge  — 知识库                      │
+│  faq://list                    — FAQ 列表                    │
+│  graph://{entity_id}           — 图谱实体详情                │
+│  health://status               — 系统健康状态                │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 技术栈 (MCP)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  MCP Server Tech Stack                                       │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Protocol:   rmcp v0.16+ (官方 Rust MCP SDK)                │
+│  Transport:  stdio (本地 CLI) + SSE (远程 HTTP)              │
+│  Schema:     schemars (JSON Schema 自动生成)                 │
+│  Serialization: serde + serde_json (已有)                    │
+│  Async:      tokio (已有)                                    │
+│  Logging:    tracing (已有)                                  │
+│                                                              │
+│  复用模块:                                                   │
+│  • memoryos-ports (trait 接口)                               │
+│  • memoryos-core (业务逻辑)                                  │
+│  • memoryos-adapters (存储/LLM 适配器)                       │
+│  • AppConfig (配置加载)                                      │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 传输方式
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Transport Options                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  1. stdio (本地部署，推荐)                                   │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │  AI Client → spawn memoryos-mcp → stdin/stdout     │     │
+│  │  • 零网络延迟                                      │     │
+│  │  • 适用: Claude Desktop, Cursor                     │     │
+│  │  • 配置: claude_desktop_config.json / .cursor/mcp  │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+│  2. SSE (远程部署)                                           │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │  AI Client → HTTP SSE → memoryos-mcp server        │     │
+│  │  • 支持远程访问                                     │     │
+│  │  • 适用: 自定义 Agent, 多客户端共享                 │     │
+│  │  • 端点: http://host:port/mcp                      │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 客户端配置示例
+
+**Claude Desktop** (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "memoryos": {
+      "command": "./memoryos-mcp",
+      "args": ["--config", "config.toml"],
+      "env": {
+        "QDRANT_URL": "http://localhost:6333",
+        "REDIS_URL": "redis://localhost:6379"
+      }
+    }
+  }
+}
+```
+
+**Cursor** (`.cursor/mcp.json`):
+```json
+{
+  "mcpServers": {
+    "memoryos": {
+      "command": "./memoryos-mcp",
+      "args": ["--config", "config.toml"]
+    }
+  }
+}
 ```
 
 ## 企业级架构 (v0.12.0)

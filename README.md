@@ -174,6 +174,7 @@ graph TD
 - [Roadmap](./docs/ROADMAP.md) - v0.2.0 → v1.0.0 planning
 - [API Key Auth](./docs/AUTH.md) - Enterprise auth system (Qdrant persistence) 🔒
 - [Work Log](./WORK_LOG.md) - **Who's doing what, for collaboration** ⭐⭐⭐
+- [Process Log](./PROCESS.md) - **All completed work + current progress** ⭐⭐
 - [Project State](./docs/state.json) - AI context recovery (machine-readable)
 - [Changelog](./CHANGELOG.md) - Version history
 - [Contributing](./CONTRIBUTING.md) - Contribution guidelines
@@ -185,7 +186,7 @@ graph TD
 
 ## 📊 Project Status
 
-**Version**: 0.9.0  
+**Version**: 0.13.0  
 **Status**: Release Candidate (pre v1.0)  
   
 
@@ -203,6 +204,10 @@ graph TD
 | Phase 10 | Benchmarks | Done | Criterion microbenchmarks (see docs/PERFORMANCE_REPORT.md) |
 | Phase 11 | Observability | Done | Prometheus /metrics + full-chain instrumentation |
 | Phase 12 | LLM FAQ | Done | LLM-based FAQ classification + /v1/admin/faq/classify |
+| Phase 13 | Enterprise | Done | RBAC + multi-tenant + Admin service + SQLite persistence |
+| Phase 14 | Wiki Generation | Done | Tree-sitter + LLM hybrid, multi-language (Rust/Python/Java/Vue) |
+| Phase 15 | Storage Connectors | In Progress | 17 connectors (Local/Git/S3/WebDAV/OSS/COS/OBS/SFTP/...) |
+| Phase 16 | MCP Server | Design Complete | MCP protocol support (rmcp + stdio/SSE) |
 
 > **Note**: End-to-end performance claims (QPS, latency) have not been independently validated yet. Criterion microbenchmark results are available in `docs/PERFORMANCE_REPORT.md`.
 
@@ -290,4 +295,4 @@ Apache 2.0 License - See [LICENSE](./LICENSE)
 
 ---
 
-**Version**: 0.10.0 (Personal Edition) | **Updated**: 2026-02-20
+**Version**: 0.13.0 (Personal Edition) | **Updated**: 2026-02-24

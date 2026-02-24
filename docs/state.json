@@ -1,12 +1,12 @@
 {
   "project_name": "MemoryOS-Rust",
-  "version": "0.12.6",
+  "version": "0.13.0",
   "edition": "Personal/Enterprise Single-Tenant Edition",
   "last_updated": "2026-02-20",
   "status": {
-    "phase": "Storage Connectors - P1 Complete",
-    "progress_percentage": 47,
-    "current_task": "P0+P1 complete (8/17), 90% coverage achieved",
+        "phase": "MCP Server - Design Complete",
+        "progress_percentage": 50,
+        "current_task": "MCP Server design docs integrated into ARCHITECTURE.md + DESIGN.md, implementation pending",
     "is_blocked": false
   },
   "branches": {
@@ -35,8 +35,9 @@
         "redis": "Session, Lock, Cache, IP Defense",
         "nats": "Message Queue, Pub/Sub, Service Discovery"
       },
-      "wiki": ["S3", "Confluence", "Local FS"],
-      "wiki_gen": "memoryos-wiki-gen (Tree-sitter + LLM hybrid, CLI + API dual-path)"
+            "wiki": ["S3", "Confluence", "Local FS"],
+            "wiki_gen": "memoryos-wiki-gen (Tree-sitter + LLM hybrid, CLI + API dual-path)",
+            "mcp": "memoryos-mcp (planned: rmcp v0.16+ SDK, stdio + SSE transport, 10 tools)"
     },
     "format_constraints": {
       "file_naming": "snake_case (strictly functional naming)",
@@ -114,11 +115,14 @@
       "v0.12.5: PR #18 Review Security Hardening (tenant ID validation, FAQ tenant wiring, multi_thread tests, add+delete edge test)",
       "v0.12.6: Comprehensive Audit Fixes (constant-time auth, nested route auth, CORS restriction, rate limiter leak fix, dedup tenant util, user ID from header, cache eviction)"
     ],
-        "in_progress": [
-          "Wiki Generation System: memoryos-wiki-gen crate (Tree-sitter + LLM hybrid, multi-language code parsing, Mermaid diagrams, CLI + API)"
-        ],
-        "todo": [
-          "v1.0.0: Production release (user cases, production validation)",
+                "in_progress": [
+                  "MCP Server: memoryos-mcp crate design complete, implementation pending (rmcp + stdio/SSE, 10 tools)",
+                  "Storage Connectors: P0+P1 complete (8/17), P2 pending"
+                ],
+                "todo": [
+                  "v0.13.0: MCP Server implementation (memoryos-mcp crate)",
+                  "v0.14.0: Wiki preview system (built-in HTTP browser + Mermaid rendering)",
+                  "v1.0.0: Production release (user cases, production validation)",
           "CLIP/Whisper integration for multimodal (P2 backlog)",
           "OpenTelemetry distributed tracing (P2 backlog)",
           "Cross-modal retrieval (P2 backlog)",
@@ -131,6 +135,22 @@
     ]
   },
   "recent_changes": [
+    {
+      "date": "2026-02-24",
+      "author": "Devin",
+      "description": "MCP Server Design + Documentation Integration",
+      "changes": [
+        "ARCHITECTURE.md: Added MCP Server section (system positioning, pipeline, 10 tools, 6 resources, tech stack, transport, client config)",
+        "DESIGN.md: Added MCP Server design (rationale, tool implementation pattern, tool-API mapping, transport details, error handling, deployment scenarios)",
+        "ROADMAP.md: Added v0.13.0 MCP Server + v0.14.0 Wiki Preview milestones",
+        "README.md: Version updated 0.9.0/0.10.0 -> 0.13.0, added Phase 13-16 to status table",
+        "PROCESS.md: Created project progress tracking document (all PRs, current work, pending tasks)",
+        "state.json: Added MCP to storage_options, updated task_queue and recent_changes",
+        "WORK_LOG.md: Added MCP design completion entry",
+        "Tech stack: rmcp v0.16+ (official Rust MCP SDK), schemars (JSON Schema), stdio + SSE transport",
+        "Architecture: Independent crate memoryos-mcp as new driving adapter in hexagonal architecture"
+      ]
+    },
     {
       "date": "2026-02-20",
       "author": "Devin",
