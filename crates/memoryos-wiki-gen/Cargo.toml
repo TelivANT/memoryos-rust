@@ -54,7 +54,7 @@ sha2 = "0.10"
 toml = "0.8"
 
 # Storage
-git2 = "0.19"
+git2 = "0.20"
 uuid = { version = "1", features = ["v4"] }
 aws-sdk-s3 = "1"
 aws-config = "1"
