@@ -117,9 +117,11 @@ impl StorageConnector for WebDavConnector {
             }
         }
 
-        if !entries.is_empty() {
-            entries.remove(0);
-        }
+        let request_path = path.trim_matches('/');
+        entries.retain(|e| {
+            let entry_path = e.path.trim_matches('/');
+            entry_path != request_path && !entry_path.is_empty()
+        });
 
         Ok(entries)
     }

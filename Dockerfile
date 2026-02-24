@@ -1,19 +1,28 @@
 # MemoryOS Gateway Dockerfile
-FROM rustlang/rust:nightly-slim AS builder
+FROM rust:slim-bookworm AS chef
 
-WORKDIR /build
-
-# 安装依赖
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && cargo install cargo-chef --locked
 
-# 复制源代码
+WORKDIR /build
+
+# Phase 1: Generate dependency recipe (changes only when Cargo.toml/lock change)
+FROM chef AS planner
 COPY Cargo.toml Cargo.lock ./
 COPY crates ./crates
+RUN cargo chef prepare --recipe-path recipe.json
 
-# 构建 release 版本
+# Phase 2: Build dependencies (cached unless recipe changes)
+FROM chef AS builder
+COPY --from=planner /build/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
+
+# Phase 3: Build application (only recompiles your code)
+COPY Cargo.toml Cargo.lock ./
+COPY crates ./crates
 RUN cargo build --release --bin memoryos-gateway
 
 # 运行时镜像

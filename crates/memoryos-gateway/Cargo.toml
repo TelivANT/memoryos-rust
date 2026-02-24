@@ -29,6 +29,9 @@ redis.workspace = true
 sha2 = "0.10"
 subtle = "2.6"
 async-trait.workspace = true
+base64 = "0.22"
+aes-gcm = "0.10"
+rand = "0.8"
 
 [features]
 integration-tests = []

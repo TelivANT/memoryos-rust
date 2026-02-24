@@ -1,3 +1,5 @@
+use aes_gcm::aead::{Aead, KeyInit, OsRng};
+use aes_gcm::{Aes256Gcm, Nonce};
 use axum::{
     extract::State,
     http::StatusCode,
@@ -5,10 +7,13 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use base64::engine::general_purpose::STANDARD as BASE64;
+use base64::Engine;
 use memoryos_wiki_gen::storage::{
     CosConnector, GitConnector, LocalConnector, ObsConnector, OssConnector, S3Connector,
     SftpConnector, StorageConnector, WebDavConnector,
 };
+use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
@@ -36,7 +41,7 @@ fn connectors_dir() -> PathBuf {
         .join("connectors")
 }
 
-fn obfuscate_key() -> [u8; 32] {
+fn derive_key() -> [u8; 32] {
     let seed = std::env::var("MEMORYOS_CONNECTOR_SECRET")
         .unwrap_or_else(|_| "memoryos-default-connector-key-change-me".to_string());
     let mut hasher = Sha256::new();
@@ -44,11 +49,28 @@ fn obfuscate_key() -> [u8; 32] {
     hasher.finalize().into()
 }
 
-fn xor_encrypt(data: &[u8], key: &[u8; 32]) -> Vec<u8> {
-    data.iter()
-        .enumerate()
-        .map(|(i, b)| b ^ key[i % 32])
-        .collect()
+fn aes_encrypt(plaintext: &[u8]) -> Option<String> {
+    let key_bytes = derive_key();
+    let cipher = Aes256Gcm::new_from_slice(&key_bytes).ok()?;
+    let mut nonce_bytes = [0u8; 12];
+    OsRng.fill_bytes(&mut nonce_bytes);
+    let nonce = Nonce::from_slice(&nonce_bytes);
+    let ciphertext = cipher.encrypt(nonce, plaintext).ok()?;
+    let mut combined = nonce_bytes.to_vec();
+    combined.extend_from_slice(&ciphertext);
+    Some(BASE64.encode(&combined))
+}
+
+fn aes_decrypt(encoded: &str) -> Option<Vec<u8>> {
+    let key_bytes = derive_key();
+    let cipher = Aes256Gcm::new_from_slice(&key_bytes).ok()?;
+    let combined = BASE64.decode(encoded).ok()?;
+    if combined.len() < 12 {
+        return None;
+    }
+    let (nonce_bytes, ciphertext) = combined.split_at(12);
+    let nonce = Nonce::from_slice(nonce_bytes);
+    cipher.decrypt(nonce, ciphertext).ok()
 }
 
 fn mask_sensitive(
@@ -59,8 +81,9 @@ fn mask_sensitive(
         .map(|(k, v)| {
             if SENSITIVE_FIELDS.contains(&k.as_str()) {
                 if let Some(s) = v.as_str() {
-                    if s.len() > 4 {
-                        let masked = format!("{}***", &s[..4]);
+                    let prefix: String = s.chars().take(4).collect();
+                    if prefix.len() == 4 {
+                        let masked = format!("{}***", prefix);
                         return (k.clone(), serde_json::Value::String(masked));
                     }
                 }
@@ -75,15 +98,14 @@ fn mask_sensitive(
 fn encrypt_config(
     config: &HashMap<String, serde_json::Value>,
 ) -> HashMap<String, serde_json::Value> {
-    let key = obfuscate_key();
     config
         .iter()
         .map(|(k, v)| {
             if SENSITIVE_FIELDS.contains(&k.as_str()) {
                 if let Some(s) = v.as_str() {
-                    let encrypted = xor_encrypt(s.as_bytes(), &key);
-                    let encoded = base64_encode(&encrypted);
-                    return (k.clone(), serde_json::json!({"__encrypted": encoded}));
+                    if let Some(encoded) = aes_encrypt(s.as_bytes()) {
+                        return (k.clone(), serde_json::json!({"__encrypted": encoded}));
+                    }
                 }
             }
             (k.clone(), v.clone())
@@ -94,14 +116,12 @@ fn encrypt_config(
 fn decrypt_config(
     config: &HashMap<String, serde_json::Value>,
 ) -> HashMap<String, serde_json::Value> {
-    let key = obfuscate_key();
     config
         .iter()
         .map(|(k, v)| {
             if let Some(obj) = v.as_object() {
                 if let Some(enc) = obj.get("__encrypted").and_then(|e| e.as_str()) {
-                    if let Some(decoded) = base64_decode(enc) {
-                        let decrypted = xor_encrypt(&decoded, &key);
+                    if let Some(decrypted) = aes_decrypt(enc) {
                         if let Ok(s) = String::from_utf8(decrypted) {
                             return (k.clone(), serde_json::Value::String(s));
                         }
@@ -111,71 +131,6 @@ fn decrypt_config(
             (k.clone(), v.clone())
         })
         .collect()
-}
-
-fn base64_encode(data: &[u8]) -> String {
-    const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut result = String::new();
-    for chunk in data.chunks(3) {
-        let b0 = chunk[0] as u32;
-        let b1 = if chunk.len() > 1 { chunk[1] as u32 } else { 0 };
-        let b2 = if chunk.len() > 2 { chunk[2] as u32 } else { 0 };
-        let triple = (b0 << 16) | (b1 << 8) | b2;
-        result.push(CHARS[((triple >> 18) & 0x3F) as usize] as char);
-        result.push(CHARS[((triple >> 12) & 0x3F) as usize] as char);
-        if chunk.len() > 1 {
-            result.push(CHARS[((triple >> 6) & 0x3F) as usize] as char);
-        } else {
-            result.push('=');
-        }
-        if chunk.len() > 2 {
-            result.push(CHARS[(triple & 0x3F) as usize] as char);
-        } else {
-            result.push('=');
-        }
-    }
-    result
-}
-
-fn base64_decode(input: &str) -> Option<Vec<u8>> {
-    const DECODE: [u8; 128] = {
-        let mut table = [255u8; 128];
-        let chars = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-        let mut i = 0;
-        while i < 64 {
-            table[chars[i] as usize] = i as u8;
-            i += 1;
-        }
-        table
-    };
-    let bytes: Vec<u8> = input.bytes().filter(|&b| b != b'=').collect();
-    let mut result = Vec::new();
-    for chunk in bytes.chunks(4) {
-        if chunk.len() < 2 {
-            break;
-        }
-        let vals: Vec<u8> = chunk
-            .iter()
-            .filter_map(|&b| {
-                if (b as usize) < 128 && DECODE[b as usize] != 255 {
-                    Some(DECODE[b as usize])
-                } else {
-                    None
-                }
-            })
-            .collect();
-        if vals.len() < 2 {
-            return None;
-        }
-        result.push((vals[0] << 2) | (vals[1] >> 4));
-        if vals.len() > 2 {
-            result.push((vals[1] << 4) | (vals[2] >> 2));
-        }
-        if vals.len() > 3 {
-            result.push((vals[2] << 6) | vals[3]);
-        }
-    }
-    Some(result)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

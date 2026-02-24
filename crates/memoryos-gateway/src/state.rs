@@ -146,12 +146,26 @@ impl AppState {
             .join(".memoryos");
         let _ = std::fs::create_dir_all(&data_dir);
 
-        let rbac_manager = Some(RbacManager::with_persistence(
-            data_dir.join("rbac_users.json"),
-        ));
-        let tenant_manager = Some(TenantManager::with_persistence(
-            data_dir.join("tenants.json"),
-        ));
+        let rbac_manager = match RbacManager::new(data_dir.join("rbac.db")).await {
+            Ok(mgr) => {
+                tracing::info!("RBAC manager initialized (SQLite)");
+                Some(mgr)
+            }
+            Err(e) => {
+                tracing::warn!("RBAC manager init failed, feature disabled: {}", e);
+                None
+            }
+        };
+        let tenant_manager = match TenantManager::new(data_dir.join("tenants.db")).await {
+            Ok(mgr) => {
+                tracing::info!("Tenant manager initialized (SQLite)");
+                Some(mgr)
+            }
+            Err(e) => {
+                tracing::warn!("Tenant manager init failed, feature disabled: {}", e);
+                None
+            }
+        };
 
         let event_bus: Option<Arc<dyn EventBus>> = {
             let stream_key =
