@@ -6,7 +6,7 @@
   "status": {
     "phase": "1.0 Release - Final Audit",
     "progress_percentage": 99,
-    "current_task": "Iterative audit loop (六条准则). PRs #42-#58 merged. Final polish before v1.0.0.",
+    "current_task": "Audit round 4 complete. PRs #42-#64 merged. Security audit updated to v1.0.0-rc. Doc sync done.",
     "is_blocked": false
   },
   "context": {
@@ -85,6 +85,9 @@
     "admin": [
       "POST /v1/admin/keys",
       "DELETE /v1/admin/keys/:key",
+      "GET /v1/admin/defense/stats",
+      "POST /v1/admin/defense/whitelist",
+      "DELETE /v1/admin/defense/unban/:ip",
       "GET /v1/admin/faq/candidates",
       "POST /v1/admin/faq/promote",
       "POST /v1/admin/faq/classify",
@@ -92,7 +95,7 @@
       "GET /v1/admin/faq/history",
       "GET /v1/admin/faq/stats"
     ],
-    "total_count": 49
+    "total_count": 52
   },
   "task_queue": {
     "done": [
@@ -108,14 +111,18 @@
       "PR #55: RBAC/Tenant JSON file persistence (removed SQLx)",
       "PR #56: P0-P2 audit fixes (20 items)",
       "PR #57: Release Checklist P0 (eliminate panics, fix configs, healthcheck)",
-      "PR #58: K8s health probes + dead code cleanup + doc sync"
+      "PR #58: K8s health probes + dead code cleanup + doc sync",
+      "PR #63: Audit Round 3 — defense mount, dead ChatRequest removal, MCP SSE hide",
+      "PR #64: S3 optional feature, global IP defense middleware, config.validate()"
     ],
     "in_progress": [],
     "todo": [
-      "v1.0.0: Final audit loop completion + release tag",
-      "v1.1.0: Defense system route mounting + Wiki preview",
-      "CLIP/Whisper multimodal integration (P2 backlog)",
-      "OpenTelemetry distributed tracing (P2 backlog)"
+      "v1.0.0: Final release tag",
+      "STM migration to Redis LRANGE (data correctness)",
+      "User profile extraction upgrade to LLM",
+      "Knowledge graph entity extraction upgrade to LLM",
+      "OpenTelemetry distributed tracing (P2 backlog)",
+      "CLIP/Whisper multimodal integration (P2 backlog)"
     ]
   }
 }

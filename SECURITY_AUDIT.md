@@ -1,8 +1,8 @@
 # Security Audit Report
 
 **Project**: MemoryOS-Rust  
-**Version**: 0.9.0  
-**Audit Date**: 2026-02-20  
+**Version**: v1.0.0-rc  
+**Audit Date**: 2026-02-20 (initial), 2026-02-25 (updated)  
 **Auditor**: Code Review  
 **Status**: 🟢 No Critical Issues Open
 
@@ -13,13 +13,19 @@
 | Severity | Count | Fixed | Remaining |
 |----------|-------|-------|-----------|
 | 🔴 P0 - Critical | 4 | 4 | 0 |
-| 🟡 P1 - High | 6 | 5 | 1 |
+| 🟡 P1 - High | 6 | 6 | 0 |
 | 🟢 P2 - Medium | 5 | 3 | 2 |
-| **Total** | **15** | **12** | **3** |
+| **Total** | **15** | **13** | **2** |
 
-**Risk Level**: 🟡 MEDIUM - All critical issues resolved, 80% complete
+**Risk Level**: 🟢 LOW - All critical and high issues resolved, 87% complete
 
-**Update**: 2026-02-20 - v0.9.0 技术债修复：AES-256-GCM 加密、审计日志持久化、GDPR 记录持久化
+**Remaining P2 issues**:
+- P2-14: 依赖版本统一 (low risk, engineering improvement)
+- P2-15: Core 层架构分离 (low risk, refactoring)
+
+**Update History**:
+- 2026-02-25: Updated to v1.0.0-rc. P1-5/6/9/10 confirmed fixed. Remediation plan updated.
+- 2026-02-20: v0.9.0 技术债修复：AES-256-GCM 加密、审计日志持久化、GDPR 记录持久化
 
 ---
 
@@ -342,46 +348,44 @@ pub async fn put(&self, query: String, embedding: Vec<f32>) {
 
 ---
 
-### 14. 依赖版本不统一
+### 14. 依赖版本不统一 ⏳ DEFERRED
 
-**Impact**: 依赖树膨胀
-
-**Fix**: 统一 redis 版本
+**Impact**: 依赖树膨胀  
+**Status**: Deferred — requires extensive compatibility testing across all crates  
+**Risk**: Low — no security impact, only build size
 
 ---
 
-### 15. Core 层依赖过重
+### 15. Core 层依赖过重 ⏳ DEFERRED
 
-**Impact**: 架构不清晰
-
-**Fix**: 分离 HTTP 映射到 gateway
+**Impact**: 架构不清晰  
+**Status**: Deferred — requires significant refactoring to move HTTP mapping from Core to Gateway  
+**Risk**: Low — no security impact, code organization concern
 
 ---
 
 ## 🚀 Remediation Plan
 
-### Phase 1: Immediate (本周)
+### Phase 1: Immediate ✅ COMPLETE
 - [x] Fix P0-1: Admin API 认证
 - [x] Fix P0-2: API Key 安全存储
 - [x] Fix P0-3: STM 清理逻辑
 - [x] Fix P0-4: STM 数据一致性（通过 P0-3 解决）
-- [ ] Fix P1-9: validate_key 过期检查（已在 P0-2 中实现）
+- [x] Fix P1-9: validate_key 过期检查（已在 P0-2 中实现）
 
-### Phase 2: Short-term (下周)
-- [ ] Fix P0-3: STM 清理逻辑
-- [ ] Fix P0-4: STM 改用 Redis
-- [ ] Fix P1-5: Gateway coordinator
-- [ ] Fix P1-6: 异步 pipeline
+### Phase 2: Short-term ✅ COMPLETE
+- [x] Fix P1-5: Gateway coordinator (PR #46 — embedding config wired)
+- [x] Fix P1-6: 异步 pipeline (PR #27 — EventBus → Worker)
 
-### Phase 3: Medium-term (本月)
-- [ ] Fix P1-7,8: 配置一致性
-- [ ] Fix P1-10: Worker pending 处理
-- [ ] Fix P2-11,12: 性能优化
+### Phase 3: Medium-term ✅ COMPLETE
+- [x] Fix P1-7,8: 配置一致性 (PR #42 — config validation, PR #46 — embedding config)
+- [x] Fix P1-10: Worker pending 处理 (PR #27 — pending entries first)
+- [x] Fix P2-11,12: 性能优化 (PR #27 — reqwest Client reuse, LRU fix)
 
-### Phase 4: Long-term (下季度)
-- [ ] Fix P2-13,14,15: 工程化改进
-- [ ] 完整安全审计
-- [ ] 渗透测试
+### Phase 4: Long-term (遗留)
+- [ ] Fix P2-14: 依赖版本统一 — 需要大量测试验证兼容性
+- [ ] Fix P2-15: Core 层架构分离 — HTTP 映射逻辑从 Core 移到 Gateway，需重构
+- [ ] 渗透测试 — 需专业安全团队
 
 ---
 
