@@ -53,7 +53,7 @@
 - 多租户数据隔离 + TenantManager (v0.12.0)
 - memoryos-admin 独立管理服务 (v0.12.0)
 - 企业安全加固: 常量时间认证、CORS 限制、并发安全 (v0.12.1 ~ v0.12.6)
-- Tenant/RBAC 迁移到 SQLite 持久化
+- Tenant/RBAC JSON 文件持久化 (移除 SQLx 依赖)
 
 ### Phase 5: Wiki 生成系统 + Storage Connectors
 - memoryos-wiki-gen crate 实现 (Phase 0-6 全管线)
@@ -148,7 +148,18 @@
 
 ## 🟢 当前进行中
 
-无。所有模块已完成。
+六条准则审计循环 (Round 3)。详见 `docs/RELEASE_CHECKLIST.md`。
+
+---
+
+## 最近 PR 记录 (v1.0.0-rc 审计阶段)
+
+| PR | 内容 | 状态 |
+|----|------|------|
+| #55 | RBAC/Tenant JSON 文件持久化，移除 SQLx | ✅ merged |
+| #56 | P0-P2 审计修复 (20 项) | ✅ merged |
+| #57 | Release Checklist P0: 消除 panic、修复 config、Dockerfile HEALTHCHECK | ✅ merged |
+| #58 | K8s 健康探针 /health/live + /health/ready、清理死代码、文档同步 | ✅ merged |
 
 ---
 
@@ -180,6 +191,7 @@
 | v0.12.0 ~ v0.12.6 | 2026-02-20 | 企业级 RBAC/多租户/Admin |
 | v0.13.0 | 2026-02-24 | MCP Server 实现 + Storage Connectors 17/17 |
 | v1.0.0-rc | 2026-02-24 | 1.0 全部 6 项任务完成 (PRs #42-#48), Storage Connectors (PR #51) |
+| v1.0.0-rc.2 | 2026-02-25 | 审计循环: PRs #55-#58 (JSON 持久化, 消除 panic, K8s 探针, 文档同步) |
 
 ---
 
