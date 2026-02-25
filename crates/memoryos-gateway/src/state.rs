@@ -110,6 +110,7 @@ impl AppState {
                 default_llm,
                 redis_storage.clone(),
             )
+            .with_short_term_store(redis_storage.clone())
             .with_embedding_config(&config.embedding),
         );
 
