@@ -2707,6 +2707,7 @@ version = "1.0.0-rc"
 dependencies = [
  "lazy_static",
  "prometheus",
+ "tracing",
 ]
 
 [[package]]

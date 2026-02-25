@@ -147,7 +147,9 @@ async fn main() -> Result<(), AppError> {
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("."))
         .join(".memoryos");
-    let _ = std::fs::create_dir_all(&data_dir);
+    if let Err(e) = std::fs::create_dir_all(&data_dir) {
+        tracing::warn!("Failed to create data dir {:?}: {}", data_dir, e);
+    }
 
     let audit_path = data_dir.join("audit.jsonl");
     let gdpr_path = data_dir.join("gdpr.json");

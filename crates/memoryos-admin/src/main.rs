@@ -39,7 +39,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|| std::path::PathBuf::from("."))
         .join(".memoryos");
-    let _ = std::fs::create_dir_all(&data_dir);
+    if let Err(e) = std::fs::create_dir_all(&data_dir) {
+        tracing::warn!("Failed to create data dir {:?}: {}", data_dir, e);
+    }
 
     let audit_path = data_dir.join("audit.jsonl");
     let audit_logger = Arc::new(AuditLogger::new(AuditConfig {

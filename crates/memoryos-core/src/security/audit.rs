@@ -19,7 +19,9 @@ impl FileAuditBackend {
     pub fn new(path: &str) -> Self {
         let path = PathBuf::from(path);
         if let Some(parent) = path.parent() {
-            let _ = std::fs::create_dir_all(parent);
+            if let Err(e) = std::fs::create_dir_all(parent) {
+                tracing::warn!("Failed to create audit dir {:?}: {}", parent, e);
+            }
         }
         let writer = std::fs::OpenOptions::new()
             .create(true)

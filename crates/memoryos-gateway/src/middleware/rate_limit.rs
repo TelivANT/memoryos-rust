@@ -94,12 +94,14 @@ pub async fn rate_limit_middleware(req: Request, next: Next) -> Result<Response,
             .into_response();
         // Standard rate-limit headers so clients can self-throttle
         let headers = response.headers_mut();
-        headers.insert("Retry-After", "60".parse().unwrap());
+        headers.insert("Retry-After", axum::http::HeaderValue::from_static("60"));
+        if let Ok(val) = axum::http::HeaderValue::from_str(&LIMITER.max_requests.to_string()) {
+            headers.insert("X-RateLimit-Limit", val);
+        }
         headers.insert(
-            "X-RateLimit-Limit",
-            LIMITER.max_requests.to_string().parse().unwrap(),
+            "X-RateLimit-Remaining",
+            axum::http::HeaderValue::from_static("0"),
         );
-        headers.insert("X-RateLimit-Remaining", "0".parse().unwrap());
         return Err(response);
     }
 
