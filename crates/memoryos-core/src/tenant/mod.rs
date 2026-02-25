@@ -57,18 +57,32 @@ impl TenantManager {
         let tenants = self.tenants.read().await;
         let list: Vec<&Tenant> = tenants.values().collect();
         if let Ok(data) = serde_json::to_string_pretty(&list) {
-            let _ = tokio::fs::write(&self.persist_path, data).await;
+            if let Err(e) = tokio::fs::write(&self.persist_path, data).await {
+                tracing::warn!("Tenant persist failed: {}", e);
+            }
         }
     }
 
     pub async fn create_tenant(&self, tenant: Tenant) -> Result<(), String> {
-        {
-            let mut tenants = self.tenants.write().await;
-            if tenants.contains_key(&tenant.id) {
-                return Err(format!("Tenant '{}' already exists", tenant.id));
-            }
-            tenants.insert(tenant.id.clone(), tenant);
+        // Validate tenant ID format
+        if tenant.id.is_empty() || tenant.id.len() > 128 {
+            return Err("Tenant ID must be 1-128 characters".to_string());
         }
+        if !tenant
+            .id
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.')
+        {
+            return Err(
+                "Tenant ID must be alphanumeric with hyphens/underscores/dots only".to_string(),
+            );
+        }
+        let mut tenants = self.tenants.write().await;
+        if tenants.contains_key(&tenant.id) {
+            return Err(format!("Tenant '{}' already exists", tenant.id));
+        }
+        tenants.insert(tenant.id.clone(), tenant);
+        drop(tenants);
         self.persist().await;
         Ok(())
     }
@@ -89,33 +103,32 @@ impl TenantManager {
         api_rate_limit: Option<u32>,
         enabled: Option<bool>,
     ) -> bool {
-        let found = {
-            let mut tenants = self.tenants.write().await;
-            if let Some(t) = tenants.get_mut(tenant_id) {
-                if let Some(v) = name {
-                    t.name = v;
-                }
-                if let Some(v) = description {
-                    t.description = v;
-                }
-                if let Some(v) = max_users {
-                    t.max_users = v;
-                }
-                if let Some(v) = storage_quota_mb {
-                    t.storage_quota_mb = v;
-                }
-                if let Some(v) = api_rate_limit {
-                    t.api_rate_limit = v;
-                }
-                if let Some(v) = enabled {
-                    t.enabled = v;
-                }
-                t.updated_at = chrono::Utc::now().to_rfc3339();
-                true
-            } else {
-                false
+        let mut tenants = self.tenants.write().await;
+        let found = if let Some(t) = tenants.get_mut(tenant_id) {
+            if let Some(v) = name {
+                t.name = v;
             }
+            if let Some(v) = description {
+                t.description = v;
+            }
+            if let Some(v) = max_users {
+                t.max_users = v;
+            }
+            if let Some(v) = storage_quota_mb {
+                t.storage_quota_mb = v;
+            }
+            if let Some(v) = api_rate_limit {
+                t.api_rate_limit = v;
+            }
+            if let Some(v) = enabled {
+                t.enabled = v;
+            }
+            t.updated_at = chrono::Utc::now().to_rfc3339();
+            true
+        } else {
+            false
         };
+        drop(tenants);
         if found {
             self.persist().await;
         }
@@ -123,10 +136,9 @@ impl TenantManager {
     }
 
     pub async fn delete_tenant(&self, tenant_id: &str) -> bool {
-        let removed = {
-            let mut tenants = self.tenants.write().await;
-            tenants.remove(tenant_id).is_some()
-        };
+        let mut tenants = self.tenants.write().await;
+        let removed = tenants.remove(tenant_id).is_some();
+        drop(tenants);
         if removed {
             self.persist().await;
         }

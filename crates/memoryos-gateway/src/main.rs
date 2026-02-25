@@ -108,8 +108,11 @@ async fn main() -> Result<(), AppError> {
         ))
         .with_state(state_arc.clone());
 
-    // FAQ 管理路由（独立 state，嵌套到 admin 路径下）
-    let faq_routes = create_faq_routes(faq_state);
+    // FAQ 管理路由（独立 state，嵌套到 admin 路径下，需要 admin 权限）
+    let faq_routes = create_faq_routes(faq_state).layer(axum::middleware::from_fn_with_state(
+        state_arc.clone(),
+        middleware::admin_only,
+    ));
 
     // Graph 路由
     let graph_state = GraphState {
@@ -180,10 +183,12 @@ async fn main() -> Result<(), AppError> {
     let wiki_routes = create_wiki_routes(wiki_state);
 
     // Defense routes (v1.1 — IP ban/whitelist management, admin-only)
-    let defense_routes = state
-        .defense
-        .as_ref()
-        .map(|d| create_defense_routes(d.clone()));
+    let defense_routes = state.defense.as_ref().map(|d| {
+        create_defense_routes(d.clone()).layer(axum::middleware::from_fn_with_state(
+            state_arc.clone(),
+            middleware::admin_only,
+        ))
+    });
 
     // All routes that require authentication (including nested sub-routes)
     let authed_routes = Router::new()

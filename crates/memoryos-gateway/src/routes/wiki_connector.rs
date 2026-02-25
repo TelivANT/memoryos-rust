@@ -47,8 +47,13 @@ fn connectors_dir() -> PathBuf {
 }
 
 fn derive_key() -> [u8; 32] {
-    let seed = std::env::var("MEMORYOS_CONNECTOR_SECRET")
-        .unwrap_or_else(|_| "memoryos-default-connector-key-change-me".to_string());
+    let seed = std::env::var("MEMORYOS_CONNECTOR_SECRET").unwrap_or_else(|_| {
+        tracing::warn!(
+            "MEMORYOS_CONNECTOR_SECRET not set — using default key. \
+             Set this env var in production to protect stored connector credentials."
+        );
+        "memoryos-default-connector-key-change-me".to_string()
+    });
     let mut hasher = Sha256::new();
     hasher.update(seed.as_bytes());
     hasher.finalize().into()
@@ -882,6 +887,20 @@ async fn browse_directory(
     State(state): State<super::wiki::WikiState>,
     Json(req): Json<BrowseDirectoryRequest>,
 ) -> impl IntoResponse {
+    // Reject path traversal attempts
+    if req.path.contains("..") {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(BrowseDirectoryResponse {
+                success: false,
+                path: req.path,
+                entries: vec![],
+                total: 0,
+                error: Some("Path must not contain '..'".to_string()),
+            }),
+        );
+    }
+
     cleanup_expired_sessions(&state.connector_sessions).await;
 
     let sessions = state.connector_sessions.read().await;
