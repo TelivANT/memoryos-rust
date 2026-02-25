@@ -1,0 +1,302 @@
+openapi: 3.0.3
+info:
+  title: MemoryOS API
+  description: |
+    MemoryOS Gateway API - OpenAI Compatible Memory-Enhanced LLM Gateway
+    
+    ## Features
+    - OpenAI compatible chat completions API
+    - Streaming support (SSE)
+    - Multi-tier memory system (STM/MTM/LTM)
+    - FAQ caching and auto-promotion
+    - Security shield (PII sanitization, compliance)
+    - Multi-tenant support
+    - RBAC authorization
+  version: 1.0.0-rc
+  contact:
+    name: MemoryOS Team
+  license:
+    name: Apache 2.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+  - url: https://api.memoryos.example.com
+    description: Production
+
+security:
+  - BearerAuth: []
+
+paths:
+  /v1/chat/completions:
+    post:
+      summary: Create chat completion
+      description: |
+        OpenAI compatible chat completions endpoint with memory enhancement.
+        Supports both streaming and non-streaming modes.
+      operationId: createChatCompletion
+      tags:
+        - Chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              basic:
+                summary: Basic chat request
+                value:
+                  model: gpt-4o-mini
+                  messages:
+                    - role: user
+                      content: Hello, how are you?
+              streaming:
+                summary: Streaming request
+                value:
+                  model: gpt-4o-mini
+                  messages:
+                    - role: user
+                      content: Tell me a story
+                  stream: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+            text/event-stream:
+              schema:
+                type: string
+                description: Server-Sent Events stream
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /v1/memory/add:
+    post:
+      summary: Add memory entry
+      description: Manually add a memory entry to user's memory system
+      operationId: addMemory
+      tags:
+        - Memory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - content
+              properties:
+                user_id:
+                  type: string
+                content:
+                  type: string
+                memory_type:
+                  type: string
+                  enum: [qa, faq, faq_candidate]
+      responses:
+        '200':
+          description: Memory added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  memory_id:
+                    type: string
+
+  /health/status:
+    get:
+      summary: Health check
+      description: Get service health status
+      operationId: healthCheck
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+  /health/live:
+    get:
+      summary: Liveness probe
+      description: Kubernetes liveness probe endpoint
+      operationId: livenessProbe
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Service is alive
+
+  /health/ready:
+    get:
+      summary: Readiness probe
+      description: Kubernetes readiness probe endpoint
+      operationId: readinessProbe
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Service is ready
+        '503':
+          description: Service is not ready
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: API Key authentication
+
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - model
+        - messages
+      properties:
+        model:
+          type: string
+          description: Model identifier
+          example: gpt-4o-mini
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        temperature:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 2
+          description: Sampling temperature
+        max_tokens:
+          type: integer
+          description: Maximum tokens to generate
+        stream:
+          type: boolean
+          default: false
+          description: Enable streaming mode
+
+    ChatMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum: [system, user, assistant]
+        content:
+          type: string
+
+    ChatResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          example: chat.completion
+        model:
+          type: string
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatChoice'
+        usage:
+          $ref: '#/components/schemas/Usage'
+
+    ChatChoice:
+      type: object
+      properties:
+        index:
+          type: integer
+        message:
+          $ref: '#/components/schemas/ChatMessage'
+        finish_reason:
+          type: string
+          enum: [stop, length, content_filter]
+
+    Usage:
+      type: object
+      properties:
+        prompt_tokens:
+          type: integer
+        completion_tokens:
+          type: integer
+        total_tokens:
+          type: integer
+
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded]
+        mode:
+          type: string
+        dependencies:
+          type: object
+          properties:
+            redis:
+              type: string
+              enum: [up, down]
+            qdrant:
+              type: string
+              enum: [up, down]
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            type:
+              type: string
+            message:
+              type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    RateLimited:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+tags:
+  - name: Chat
+    description: Chat completion endpoints
+  - name: Memory
+    description: Memory management endpoints
+  - name: Health
+    description: Health check endpoints
