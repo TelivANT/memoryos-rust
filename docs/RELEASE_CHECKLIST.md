@@ -253,4 +253,5 @@
 | #100 | AGENTS.md 文档 (Devin) | ✅ merged |
 | #102 | 六条准则审查 Round 8 | ✅ merged |
 | #103 | 更新 PR 合并记录 | ✅ merged |
-| #??? | 六条准则审查 Round 9 | 🔄 pending |
+| #104 | 六条准则审查 Round 9 | ✅ merged |
+| #??? | 修复剩余 hot-reload 文档声明 (DESIGN/COMPARISON/roadmap) | 🔄 pending |

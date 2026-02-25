@@ -243,8 +243,8 @@ tokio::spawn(async move {
 - `SystemTime`: 文件修改时间检测
 
 **优势**:
-- ✅ 无需重启
-- ✅ 5 秒自动生效
+- ⚠️ 受限 — AppState 持有启动时快照，大部分配置变更需重启
+- ⚠️ 详见 docs/CONFIG_HOT_RELOAD_LIMITATION.md
 - ✅ 无锁读取（高性能）
 - ✅ 支持 K8s ConfigMap
 

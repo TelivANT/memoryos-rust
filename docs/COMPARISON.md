@@ -317,7 +317,7 @@ GET  /v1/users/{user_id}/memories/
 
 ### 1. 配置热更新
 
-**MemoryOS-Rust**: ✅ 5 秒自动生效，无需重启  
+**MemoryOS-Rust**: ⚠️ 受限 — AppState 持有启动时快照，大部分配置变更需重启（见 docs/CONFIG_HOT_RELOAD_LIMITATION.md）  
 **Mem0**: ❌ 需要重启服务
 
 ### 2. 实时健康检查
