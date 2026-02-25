@@ -55,7 +55,7 @@ MemoryOS-Rust is a high-performance AI Agent memory management system built with
 | **LLM Adapters** | 10 | 10+ | Similar |
 | **Vector DBs** | 3 (Qdrant, Chroma, Pinecone) | 5+ | Good coverage |
 | **Graph Memory** | ✅ entity/relation extraction + graph query | ✅ Neo4j | Similar capabilities |
-| **Hot Config Reload** | ✅ 5s auto-refresh | ❌ | Unique feature |
+| **Hot Config Reload** | ⚠️ Limited (restart required) | ❌ | See docs/CONFIG_HOT_RELOAD_LIMITATION.md |
 | **Smart Routing** | ✅ Tier 0 FAQ + heuristic tiers | ⚠️ Basic | MemoryOS has Tier 0 |
 | **Production Ready** | Release candidate (pre v1.0) | ✅ Mature | Mem0 is more mature |
 

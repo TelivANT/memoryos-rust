@@ -12,6 +12,24 @@ impl LocalConnector {
     pub fn new(root: PathBuf) -> Self {
         Self { root }
     }
+
+    /// Validate that the resolved path stays within the root directory (path traversal prevention).
+    fn validate_path(&self, path: &str) -> Result<PathBuf> {
+        let full_path = self.root.join(path);
+        let canonical = full_path
+            .canonicalize()
+            .map_err(|e| crate::error::WikiGenError::Io(e))?;
+        let root_canonical = self
+            .root
+            .canonicalize()
+            .map_err(|e| crate::error::WikiGenError::Io(e))?;
+        if !canonical.starts_with(&root_canonical) {
+            return Err(crate::error::WikiGenError::Storage(
+                "Path traversal denied: path escapes root directory".to_string(),
+            ));
+        }
+        Ok(canonical)
+    }
 }
 
 #[async_trait]
@@ -21,20 +39,7 @@ impl StorageConnector for LocalConnector {
     }
 
     async fn list_files(&self, path: &str) -> Result<Vec<FileEntry>> {
-        let full_path = self.root.join(path);
-        // Prevent path traversal: resolved path must stay within root
-        let canonical = full_path
-            .canonicalize()
-            .map_err(|e| crate::error::WikiGenError::Io(e))?;
-        if !canonical.starts_with(
-            self.root
-                .canonicalize()
-                .map_err(|e| crate::error::WikiGenError::Io(e))?,
-        ) {
-            return Err(crate::error::WikiGenError::Storage(
-                "Path traversal denied: path escapes root directory".to_string(),
-            ));
-        }
+        let canonical = self.validate_path(path)?;
         let mut entries = Vec::new();
 
         let mut read_dir = tokio::fs::read_dir(&canonical).await?;
@@ -58,42 +63,15 @@ impl StorageConnector for LocalConnector {
     }
 
     async fn read_file(&self, path: &str) -> Result<Vec<u8>> {
-        let full_path = self.root.join(path);
-        let canonical = full_path
-            .canonicalize()
-            .map_err(|e| crate::error::WikiGenError::Io(e))?;
-        if !canonical.starts_with(
-            self.root
-                .canonicalize()
-                .map_err(|e| crate::error::WikiGenError::Io(e))?,
-        ) {
-            return Err(crate::error::WikiGenError::Storage(
-                "Path traversal denied: path escapes root directory".to_string(),
-            ));
-        }
+        let canonical = self.validate_path(path)?;
         Ok(tokio::fs::read(canonical).await?)
     }
 
     async fn exists(&self, path: &str) -> Result<bool> {
         let full_path = self.root.join(path);
-        // For exists check, canonicalize may fail if path doesn't exist
-        // Use the parent directory check instead
-        let normalized = full_path
-            .components()
-            .fold(std::path::PathBuf::new(), |mut acc, c| {
-                match c {
-                    std::path::Component::ParentDir => {
-                        acc.pop();
-                    }
-                    _ => acc.push(c),
-                }
-                acc
-            });
-        let root_canonical = self
-            .root
-            .canonicalize()
-            .map_err(|e| crate::error::WikiGenError::Io(e))?;
-        if !normalized.starts_with(&root_canonical) && !full_path.starts_with(&self.root) {
+        // For exists check, canonicalize may fail if path doesn't exist.
+        // Reject obvious traversal attempts, then delegate to try_exists.
+        if path.contains("..") {
             return Err(crate::error::WikiGenError::Storage(
                 "Path traversal denied".to_string(),
             ));
@@ -102,19 +80,7 @@ impl StorageConnector for LocalConnector {
     }
 
     async fn metadata(&self, path: &str) -> Result<FileMetadata> {
-        let full_path = self.root.join(path);
-        let canonical = full_path
-            .canonicalize()
-            .map_err(|e| crate::error::WikiGenError::Io(e))?;
-        if !canonical.starts_with(
-            self.root
-                .canonicalize()
-                .map_err(|e| crate::error::WikiGenError::Io(e))?,
-        ) {
-            return Err(crate::error::WikiGenError::Storage(
-                "Path traversal denied".to_string(),
-            ));
-        }
+        let canonical = self.validate_path(path)?;
         let meta = tokio::fs::metadata(canonical).await?;
 
         Ok(FileMetadata {
