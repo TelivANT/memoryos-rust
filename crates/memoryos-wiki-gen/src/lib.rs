@@ -13,6 +13,8 @@ pub mod llm_adapter;
 pub mod llm_gen;
 pub mod manifest;
 pub mod page_builder;
+// Tree-sitter visitor functions require multiple context parameters for recursive AST traversal
+#[allow(clippy::too_many_arguments)]
 pub mod parser;
 pub mod storage;
 pub mod wiki_index;
@@ -148,7 +150,7 @@ impl WikiGenerator {
             ProgressStyle::with_template(
                 "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}",
             )
-            .unwrap()
+            .expect("BUG: invalid progress bar template")
             .progress_chars("#>-"),
         );
 
