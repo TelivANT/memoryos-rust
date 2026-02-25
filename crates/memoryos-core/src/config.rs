@@ -480,6 +480,7 @@ mod tests {
                 worker_threads: 4,
                 timeout_seconds: 60,
                 rate_limit_per_minute: 100,
+                allowed_origins: vec![],
             },
             llm: LlmConfig {
                 default_provider: "openai".to_string(),
