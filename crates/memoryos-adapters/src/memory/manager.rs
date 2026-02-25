@@ -4,7 +4,9 @@ use async_trait::async_trait;
 use memoryos_core::{
     AppError, KnowledgeItem, LongTermMemory, MemoryContext, Message, MidTermSegment, UserProfile,
 };
-use memoryos_ports::{ConcurrencyControl, LlmAdapter, MemoryManager, VectorStorage};
+use memoryos_ports::{
+    ConcurrencyControl, LlmAdapter, MemoryManager, ShortTermStorage, VectorStorage,
+};
 use reqwest::StatusCode;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -54,6 +56,7 @@ impl EmbeddingCache {
 
 pub struct DefaultMemoryManager {
     vector_store: Arc<dyn VectorStorage>,
+    short_term_store: Option<Arc<dyn ShortTermStorage>>,
     write_coordinator: Option<Arc<dyn ConcurrencyControl>>,
     history_storage: Option<Arc<dyn memoryos_ports::HistoryStorage>>,
     llm: Arc<dyn LlmAdapter>,
@@ -172,6 +175,7 @@ impl DefaultMemoryManager {
 
         Self {
             vector_store,
+            short_term_store: None,
             write_coordinator: None,
             history_storage: None,
             llm,
@@ -198,6 +202,13 @@ impl DefaultMemoryManager {
         history_storage: Arc<dyn memoryos_ports::HistoryStorage>,
     ) -> Self {
         self.history_storage = Some(history_storage);
+        self
+    }
+
+    /// Use Redis (LPUSH/LRANGE) for short-term memory instead of vector DB zero-vector search.
+    /// This guarantees correct ordering and retrieval of the latest N messages.
+    pub fn with_short_term_store(mut self, store: Arc<dyn ShortTermStorage>) -> Self {
+        self.short_term_store = Some(store);
         self
     }
 
@@ -245,6 +256,7 @@ impl DefaultMemoryManager {
 
         Self {
             vector_store,
+            short_term_store: None,
             write_coordinator: Some(write_coordinator),
             history_storage: None,
             llm,
@@ -281,6 +293,7 @@ impl DefaultMemoryManager {
 
         Self {
             vector_store,
+            short_term_store: None,
             write_coordinator: Some(write_coordinator),
             history_storage: None,
             llm,
@@ -666,9 +679,14 @@ impl MemoryManager for DefaultMemoryManager {
         let message_id = format!("msg_{}", uuid::Uuid::now_v7());
 
         let operation_result = async {
-            self.vector_store
-                .add_short_term_message(user_id, message)
-                .await?;
+            // STM write: prefer Redis (correct LPUSH/LRANGE ordering)
+            if let Some(stm) = &self.short_term_store {
+                stm.add_message(user_id, message).await?;
+            } else {
+                self.vector_store
+                    .add_short_term_message(user_id, message)
+                    .await?;
+            }
 
             // 记录历史
             if let Some(history) = &self.history_storage {
@@ -727,11 +745,14 @@ impl MemoryManager for DefaultMemoryManager {
     ) -> Result<MemoryContext, AppError> {
         info!("Retrieving context for user: {}", user_id);
 
-        // 1. Get short-term memory
-        let short_term = self
-            .vector_store
-            .get_short_term_messages(user_id, self.short_term_limit)
-            .await?;
+        // 1. Get short-term memory — prefer Redis (correct ordering)
+        let short_term = if let Some(stm) = &self.short_term_store {
+            stm.get_recent(user_id, self.short_term_limit).await?
+        } else {
+            self.vector_store
+                .get_short_term_messages(user_id, self.short_term_limit)
+                .await?
+        };
 
         // 2. Search mid-term memory
         let query_embedding = self.generate_embedding(query).await?;
@@ -755,11 +776,14 @@ impl MemoryManager for DefaultMemoryManager {
 impl DefaultMemoryManager {
     /// 检查并执行 STM → MTM consolidation
     async fn check_and_consolidate_internal(&self, user_id: &str) -> Result<(), AppError> {
-        // 获取 STM 中的消息数量
-        let recent_messages = self
-            .vector_store
-            .get_short_term_messages(user_id, self.short_term_capacity)
-            .await?;
+        // Get STM messages — prefer Redis
+        let recent_messages = if let Some(stm) = &self.short_term_store {
+            stm.get_recent(user_id, self.short_term_capacity).await?
+        } else {
+            self.vector_store
+                .get_short_term_messages(user_id, self.short_term_capacity)
+                .await?
+        };
 
         // 如果 STM 达到容量，触发 consolidation
         if recent_messages.len() >= self.short_term_capacity {
@@ -831,25 +855,41 @@ impl DefaultMemoryManager {
             keep_count, user_id
         );
 
-        // 清空 STM
-        self.vector_store.clear_short_term(user_id).await?;
-
-        // 重新写入最近的消息
-        if keep_count > 0 {
-            let recent_messages: Vec<_> = messages
-                .iter()
-                .rev()
-                .take(keep_count)
-                .rev()
-                .cloned()
-                .collect();
-            for msg in recent_messages {
-                self.vector_store
-                    .add_short_term_message(user_id, msg)
-                    .await?;
+        // Clear STM — prefer Redis
+        if let Some(stm) = &self.short_term_store {
+            stm.clear(user_id).await?;
+            // Re-add recent messages to Redis
+            if keep_count > 0 {
+                let recent_messages: Vec<_> = messages
+                    .iter()
+                    .rev()
+                    .take(keep_count)
+                    .rev()
+                    .cloned()
+                    .collect();
+                for msg in recent_messages {
+                    stm.add_message(user_id, msg).await?;
+                }
             }
-            info!("Re-added {} recent messages to STM", keep_count);
+        } else {
+            self.vector_store.clear_short_term(user_id).await?;
+            // Re-add recent messages to vector store
+            if keep_count > 0 {
+                let recent_messages: Vec<_> = messages
+                    .iter()
+                    .rev()
+                    .take(keep_count)
+                    .rev()
+                    .cloned()
+                    .collect();
+                for msg in recent_messages {
+                    self.vector_store
+                        .add_short_term_message(user_id, msg)
+                        .await?;
+                }
+            }
         }
+        info!("Re-added {} recent messages to STM", keep_count);
 
         Ok(())
     }

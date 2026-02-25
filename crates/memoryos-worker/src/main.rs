@@ -73,7 +73,8 @@ async fn main() -> Result<(), AppError> {
     )?);
     let qdrant_storage = Arc::new(QdrantStorage::new(&app_config.storage.vector.url).await?);
     let memory_manager: Arc<dyn MemoryManager> = Arc::new(
-        DefaultMemoryManager::new_with_coordinator(qdrant_storage, llm, redis_storage)
+        DefaultMemoryManager::new_with_coordinator(qdrant_storage, llm, redis_storage.clone())
+            .with_short_term_store(redis_storage)
             .with_embedding_config(&app_config.embedding),
     );
 
