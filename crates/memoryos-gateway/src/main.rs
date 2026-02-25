@@ -241,7 +241,22 @@ async fn main() -> Result<(), AppError> {
         app
     };
 
+    // Add CORS middleware
+    let cors = tower_http::cors::CorsLayer::new()
+        .allow_origin(tower_http::cors::Any)
+        .allow_methods([
+            axum::http::Method::GET,
+            axum::http::Method::POST,
+            axum::http::Method::PUT,
+            axum::http::Method::DELETE,
+            axum::http::Method::OPTIONS,
+        ])
+        .allow_headers(tower_http::cors::Any)
+        .allow_credentials(false);
+
     let app = app
+        .layer(cors)
+        .layer(axum::extract::DefaultBodyLimit::max(10 * 1024 * 1024)) // 10MB limit
         .layer(axum::middleware::from_fn_with_state(
             state_arc.clone(),
             middleware::rbac_middleware,
@@ -288,13 +303,43 @@ async fn main() -> Result<(), AppError> {
             listener,
             app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
         )
+        .with_graceful_shutdown(shutdown_signal())
         .await
         .map_err(|e| AppError::Internal(format!("Server error: {}", e)))?;
     } else {
         axum::serve(listener, app)
+            .with_graceful_shutdown(shutdown_signal())
             .await
             .map_err(|e| AppError::Internal(format!("Server error: {}", e)))?;
     }
 
     Ok(())
+}
+
+async fn shutdown_signal() {
+    use tokio::signal;
+
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+
+    tracing::info!("Shutdown signal received, starting graceful shutdown");
 }
