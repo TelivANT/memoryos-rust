@@ -241,12 +241,6 @@ impl StorageConnector for SftpConnector {
             .map_err(|_| WikiGenError::Storage("SFTP worker dropped".to_string()))?
     }
 
-    async fn clone_to_temp(&self) -> Result<PathBuf> {
-        Err(WikiGenError::Storage(
-            "SFTP does not support clone_to_temp".to_string(),
-        ))
-    }
-
     fn name(&self) -> &str {
         "sftp"
     }

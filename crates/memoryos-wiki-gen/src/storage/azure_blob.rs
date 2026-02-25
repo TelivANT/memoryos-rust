@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use reqwest::Client;
-use std::path::PathBuf;
 
 use crate::error::{Result, WikiGenError};
 
@@ -219,12 +218,6 @@ impl StorageConnector for AzureBlobConnector {
             modified: None,
             is_dir: false,
         })
-    }
-
-    async fn clone_to_temp(&self) -> Result<PathBuf> {
-        Err(WikiGenError::Storage(
-            "Azure Blob does not support clone_to_temp".to_string(),
-        ))
     }
 
     fn name(&self) -> &str {

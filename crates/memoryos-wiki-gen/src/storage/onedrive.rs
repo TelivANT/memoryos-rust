@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use reqwest::Client;
-use std::path::PathBuf;
 
 use crate::error::{Result, WikiGenError};
 
@@ -162,12 +161,6 @@ impl StorageConnector for OneDriveConnector {
             modified: None,
             is_dir: body.get("folder").is_some(),
         })
-    }
-
-    async fn clone_to_temp(&self) -> Result<PathBuf> {
-        Err(WikiGenError::Storage(
-            "OneDrive does not support clone_to_temp".to_string(),
-        ))
     }
 
     fn name(&self) -> &str {

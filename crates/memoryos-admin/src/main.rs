@@ -47,8 +47,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..AuditConfig::default()
     }));
 
-    let rbac_path = data_dir.join("rbac.db");
-    let tenant_path = data_dir.join("tenants.db");
+    let rbac_path = data_dir.join("rbac_users.json");
+    let tenant_path = data_dir.join("tenants.json");
 
     let admin_token = std::env::var("ADMIN_TOKEN").unwrap_or_default();
     if admin_token.is_empty() {

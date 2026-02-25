@@ -36,8 +36,14 @@ pub trait StorageConnector: Send + Sync {
     /// Get file metadata
     async fn metadata(&self, path: &str) -> Result<FileMetadata>;
 
-    /// Clone to temp directory (optional)
-    async fn clone_to_temp(&self) -> Result<PathBuf>;
+    /// Clone to temp directory.
+    /// Default: returns "not supported" error. Override for connectors that support local cloning (e.g. Git, Local).
+    async fn clone_to_temp(&self) -> Result<PathBuf> {
+        Err(crate::error::WikiGenError::Storage(format!(
+            "{} does not support clone_to_temp",
+            self.name()
+        )))
+    }
 
     /// Connector name
     fn name(&self) -> &str;

@@ -19,11 +19,11 @@ enum TransportMode {
 #[derive(Parser, Debug)]
 #[command(name = "memoryos-mcp", about = "MemoryOS MCP Server")]
 struct Cli {
-    /// Transport mode: stdio or sse
+    /// Transport mode: stdio (recommended) or sse (not yet implemented)
     #[arg(long, default_value = "stdio")]
     transport: TransportMode,
 
-    /// SSE listen address (only used with --transport sse)
+    /// SSE listen address (only used with --transport sse, not yet implemented)
     #[arg(long, default_value = "127.0.0.1:3001")]
     sse_addr: SocketAddr,
 

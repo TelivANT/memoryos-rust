@@ -127,7 +127,13 @@ pub async fn chat_completions(
 
     // 4. Upstream Call
     let target_provider = match decision.tier {
-        RouteTier::Local => "local", // TODO: Should come from config
+        RouteTier::Local => state
+            .config
+            .router
+            .local_backends
+            .first()
+            .map(|s| s.as_str())
+            .unwrap_or(&state.config.llm.default_provider),
         RouteTier::Cloud => &state.config.llm.default_provider,
         _ => return Err(AppError::Internal("Invalid route tier".to_string())),
     };

@@ -69,8 +69,8 @@ pub async fn status(State(state): State<AppState>) -> Response {
     response
 }
 
-// TODO: Gateway 测试需要完整的集成环境，暂时禁用
-// 使用 integration-tests feature 启用
+// NOTE: Gateway health tests require full integration environment (Redis + Qdrant).
+// Enable with `integration-tests` feature flag.
 #[cfg(test)]
 #[cfg(feature = "integration-tests")]
 mod tests {

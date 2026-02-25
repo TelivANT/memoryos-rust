@@ -4,7 +4,7 @@ use memoryos_adapters::{
 };
 use memoryos_core::{
     config::AppConfig,
-    llm::{ContextInjector, ModelRouter, RouterConfig, StandardInjector, TieredRouter},
+    llm::{ModelRouter, RouterConfig, TieredRouter},
     rbac::RbacManager,
     security::{SecurityConfig, SecurityShield},
     tenant::TenantManager,
@@ -22,8 +22,6 @@ pub struct AppState {
     pub config: Arc<AppConfig>,
     pub router: Arc<dyn ModelRouter>,
     pub shield: Arc<SecurityShield>,
-    #[allow(dead_code)]
-    pub context_injector: Arc<dyn ContextInjector>,
     pub vector_store: Arc<dyn VectorStorage>,
     pub qdrant_storage: Arc<QdrantStorage>,
     pub redis_storage: Arc<RedisStorage>,
@@ -84,8 +82,6 @@ impl AppState {
             sensitive_keywords: config.router.sensitive_keywords.clone(),
         };
         let shield = Arc::new(SecurityShield::new(shield_config));
-
-        let context_injector = Arc::new(StandardInjector::new(2000));
 
         // 4. Init Memory Manager with Coordinator for idempotency
         let default_llm = providers
@@ -200,7 +196,6 @@ impl AppState {
             config: Arc::new(config),
             router,
             shield,
-            context_injector,
             vector_store: vector_store.clone(),
             qdrant_storage: vector_store,
             redis_storage,
