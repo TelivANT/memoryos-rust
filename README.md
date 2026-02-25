@@ -4,7 +4,7 @@ High-Performance AI Agent Memory Management System - Rust Implementation
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Rust](https://img.shields.io/badge/Rust-1.75+-orange.svg)](https://www.rust-lang.org/)
-[![Status](https://img.shields.io/badge/Status-Early_Development-yellow.svg)](./CHANGELOG.md)
+[![Status](https://img.shields.io/badge/Status-Release_Candidate-green.svg)](./CHANGELOG.md)
 [![GitHub stars](https://img.shields.io/github/stars/TelivANT/memoryos-rust?style=social)](https://github.com/TelivANT/memoryos-rust/stargazers)
 [![GitHub release](https://img.shields.io/github/v/release/TelivANT/memoryos-rust)](https://github.com/TelivANT/memoryos-rust/releases)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/TelivANT/memoryos-rust/ci.yml?branch=main)](https://github.com/TelivANT/memoryos-rust/actions)

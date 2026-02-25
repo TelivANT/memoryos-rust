@@ -25,22 +25,23 @@ COPY Cargo.toml Cargo.lock ./
 COPY crates ./crates
 RUN cargo build --release --bin memoryos-gateway
 
-# 运行时镜像
+# Runtime image
 FROM debian:bookworm-slim
 
-# 安装运行时依赖
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# 从构建阶段复制二进制文件
 COPY --from=builder /build/target/release/memoryos-gateway /app/
 
-# 暴露端口
 EXPOSE 8080
 
-# 运行
+HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
 CMD ["./memoryos-gateway"]

@@ -1,62 +1,50 @@
-# Production Configuration for MemoryOS
+# MemoryOS Production Configuration
+# Copy this file to config.toml and fill in your values.
+# All API keys should be set via environment variables (api_key_env) in production.
 
 [server]
 host = "0.0.0.0"
 port = 8080
-log_level = "info"  # Use "warn" in production for less noise
+worker_threads = 4
+timeout_seconds = 60
 
 [llm]
-# OpenAI
-openai_model = "gpt-4o-mini"
-openai_base_url = "https://api.openai.com/v1"
+default_provider = "openai"
+default_model = "gpt-4o-mini"
 
-# Gemini
-gemini_model = "gemini-1.5-flash"
-gemini_base_url = "https://generativelanguage.googleapis.com/v1beta"
+[llm.providers.openai]
+type = "openai"
+api_key_env = "OPENAI_API_KEY"
+base_url = "https://api.openai.com/v1"
 
-# Claude
-claude_model = "claude-3-5-sonnet-20241022"
-claude_base_url = "https://api.anthropic.com/v1"
+# Add more providers as needed:
+# [llm.providers.claude]
+# type = "claude"
+# api_key_env = "ANTHROPIC_API_KEY"
+# base_url = "https://api.anthropic.com/v1"
 
-# Ollama (local)
-ollama_model = "llama3.2"
-ollama_base_url = "http://localhost:11434"
-
-[redis]
+[storage.redis]
 url = "redis://redis:6379"
-# Connection pool settings
-max_connections = 10
-connection_timeout_ms = 5000
+ttl_seconds = 3600
+max_messages = 20
 
-[qdrant]
-url = "http://qdrant:6333"
-collection_name = "memoryos"
-# Vector settings
-vector_size = 1536
-distance = "Cosine"
+[storage.vector]
+url = "http://qdrant:6334"
 
-[performance]
-# Worker threads (default: number of CPU cores)
-worker_threads = 4
+[router]
+enable = true
+hot_threshold = 0.7
+max_local_tokens = 2000
+local_backends = []
+sensitive_keywords = []
 
-# Request timeout
-request_timeout_ms = 30000
+[embedding]
+api_key_env = "OPENAI_API_KEY"
+base_url = "https://api.openai.com/v1"
+model = "text-embedding-3-small"
 
-# Connection keep-alive
-keep_alive_seconds = 60
-
-[security]
-# Rate limiting
-rate_limit_requests = 100
-rate_limit_window_seconds = 60
-
-# CORS (if needed)
-# cors_origins = ["https://example.com"]
-
-[monitoring]
-# Metrics
-enable_metrics = true
-metrics_path = "/metrics"
-
-# Health checks
-health_check_interval_seconds = 30
+[auth]
+enabled = true
+# Generate keys: openssl rand -hex 32
+admin_keys = []  # REQUIRED: add at least one admin key
+api_keys = []    # REQUIRED: add at least one API key

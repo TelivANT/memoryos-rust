@@ -14,7 +14,7 @@ default_model = "gpt-4"
 
 [llm.providers.openai]
 type = "openai"
-api_key = "${OPENAI_API_KEY}"
+api_key_env = "OPENAI_API_KEY"
 base_url = "https://api.openai.com/v1"
 
 [storage.redis]

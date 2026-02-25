@@ -46,7 +46,7 @@ async fn main() -> Result<(), AppError> {
         .unwrap_or(false);
 
     // 3. Init App State (Connect to DBs)
-    let state = AppState::new((*config).clone()).await;
+    let state = AppState::new((*config).clone()).await?;
 
     if async_memory_enabled {
         tracing::info!(
@@ -139,7 +139,9 @@ async fn main() -> Result<(), AppError> {
     let multimodal_storage = std::sync::Arc::new(
         memoryos_adapters::multimodal::QdrantMultiModalStorage::new(&config.storage.vector.url)
             .await
-            .expect("Failed to init QdrantMultiModalStorage"),
+            .map_err(|e| {
+                AppError::Internal(format!("Failed to init QdrantMultiModalStorage: {}", e))
+            })?,
     );
     let multimodal_state = MultiModalState {
         storage: multimodal_storage,

@@ -8,6 +8,7 @@ use memoryos_core::{
     rbac::RbacManager,
     security::{SecurityConfig, SecurityShield},
     tenant::TenantManager,
+    AppError,
 };
 use memoryos_ports::{EventBus, HistoryStorage, LlmAdapter, MemoryManager, VectorStorage};
 use std::{collections::HashMap, sync::Arc};
@@ -39,12 +40,12 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub async fn new(config: AppConfig) -> Self {
+    pub async fn new(config: AppConfig) -> Result<Self, AppError> {
         // 1. Init Storage (Qdrant Only)
         let vector_store = Arc::new(
             QdrantStorage::new(&config.storage.vector.url)
                 .await
-                .expect("Failed to init Qdrant"),
+                .map_err(|e| AppError::Internal(format!("Failed to init Qdrant: {}", e)))?,
         );
 
         // 2. Init Providers Registry
@@ -89,7 +90,12 @@ impl AppState {
         // 4. Init Memory Manager with Coordinator for idempotency
         let default_llm = providers
             .get(&config.llm.default_provider)
-            .expect("Default LLM provider not found")
+            .ok_or_else(|| {
+                AppError::Config(format!(
+                    "Default LLM provider '{}' not found in [llm.providers]",
+                    config.llm.default_provider
+                ))
+            })?
             .clone();
 
         let redis_storage = Arc::new(
@@ -98,7 +104,7 @@ impl AppState {
                 config.storage.redis.ttl_seconds,
                 config.storage.redis.max_messages,
             )
-            .expect("Failed to init Redis storage"),
+            .map_err(|e| AppError::Internal(format!("Failed to init Redis storage: {}", e)))?,
         );
 
         let memory_manager: Arc<dyn MemoryManager> = Arc::new(
@@ -135,11 +141,13 @@ impl AppState {
 
         // 6. Init API Key Store (if using Qdrant)
         let api_key_store = if config.auth.use_redis_store {
-            Some(Arc::new(
-                ApiKeyStore::new(&config.storage.vector.url)
-                    .await
-                    .expect("Failed to init API Key Store"),
-            ))
+            match ApiKeyStore::new(&config.storage.vector.url).await {
+                Ok(store) => Some(Arc::new(store)),
+                Err(e) => {
+                    tracing::warn!("API Key Store init failed, feature disabled: {}", e);
+                    None
+                }
+            }
         } else {
             None
         };
@@ -188,7 +196,7 @@ impl AppState {
 
         let faq_matcher = Arc::new(RwLock::new(memoryos_core::OptimizedFaqMatcher::new(10_000)));
 
-        Self {
+        Ok(Self {
             config: Arc::new(config),
             router,
             shield,
@@ -206,7 +214,7 @@ impl AppState {
             faq_matcher,
             rbac_manager,
             tenant_manager,
-        }
+        })
     }
 
     pub fn get_adapter(&self, name: &str) -> Option<Arc<dyn LlmAdapter>> {
