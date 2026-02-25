@@ -13,7 +13,7 @@ mod routes;
 mod state;
 mod worker_monitor;
 
-use handlers::{chat_completions, health_check, health_status};
+use handlers::{chat_completions, health_check};
 use routes::faq::{create_faq_routes, FaqState};
 use routes::graph::{create_graph_routes, GraphState};
 use routes::memory_manage::{create_memory_manage_routes, MemoryManageState};
@@ -46,7 +46,7 @@ async fn main() -> Result<(), AppError> {
         .unwrap_or(false);
 
     // 3. Init App State (Connect to DBs)
-    let state = AppState::new((*config).clone()).await;
+    let state = AppState::new((*config).clone()).await?;
 
     if async_memory_enabled {
         tracing::info!(
@@ -139,7 +139,9 @@ async fn main() -> Result<(), AppError> {
     let multimodal_storage = std::sync::Arc::new(
         memoryos_adapters::multimodal::QdrantMultiModalStorage::new(&config.storage.vector.url)
             .await
-            .expect("Failed to init QdrantMultiModalStorage"),
+            .map_err(|e| {
+                AppError::Internal(format!("Failed to init QdrantMultiModalStorage: {}", e))
+            })?,
     );
     let multimodal_state = MultiModalState {
         storage: multimodal_storage,
@@ -211,7 +213,7 @@ async fn main() -> Result<(), AppError> {
 
     let app = Router::new()
         .route("/health", get(health_check))
-        .route("/health/status", get(health_status))
+        .route("/health/status", get(routes::health::status))
         .route("/metrics", get(routes::metrics::metrics_handler))
         .with_state(state)
         .merge(authed_routes)

@@ -5,16 +5,18 @@ worker_threads = 4
 timeout_seconds = 60
 
 [llm]
-default_provider = "gemini"
-default_model = "gemini-3-pro-preview"
+default_provider = "openai"
+default_model = "gpt-4o-mini"
 
-[llm.providers.gemini]
-type = "gemini"
-api_key = "<YOUR_GEMINI_API_KEY>"
-base_url = "<YOUR_GEMINI_BASE_URL>"  # e.g., http://your-server:3000/gemini
+[llm.providers.openai]
+type = "openai"
+base_url = "https://api.openai.com/v1"
+api_key_env = "OPENAI_API_KEY"
 
 [storage.redis]
 url = "redis://127.0.0.1:6379"
+ttl_seconds = 3600
+max_messages = 20
 
 [storage.vector]
 url = "http://127.0.0.1:6334"
@@ -27,15 +29,13 @@ local_backends = []
 sensitive_keywords = []
 
 [embedding]
-api_key = ""
-base_url = "https://api.openai.com/v1"
-model = "text-embedding-3-small"
+# api_key_env = "OPENAI_API_KEY"
+# base_url = "https://api.openai.com/v1"
+# model = "text-embedding-3-small"
 
-# API Key authentication
+[auth]
+enabled = false
 # Generate your own keys before deploying to production:
 #   openssl rand -hex 32
-[auth]
-enabled = true
-api_keys = [
-    "REPLACE_WITH_YOUR_OWN_KEY"
-]
+# admin_keys = ["your-admin-key"]
+# api_keys = ["your-api-key"]

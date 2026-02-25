@@ -54,7 +54,6 @@ pub async fn readiness(State(state): State<AppState>) -> Response {
 }
 
 /// Detailed dependency status endpoint.
-#[allow(dead_code)]
 pub async fn status(State(state): State<AppState>) -> Response {
     let health = state.current_health().await;
     let mut response = (
