@@ -139,5 +139,6 @@ impl FastApiExtractor {
 }
 
 fn normalize_path(path: &str) -> String {
-    path.replace("{", "{").replace("}", "}")
+    // FastAPI uses {param} natively — no transformation needed
+    path.to_string()
 }

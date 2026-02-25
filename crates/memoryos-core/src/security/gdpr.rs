@@ -3,18 +3,19 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tracing::info;
 
+/// Type alias for GDPR snapshot data (consents map + deletion requests)
+pub type GdprSnapshotData = (
+    std::collections::HashMap<String, Vec<ConsentRecord>>,
+    Vec<DeletionRequest>,
+);
+
 pub trait GdprStorageBackend: Send + Sync {
     fn save_snapshot(
         &self,
         consents: &std::collections::HashMap<String, Vec<ConsentRecord>>,
         deletion_requests: &[DeletionRequest],
     );
-    fn load_snapshot(
-        &self,
-    ) -> Option<(
-        std::collections::HashMap<String, Vec<ConsentRecord>>,
-        Vec<DeletionRequest>,
-    )>;
+    fn load_snapshot(&self) -> Option<GdprSnapshotData>;
 }
 
 pub struct FileGdprBackend {
@@ -48,12 +49,7 @@ impl GdprStorageBackend for FileGdprBackend {
         }
     }
 
-    fn load_snapshot(
-        &self,
-    ) -> Option<(
-        std::collections::HashMap<String, Vec<ConsentRecord>>,
-        Vec<DeletionRequest>,
-    )> {
+    fn load_snapshot(&self) -> Option<GdprSnapshotData> {
         if self.path.exists() {
             std::fs::read_to_string(&self.path)
                 .ok()

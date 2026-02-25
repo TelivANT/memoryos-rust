@@ -95,8 +95,8 @@ impl ConfluenceExportBackend {
                 html.push_str(&format!("<h3>{}</h3>\n", h3));
             } else if line == "---" {
                 html.push_str("<hr/>\n");
-            } else if line.starts_with("- ") {
-                html.push_str(&format!("<li>{}</li>\n", &line[2..]));
+            } else if let Some(item) = line.strip_prefix("- ") {
+                html.push_str(&format!("<li>{}</li>\n", item));
             } else if line.starts_with("**") && line.ends_with("**") {
                 html.push_str(&format!(
                     "<p><strong>{}</strong></p>\n",

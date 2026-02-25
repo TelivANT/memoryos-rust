@@ -41,6 +41,7 @@ rand = "0.8"
 default = ["s3"]
 s3 = ["memoryos-wiki-gen/s3"]
 integration-tests = []
+memory-route-tests-disabled = []
 
 [dev-dependencies]
 tower.workspace = true

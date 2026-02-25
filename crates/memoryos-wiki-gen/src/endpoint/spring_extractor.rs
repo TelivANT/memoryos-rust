@@ -192,5 +192,6 @@ fn combine_paths(class_path: &str, method_path: &str) -> String {
 }
 
 fn normalize_path(path: &str) -> String {
-    path.replace("{", "{").replace("}", "}")
+    // Spring uses {param} natively — no transformation needed
+    path.to_string()
 }
