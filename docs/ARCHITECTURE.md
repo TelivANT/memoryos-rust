@@ -175,7 +175,7 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph "Layer 1: IP Defense (reserved for v1.1)"
+    subgraph "Layer 1: IP Defense"
         TD["临时封禁 → Redis TTL"]
         PD["永久封禁 → Qdrant 持久化"]
         RL["滑动窗口限流"]
