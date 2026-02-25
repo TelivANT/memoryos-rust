@@ -64,15 +64,14 @@ pub async fn rate_limit_middleware(
     // Rate limit from config (default: 100 requests per minute)
     // Note: This uses a static limiter for simplicity. For production,
     // consider passing config through AppState or using a service layer.
-    static LIMITER: once_cell::sync::Lazy<RateLimiter> =
-        once_cell::sync::Lazy::new(|| {
-            // Read from env or use default
-            let limit = std::env::var("MEMORYOS_RATE_LIMIT")
-                .ok()
-                .and_then(|s| s.parse().ok())
-                .unwrap_or(100);
-            RateLimiter::new(limit, Duration::from_secs(60))
-        });
+    static LIMITER: once_cell::sync::Lazy<RateLimiter> = once_cell::sync::Lazy::new(|| {
+        // Read from env or use default
+        let limit = std::env::var("MEMORYOS_RATE_LIMIT")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(100);
+        RateLimiter::new(limit, Duration::from_secs(60))
+    });
 
     if !LIMITER.check(ip).await {
         return Err((
