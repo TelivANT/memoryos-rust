@@ -110,16 +110,17 @@ impl ModelRouter for TieredRouter {
         }
 
         // 1. Tier 0: Direct Hit (FAQ)
-        if ctx.is_faq_match && ctx.global_similarity >= self.config.direct_hit_threshold {
+        // Only return DirectHit if we actually have an answer to serve
+        if ctx.is_faq_match
+            && ctx.global_similarity >= self.config.direct_hit_threshold
+            && ctx.faq_answer.is_some()
+        {
             return Ok(RouteDecision {
                 tier: RouteTier::DirectHit,
                 endpoint: None,
                 model: "none".to_string(),
                 reason: format!("Direct Hit (Score: {:.2})", ctx.global_similarity),
-                direct_response: ctx
-                    .faq_answer
-                    .clone()
-                    .or_else(|| Some("FAQ Content Placeholder".to_string())),
+                direct_response: ctx.faq_answer.clone(),
             });
         }
 

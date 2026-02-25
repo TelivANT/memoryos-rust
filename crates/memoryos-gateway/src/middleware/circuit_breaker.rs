@@ -1,10 +1,3 @@
-use axum::{
-    body::Body,
-    http::{Request, StatusCode},
-    response::{IntoResponse, Response},
-    Json,
-};
-use serde_json::json;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
@@ -83,45 +76,28 @@ impl CircuitBreakerState {
     }
 }
 
-/// Circuit breaker middleware for external service calls
-pub async fn circuit_breaker_middleware(
-    req: Request<Body>,
-    next: axum::middleware::Next,
-) -> Response {
-    // Note: This is a simplified implementation
-    // For production, consider using a proper circuit breaker library
-    // or implementing per-service circuit breakers in AppState
-
-    let response = next.run(req).await;
-
-    // Check if response indicates external service failure
-    if response.status().is_server_error() {
-        // Could record failure here if we had access to circuit breaker state
-    }
-
-    response
-}
-
-/// Helper to wrap external service calls with circuit breaker
-pub async fn with_circuit_breaker<F, T, E>(breaker: &CircuitBreakerState, f: F) -> Result<T, E>
+/// Helper to wrap external service calls with circuit breaker.
+///
+/// Returns `None` when the circuit is open (caller should handle as service unavailable).
+/// Returns `Some(result)` when the call was attempted.
+pub async fn with_circuit_breaker<F, T, E>(
+    breaker: &CircuitBreakerState,
+    f: F,
+) -> Option<Result<T, E>>
 where
     F: std::future::Future<Output = Result<T, E>>,
 {
     if !breaker.should_allow().await {
-        // Circuit is open, fail fast
-        return Err(unsafe { std::mem::zeroed() }); // Placeholder, needs proper error type
+        // Circuit is open, fail fast — caller decides the error
+        return None;
     }
 
-    match f.await {
-        Ok(result) => {
-            breaker.record_success().await;
-            Ok(result)
-        }
-        Err(e) => {
-            breaker.record_failure().await;
-            Err(e)
-        }
+    let result = f.await;
+    match &result {
+        Ok(_) => breaker.record_success().await,
+        Err(_) => breaker.record_failure().await,
     }
+    Some(result)
 }
 
 #[cfg(test)]

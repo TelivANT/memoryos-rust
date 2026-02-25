@@ -1,5 +1,7 @@
 # MemoryOS-Rust
 
+> ⚠️ Diese Übersetzung kann hinter der [englischen README](README.md) zurückliegen. Im Zweifelsfall gilt die englische Version.
+
 Hochleistungs-KI-Agent-Speicherverwaltungssystem - Rust-Implementierung
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)

@@ -15,7 +15,7 @@ pub struct DeepSeekAdapter {
 impl DeepSeekAdapter {
     pub fn new(api_key: String, base_url: String) -> Self {
         Self {
-            client: Client::new(),
+            client: super::build_llm_http_client(),
             api_key,
             base_url,
         }

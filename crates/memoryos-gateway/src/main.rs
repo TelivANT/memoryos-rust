@@ -79,6 +79,14 @@ async fn main() -> Result<(), AppError> {
         .unwrap_or(true); // 默认启用
 
     if config_reload_enabled {
+        // KNOWN LIMITATION: Config hot-reload updates the ConfigManager's ArcSwap,
+        // but AppState holds an Arc<AppConfig> snapshot taken at startup. Changes to
+        // router thresholds, LLM providers, etc. require a restart to take effect.
+        // Hot-reload currently only affects components that re-read from ConfigManager
+        // (none at this time). See docs/CONFIG_HOT_RELOAD_LIMITATION.md for details.
+        tracing::warn!(
+            "Config hot-reload is enabled but has limited effect: AppState uses a startup snapshot. Most config changes require a restart."
+        );
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(5));
             loop {

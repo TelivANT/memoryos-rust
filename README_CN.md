@@ -1,5 +1,7 @@
 # MemoryOS-Rust
 
+> ⚠️ 此翻译可能落后于 [英文版 README](README.md)。如有疑问，请以英文版为准。
+
 高性能 AI Agent 记忆管理系统 - Rust 实现
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)

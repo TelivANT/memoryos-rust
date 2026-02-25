@@ -205,6 +205,26 @@ impl AppState {
 
         let faq_matcher = Arc::new(RwLock::new(memoryos_core::OptimizedFaqMatcher::new(10_000)));
 
+        // Populate FAQ Bloom filter from existing FAQ data in vector store
+        match vector_store
+            .search_segments_by_tags("system", &["faq".to_string()], 100)
+            .await
+        {
+            Ok(segments) => {
+                let mut matcher = faq_matcher.write().await;
+                let count = segments.len();
+                for seg in segments {
+                    matcher.add_faq(&seg.summary, seg.summary.clone());
+                }
+                if count > 0 {
+                    tracing::info!("FAQ Bloom filter populated with {} entries", count);
+                }
+            }
+            Err(e) => {
+                tracing::warn!("Failed to populate FAQ Bloom filter: {}", e);
+            }
+        }
+
         let defense =
             match IpDefenseSystem::new(&config.storage.redis.url, vector_store.client().clone()) {
                 Ok(d) => {
@@ -229,7 +249,14 @@ impl AppState {
             history_storage,
             worker_monitor,
             api_key_store,
-            async_memory_pipeline: false,
+            async_memory_pipeline: std::env::var("MEMORYOS_ASYNC_MEMORY_PIPELINE")
+                .map(|v| {
+                    matches!(
+                        v.trim().to_ascii_lowercase().as_str(),
+                        "1" | "true" | "yes" | "on"
+                    )
+                })
+                .unwrap_or(false),
             event_bus,
             faq_matcher,
             rbac_manager,

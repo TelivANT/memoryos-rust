@@ -7,7 +7,7 @@ use axum::{
         IntoResponse, Response,
     },
 };
-use futures::stream::{self, Stream, StreamExt};
+use futures::stream::{self, StreamExt};
 use memoryos_core::{
     llm::{RouteDecision, RouteTier, RouterContext},
     security::ComplianceResult,
@@ -34,6 +34,20 @@ pub async fn chat_completions(
         .get("X-User-ID")
         .and_then(|h| h.to_str().ok())
         .unwrap_or("default_user");
+
+    // Basic validation: user_id must be alphanumeric + hyphens/underscores, max 128 chars
+    if user_id.len() > 128
+        || (!user_id.is_empty()
+            && user_id != "default_user"
+            && !user_id
+                .chars()
+                .all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.'))
+    {
+        return Err(AppError::BadRequest(
+            "Invalid X-User-ID: must be alphanumeric with hyphens/underscores, max 128 chars"
+                .to_string(),
+        ));
+    }
 
     let last_msg = request
         .messages
@@ -103,9 +117,23 @@ pub async fn chat_completions(
         };
 
     let has_sensitive = matches!(compliance, ComplianceResult::RequiresLocal);
+    // Estimate token count: CJK characters are ~1-2 tokens each (avg 1.5),
+    // ASCII text is roughly len/4. We count CJK chars separately for accuracy.
+    let cjk_chars = last_msg
+        .chars()
+        .filter(|c| {
+            matches!(*c as u32,
+                0x4E00..=0x9FFF | 0x3400..=0x4DBF | 0xF900..=0xFAFF |
+                0x3000..=0x303F | 0x3040..=0x309F | 0x30A0..=0x30FF |
+                0xAC00..=0xD7AF
+            )
+        })
+        .count();
+    let ascii_bytes = last_msg.len().saturating_sub(cjk_chars * 3); // CJK chars are ~3 bytes in UTF-8
+    let estimated_tokens = (cjk_chars * 3 / 2) + (ascii_bytes / 4); // CJK: ~1.5 tok/char, ASCII: ~4 bytes/tok
     let router_ctx = RouterContext {
         query: last_msg.clone(),
-        token_count: last_msg.len() / 4,
+        token_count: estimated_tokens.max(1),
         global_similarity,
         is_faq_match,
         has_sensitive_keywords: has_sensitive,
@@ -156,7 +184,38 @@ pub async fn chat_completions(
         .get_adapter(target_provider)
         .ok_or_else(|| AppError::Config(format!("Provider '{}' not found", target_provider)))?;
 
-    let response = adapter.chat(request).await?;
+    // Use retry with circuit breaker for LLM calls
+    let retry_config = memoryos_core::retry::RetryConfig {
+        max_retries: 2,
+        initial_backoff_ms: 200,
+        max_backoff_ms: 3000,
+        backoff_multiplier: 2.0,
+    };
+    let adapter_ref = adapter.clone();
+    let request_clone = request.clone();
+    let breaker = state.circuit_breaker.clone();
+
+    let response = match crate::middleware::circuit_breaker::with_circuit_breaker(
+        &breaker,
+        memoryos_core::retry::retry_with_backoff(&retry_config, "llm_chat", {
+            let adapter_ref = adapter_ref.clone();
+            let req = request_clone;
+            move || {
+                let a = adapter_ref.clone();
+                let r = req.clone();
+                async move { a.chat(r).await }
+            }
+        }),
+    )
+    .await
+    {
+        Some(result) => result?,
+        None => {
+            return Err(AppError::ServiceUnavailable(
+                "LLM service circuit breaker is open — too many recent failures".to_string(),
+            ));
+        }
+    };
 
     if let Some(ref event_bus) = state.event_bus {
         let event_id = uuid::Uuid::now_v7().to_string();
@@ -181,7 +240,7 @@ pub async fn chat_completions(
 async fn chat_completions_stream(
     state: AppState,
     headers: HeaderMap,
-    request: ChatRequest,
+    mut request: ChatRequest,
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = headers
         .get("X-User-ID")
@@ -195,16 +254,48 @@ async fn chat_completions_stream(
         .map(|m| m.content.clone())
         .unwrap_or_default();
 
-    // Basic compliance check (same as non-streaming)
+    // Compliance check (same as non-streaming path)
     let compliance = state.shield.check_compliance(&last_msg);
-    if let ComplianceResult::Blocked(reason) = compliance {
-        return Err(AppError::BadRequest(reason));
+    match &compliance {
+        ComplianceResult::Blocked(reason) => {
+            warn!(
+                user_id = user_id.as_str(),
+                reason = reason.as_str(),
+                "Streaming request blocked by Security Shield"
+            );
+            return Err(AppError::BadRequest(reason.clone()));
+        }
+        ComplianceResult::RequiresLocal => {
+            info!(
+                user_id = user_id.as_str(),
+                "Streaming: Compliance enforced, routing to Local LLM"
+            );
+        }
+        ComplianceResult::Safe => {}
     }
 
-    // Get target provider (simplified routing for streaming)
-    let target_provider = &state.config.llm.default_provider;
+    // PII sanitization (same as non-streaming path)
+    if let Some(msg) = request.messages.last_mut() {
+        msg.content = state.shield.sanitize_pii(&msg.content);
+    }
+
+    // Route decision (same logic as non-streaming path)
+    let has_sensitive = matches!(compliance, ComplianceResult::RequiresLocal);
+    let target_provider = if has_sensitive {
+        // Sensitive content must go to local backend
+        state
+            .config
+            .router
+            .local_backends
+            .first()
+            .cloned()
+            .unwrap_or_else(|| state.config.llm.default_provider.clone())
+    } else {
+        state.config.llm.default_provider.clone()
+    };
+
     let adapter = state
-        .get_adapter(target_provider)
+        .get_adapter(&target_provider)
         .ok_or_else(|| AppError::Config(format!("Provider '{}' not found", target_provider)))?;
 
     // Call streaming API

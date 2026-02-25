@@ -1,5 +1,7 @@
 # MemoryOS-Rust
 
+> ⚠️ 이 번역은 [영문 README](README.md)보다 뒤처질 수 있습니다. 의문이 있으시면 영문 버전을 참조해 주세요.
+
 고성능 AI 에이전트 메모리 관리 시스템 - Rust 구현
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)

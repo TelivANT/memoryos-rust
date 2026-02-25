@@ -1,5 +1,7 @@
 # MemoryOS-Rust
 
+> ⚠️ この翻訳は [英語版 README](README.md) より遅れている可能性があります。最新情報は英語版をご確認ください。
+
 高性能AIエージェントメモリ管理システム - Rust実装
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)

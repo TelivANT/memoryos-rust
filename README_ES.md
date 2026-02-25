@@ -1,5 +1,7 @@
 # MemoryOS-Rust
 
+> ⚠️ Esta traducción puede estar desactualizada respecto al [README en inglés](README.md). En caso de duda, consulte la versión en inglés.
+
 Sistema de Gestión de Memoria de Agente IA de Alto Rendimiento - Implementación Rust
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
