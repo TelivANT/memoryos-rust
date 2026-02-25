@@ -6,7 +6,7 @@
   "status": {
     "phase": "1.0 Release - Final Audit",
     "progress_percentage": 99,
-    "current_task": "Audit round 4 complete. PRs #42-#64 merged. Security audit updated to v1.0.0-rc. Doc sync done.",
+    "current_task": "Audit round 7. PRs #42-#66 merged. STM Redis LRANGE fixed. Doc sync in progress.",
     "is_blocked": false
   },
   "context": {
@@ -113,12 +113,13 @@
       "PR #57: Release Checklist P0 (eliminate panics, fix configs, healthcheck)",
       "PR #58: K8s health probes + dead code cleanup + doc sync",
       "PR #63: Audit Round 3 — defense mount, dead ChatRequest removal, MCP SSE hide",
-      "PR #64: S3 optional feature, global IP defense middleware, config.validate()"
+      "PR #64: S3 optional feature, global IP defense middleware, config.validate()",
+      "PR #65: Audit Round 4 — security audit v1.0.0-rc, doc sync",
+      "PR #66: STM uses Redis LPUSH/LRANGE instead of vector DB zero-vector search"
     ],
     "in_progress": [],
     "todo": [
       "v1.0.0: Final release tag",
-      "STM migration to Redis LRANGE (data correctness)",
       "User profile extraction upgrade to LLM",
       "Knowledge graph entity extraction upgrade to LLM",
       "OpenTelemetry distributed tracing (P2 backlog)",

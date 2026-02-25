@@ -162,6 +162,8 @@
 | #58 | K8s 健康探针 /health/live + /health/ready、清理死代码、文档同步 | ✅ merged |
 | #63 | 审计 Round 3: defense 挂载、ChatRequest 死代码删除、MCP SSE 隐藏 | ✅ merged |
 | #64 | S3 optional feature、全局 IP defense middleware、config.validate() | ✅ merged |
+| #65 | 审计 Round 4: 安全审计报告更新到 v1.0.0-rc、文档同步 | ✅ merged |
+| #66 | STM 使用 Redis LPUSH/LRANGE 替代向量数据库零向量搜索 | ✅ merged |
 
 ---
 
@@ -195,6 +197,7 @@
 | v1.0.0-rc | 2026-02-24 | 1.0 全部 6 项任务完成 (PRs #42-#48), Storage Connectors (PR #51) |
 | v1.0.0-rc.2 | 2026-02-25 | 审计循环: PRs #55-#58 (JSON 持久化, 消除 panic, K8s 探针, 文档同步) |
 | v1.0.0-rc.3 | 2026-02-25 | PRs #63-#64: defense 挂载, S3 optional, 全局 IP 防御, config.validate() |
+| v1.0.0-rc.4 | 2026-02-25 | PRs #65-#66: 安全审计文档更新, STM Redis LRANGE 数据正确性修复 |
 
 ---
 
