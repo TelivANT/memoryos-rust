@@ -17,11 +17,11 @@
 | P0-3 | defense.clone().unwrap() 生产代码 | ✅ FIXED | #77 |
 | P0-4 | 无 streaming 支持 | ⏳ DEFERRED | 复杂功能，需单独实现 |
 
-### ✅ P1 工程质量 (6/12 已修复)
+### ✅ P1 工程质量 (7/12 已修复)
 
 | # | 问题 | 状态 | PR |
 |---|------|------|-----|
-| P1-5 | max_retries 配置未使用 | ⏳ TODO | - |
+| P1-5 | max_retries 配置未使用 | ⏳ DEFERRED | 需重构 LLM 适配器 |
 | P1-6 | Gateway 无 CORS 配置 | ✅ FIXED | #78 |
 | P1-7 | 无请求体大小限制 | ✅ FIXED | #78 |
 | P1-8 | 无 Request-ID | ✅ FIXED | #83 |
@@ -30,16 +30,16 @@
 | P1-11 | 无 Graceful Shutdown | ✅ FIXED | #78 |
 | P1-12 | Config Hot-Reload 无效 | ⏳ DEFERRED | 需重构 AppState |
 | P1-13 | dead_code 残留 4 处 | ✅ PASS | 已确认合理 |
-| P1-14 | metrics expect() 15 处 | ⏳ TODO | - |
+| P1-14 | metrics expect() 15 处 | ✅ PASS | lazy_static 初始化合理 |
 | P1-15 | 版本注释残留 | ✅ FIXED | #81 |
 | P1-16 | ARCHITECTURE.md 不一致 | ✅ FIXED | #81 |
 
-### ✅ P2 文档/部署 (2/20 已修复)
+### ✅ P2 文档/部署 (3/20 已修复)
 
 | # | 问题 | 状态 | PR |
 |---|------|------|-----|
 | P2-17 | README 缺少 MCP Server 说明 | ✅ FIXED | #80 |
-| P2-18 | 缺少 docker-compose 一键启动 | ⏳ TODO | - |
+| P2-18 | 缺少 docker-compose 一键启动 | ✅ PASS | 已实现 |
 | P2-19 | 无 OpenAPI/Swagger 规范 | ⏳ TODO | - |
 | P2-20 | Grafana 密码硬编码 | ✅ FIXED | #80 |
 
@@ -52,7 +52,8 @@
 - **PR #80**: P2-17,20 - MCP 文档、Grafana 密码环境变量
 - **PR #81**: P1-15,16 - 版本注释清理、文档更新
 - **PR #82**: 完整审计报告
-- **PR #83**: P1-8 - Request-ID 中间件 (待合并)
+- **PR #83**: P1-8 - Request-ID 中间件
+- **PR #84**: 审计进度更新
 
 ---
 
@@ -96,8 +97,9 @@
 - **安全审计**: 87% 完成 (0 P0/P1 遗留) ✅
 - **文档覆盖率**: 100% ✅
 - **P0 修复率**: 75% (3/4)
-- **P1 修复率**: 50% (6/12)
-- **总体修复率**: 53% (11/21)
+- **P1 修复率**: 58% (7/12)
+- **P2 修复率**: 15% (3/20)
+- **总体修复率**: 59% (13/22)
 
 ---
 
