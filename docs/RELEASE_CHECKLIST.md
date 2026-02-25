@@ -174,6 +174,19 @@
 
 ---
 
+## 六条准则审查 Round 11 (PR #109 后)
+
+| 准则 | 结果 | 修复 |
+|------|------|------|
+| 1. Bug/功能缺陷 | ✅ 通过 — cargo check + clippy 零警告 | — |
+| 2. 文档同步 | ⚠️ COMPARISON.md 仍有 "✅ 5秒" hot-reload 声明 | ✅ 修正 4 处 |
+| 3. 进度追踪 | ⚠️ PR #107/#108/#109 未记录 | ✅ 已更新 |
+| 4. 代码-文档偏差 | ⚠️ ROADMAP.md 比较表 + 优先级列表 hot-reload 声明不准确 | ✅ 修正 |
+| 5. 技术栈一致性 | ✅ 通过 — 无 sqlx/postgres/mysql | — |
+| 6. 基座复用 | ✅ 通过 | — |
+
+---
+
 ## 六条准则审查 Round 10 (PR #105 后)
 
 | 准则 | 结果 |
@@ -217,6 +230,20 @@
 |---|---------|------|------|------|
 | 1 | 🔴 DevOps: 容器不以 root 运行 | DevOps/SRE | Dockerfile, Dockerfile.worker | ✅ 添加 memoryos 非 root 用户 |
 | 2 | 🟡 Rust: cargo clippy 干净 | Rust 工程师 | error.rs, local.rs, tools.rs, fastapi_extractor.rs | ✅ 修复 4 个 Clippy 警告 |
+
+### AGENTS.md 审计 Round 3
+
+| # | 违规规则 | 角色 | 文件 | 修复 |
+|---|---------|------|------|------|
+| 1 | 🟡 Clippy: no_effect_replace | Rust 工程师 | fastapi_extractor.rs, spring_extractor.rs | ✅ 移除无效 replace 调用 |
+| 2 | 🟡 Clippy: manual_strip | Rust 工程师 | confluence_backend.rs | ✅ `&line[2..]` → `strip_prefix` |
+| 3 | 🟡 Clippy: type_complexity | Rust 工程师 | gdpr.rs | ✅ 提取 `GdprSnapshotData` 类型别名 |
+| 4 | 🟡 Clippy: module_inception | Rust 工程师 | storage/tests.rs | ✅ 移除嵌套 `mod tests` |
+| 5 | 🟡 unexpected_cfgs | Rust 工程师 | gateway/Cargo.toml | ✅ 添加 `memory-route-tests-disabled` feature |
+| 6 | 🔴 Rust: unwrap() in production | Rust 工程师 | wiki-gen/lib.rs | ✅ `unwrap()` → `expect("BUG: ...")` |
+| 7 | 🟡 Clippy: too_many_arguments | Rust 工程师 | parser/*.rs | ✅ `#[allow]` + 文档说明（tree-sitter visitor 模式） |
+
+Clippy 警告: 15+ → 0
 
 ---
 
@@ -302,4 +329,6 @@
 | #104 | 六条准则审查 Round 9 | ✅ merged |
 | #105 | 修复剩余 hot-reload 文档声明 | ✅ merged |
 | #106 | 六条准则审查 Round 10 | ✅ merged |
-| #??? | AGENTS.md 规则审计 — 代码质量修复 | 🔄 pending |
+| #107 | AGENTS.md 规则审计 Round 1 — 代码质量修复 | ✅ merged |
+| #108 | AGENTS.md 规则审计 Round 2 — 非 root Docker + Clippy | ✅ merged |
+| #109 | AGENTS.md 规则审计 Round 3 — Clippy 零警告 | ✅ merged |
