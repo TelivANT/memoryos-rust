@@ -41,7 +41,7 @@ where
             Ok(result) => return Ok(result),
             Err(e) => {
                 attempt += 1;
-                
+
                 if attempt > config.max_retries {
                     warn!(
                         operation = operation_name,
@@ -78,12 +78,12 @@ where
 /// 判断错误是否可重试
 fn is_retryable_error(error: &AppError) -> bool {
     match error {
-        AppError::BadRequest(_) => false,  // 客户端错误不重试
+        AppError::BadRequest(_) => false, // 客户端错误不重试
         AppError::Unauthorized(_) => false,
         AppError::Forbidden(_) => false,
         AppError::NotFound(_) => false,
         AppError::Config(_) => false,
-        AppError::Internal(_) => true,     // 服务器错误可重试
+        AppError::Internal(_) => true, // 服务器错误可重试
         AppError::ExternalService(_) => true,
         AppError::ServiceUnavailable(_) => true,
         AppError::Timeout(_) => true,

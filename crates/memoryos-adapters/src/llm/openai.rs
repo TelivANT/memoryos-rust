@@ -1,7 +1,10 @@
 //! OpenAI Adapter - 透传模式调用 OpenAI API
 
 use async_trait::async_trait;
-use memoryos_core::{retry::{retry_with_backoff, RetryConfig}, AppError};
+use memoryos_core::{
+    retry::{retry_with_backoff, RetryConfig},
+    AppError,
+};
 use memoryos_ports::{ChatRequest, ChatResponse, ChatStreamChunk, LlmAdapter};
 use reqwest::Client;
 use tracing::debug;
@@ -49,20 +52,24 @@ impl LlmAdapter for OpenAiAdapter {
             if !response.status().is_success() {
                 let status = response.status();
                 let body = response.text().await.unwrap_or_default();
-                
+
                 // 根据状态码返回不同错误类型
                 return Err(match status.as_u16() {
                     429 => AppError::RateLimited("OpenAI rate limit exceeded".to_string()),
                     503 => AppError::ServiceUnavailable("OpenAI service unavailable".to_string()),
-                    _ if status.is_server_error() => AppError::Internal(format!("OpenAI API error {}: {}", status, body)),
+                    _ if status.is_server_error() => {
+                        AppError::Internal(format!("OpenAI API error {}: {}", status, body))
+                    }
                     _ => AppError::BadRequest(format!("OpenAI API error {}: {}", status, body)),
                 });
             }
 
-            response.json::<ChatResponse>().await.map_err(|e| {
-                AppError::Internal(format!("Failed to parse OpenAI response: {}", e))
-            })
-        }).await
+            response
+                .json::<ChatResponse>()
+                .await
+                .map_err(|e| AppError::Internal(format!("Failed to parse OpenAI response: {}", e)))
+        })
+        .await
     }
 
     async fn chat_stream(&self, request: ChatRequest) -> Result<Vec<ChatStreamChunk>, AppError> {
