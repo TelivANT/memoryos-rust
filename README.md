@@ -45,6 +45,7 @@ MemoryOS-Rust is a high-performance AI Agent memory management system built with
 - 🔐 **Security Hardening**: AES-256-GCM encryption + persistent audit log (JSONL) + GDPR records (JSON) (v0.8.0~v0.9.0).
 - 📊 **Prometheus Observability**: /metrics endpoint + HTTP/Router/FAQ/LLM full-chain metrics (v0.10.0).
 - 🧠 **LLM FAQ Classification**: Automatic FAQ categorization via LLM + /v1/admin/faq/classify API (v0.10.0).
+- 🔌 **MCP Server**: Model Context Protocol support with stdio transport, 7 tools for memory operations, Gateway proxy integration (v1.0.0-rc).
 
 ### vs Mem0 Comparison
 
