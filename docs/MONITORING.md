@@ -1,6 +1,6 @@
 # Monitoring & Observability Guide
 
-**版本**: v0.3.0  
+**版本**: v1.0.0-rc  
 **更新**: 2026-02-19
 
 ---

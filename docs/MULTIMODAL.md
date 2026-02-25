@@ -1,6 +1,6 @@
 # Multi-Modal Support Guide
 
-**版本**: v0.9.0  
+**版本**: v1.0.0-rc  
 **更新**: 2026-02-20  
 **状态**: 🟡 Experimental
 
