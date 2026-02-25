@@ -1,7 +1,7 @@
 use crate::state::AppState;
 use axum::{
     extract::{Json, State},
-    http::{HeaderMap, StatusCode},
+    http::HeaderMap,
     response::IntoResponse,
 };
 use memoryos_core::{
@@ -155,8 +155,4 @@ pub async fn chat_completions(
     }
 
     Ok(Json(response))
-}
-
-pub async fn health_check() -> impl IntoResponse {
-    (StatusCode::OK, "OK")
 }
