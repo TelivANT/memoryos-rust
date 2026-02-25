@@ -1,5 +1,8 @@
 use memoryos_adapters::{
-    llm::{ClaudeAdapter, GeminiAdapter, OllamaAdapter, OpenAiAdapter},
+    llm::{
+        AzureOpenAiAdapter, ClaudeAdapter, CohereAdapter, DeepSeekAdapter, GeminiAdapter,
+        GroqAdapter, MistralAdapter, OllamaAdapter, OpenAiAdapter, OpenRouterAdapter,
+    },
     memory::{DefaultMemoryManager, QdrantStorage, RedisStorage},
 };
 use memoryos_core::{
@@ -57,6 +60,12 @@ impl AppState {
                 "gemini" => Arc::new(GeminiAdapter::new(api_key, cfg.base_url.clone())),
                 "claude" => Arc::new(ClaudeAdapter::new(api_key, cfg.base_url.clone())),
                 "ollama" => Arc::new(OllamaAdapter::new(cfg.base_url.clone())),
+                "deepseek" => Arc::new(DeepSeekAdapter::new(api_key, cfg.base_url.clone())),
+                "openrouter" => Arc::new(OpenRouterAdapter::new(api_key, cfg.base_url.clone())),
+                "azure-openai" => Arc::new(AzureOpenAiAdapter::new(api_key, cfg.base_url.clone())),
+                "cohere" => Arc::new(CohereAdapter::new(api_key, cfg.base_url.clone())),
+                "groq" => Arc::new(GroqAdapter::new(api_key, cfg.base_url.clone())),
+                "mistral" => Arc::new(MistralAdapter::new(api_key, cfg.base_url.clone())),
                 other => {
                     tracing::warn!("Skipping unsupported provider type: {}", other);
                     continue;
