@@ -82,6 +82,62 @@
 
 ---
 
+## 多视角深度审查 (Round 7 — PR #98)
+
+五视角（架构师 / 后端总监 / 算法总监 / 测试总监 / 网络架构师）对 11 crate、167 文件、~31,901 行的全面扫描。
+
+### P0 — 已修复
+
+| # | 问题 | 视角 | 状态 |
+|---|------|------|------|
+| X-1/B-1 | Chat Handler 不写入 Memory | 架构+后端+算法 | ✅ DONE — chat_completions 完成后 spawn 异步写入 user+assistant 消息 |
+| X-2/A-1 | Streaming 路径是"二等公民" | 架构+后端+网络+测试 | ✅ DONE — 加入 X-User-ID 验证、Circuit Breaker+Retry、EventBus publish |
+| X-3/E-1 | CORS allow_origin(Any) 生产安全风险 | 网络+后端 | ✅ DONE — 从 config.server.allowed_origins 读取；空列表时 warn 并 fallback Any |
+| D-1/D-2 | Chat Handler + Streaming 零单元测试 | 测试+后端 | ⚠️ 测试范围 — 需要 mock LLM/Redis/Qdrant，建议 v1.1 |
+
+### P1 — 已修复 / 已记录
+
+| # | 问题 | 视角 | 状态 |
+|---|------|------|------|
+| A-2 | Pinecone/Chroma 缺少 tenant 方法 | 架构 | ⚠️ 已知限制 — 使用 trait 默认实现，文档化 |
+| B-2 | Circuit Breaker 全局单例 | 后端+架构 | ⚠️ 已知限制 — 建议 v1.1 per-provider 隔离 |
+| B-3 | CB should_allow() write lock 优化 | 后端 | ✅ DONE — 改为 read lock fast path，仅 Open→HalfOpen 时 write |
+| B-4 | Rate Limiter static Lazy 不跟随 config | 后端 | ⚠️ 已知限制 — 文档注释说明，建议 v1.1 改为 AppState |
+| B-5 | Redis 连接无复用 | 后端 | ⚠️ 已知限制 — redis-rs multiplexed 内部有连接池 |
+| C-1 | Token 估算对混合内容不准确 | 算法 | ⚠️ 已知限制 — 仅用于路由决策，误差可接受 |
+| C-2 | FAQ Bloom filter 不随写入更新 | 算法+后端 | ✅ DONE — promote_to_faq 后同步更新 faq_matcher |
+| D-3 | 集成测试覆盖不足 | 测试 | ⚠️ 长期 — 需要完整基础设施环境 |
+| E-2 | SSE Streaming 无超时控制 | 网络 | ⚠️ 已知限制 — 建议 v1.1 添加 per-stream timeout |
+| E-3 | LLM adapter 响应无 body size limit | 网络 | ⚠️ 已知限制 — HTTP client 有 120s 超时作为间接保护 |
+| E-4 | 无全局 Request Timeout | 网络+后端 | ✅ DONE — 添加 TimeoutLayer(config.server.timeout_seconds) |
+
+### P2 — 已修复 / 已记录
+
+| # | 问题 | 视角 | 状态 |
+|---|------|------|------|
+| A-3 | AppState.providers clone 开销 | 架构 | ✅ DONE — providers 改为 Arc<HashMap> |
+| A-4 | Config hot-reload 无效任务 | 架构 | ✅ DONE — 移除轮询任务，仅保留 info 日志 |
+| A-5 | direct_hit_threshold 硬编码 | 架构 | ✅ DONE — 添加 config.router.direct_hit_threshold 可选配置 |
+| B-6 | UTF-8 截断 panic 风险 | 后端 | ✅ DONE — 改用 char_indices 安全截断 |
+| B-7 | tokio::spawn fire-and-forget 无 metrics | 后端 | ⚠️ 已知限制 — 有 warn 日志，建议 v1.1 添加 metrics counter |
+| C-3 | Embedding cache 无 TTL | 算法 | ⚠️ 已知限制 — LRU 淘汰足够，建议 v1.1 添加 TTL |
+| C-4 | generate_simple_embedding hash 质量 | 算法 | ⚠️ 已知限制 — 仅 fallback 路径，有 warn 日志 |
+| C-5 | Router 不考虑历史上下文长度 | 算法 | ⚠️ 已知限制 — 建议 v1.1 改进 |
+| D-4 | Half-open 测试不完整 | 测试 | ⚠️ 已知限制 — 需要 mock time |
+| D-5 | 无 fuzzing/property-based 测试 | 测试 | ⚠️ 长期 — 建议 v1.1 |
+| D-6 | 生产代码 unwrap() | 测试 | ✅ DONE — defense.rs unwrap 改为 expect with message |
+| E-5 | Rate limit 缺少 Retry-After headers | 网络 | ✅ DONE — 添加 Retry-After + X-RateLimit-* headers |
+| E-6 | Rate limiter 无法多实例 | 网络 | ⚠️ 已知限制 — 文档注释说明 Redis 替代方案 |
+| E-7 | IP defense 不支持反向代理 | 网络 | ✅ DONE — 解析 X-Forwarded-For / X-Real-IP headers |
+
+### 修复统计
+
+- 实际代码修复: 14 项 (A-1/X-2, B-1, B-3, B-6, A-3, A-4, A-5, D-6, E-1, C-2, E-4, E-5, E-7, TimeoutLayer)
+- 已知限制/文档化: 9 项 (A-2, B-2, B-4, B-5, C-1, C-3, C-4, C-5, E-2, E-3, E-6)
+- 测试范围/长期: 4 项 (D-1/D-2, D-3, D-4, D-5)
+
+---
+
 ## 历史审计轮次
 
 ### Round 1-4 (PR #57-#61)

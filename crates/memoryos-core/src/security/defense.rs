@@ -147,7 +147,7 @@ impl IpDefenseSystem {
         // 4. 滑动窗口限流
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .expect("system clock before UNIX epoch")
             .as_secs();
         let window = attack_type.window_seconds();
         let threshold = attack_type.threshold();

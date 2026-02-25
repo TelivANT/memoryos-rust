@@ -26,6 +26,7 @@ pub struct FaqState {
     pub auto_promoter: Arc<AutoPromoter>,
     pub vector_store: Arc<dyn VectorStorage>,
     pub tenant_manager: Option<TenantManager>,
+    pub faq_matcher: Arc<tokio::sync::RwLock<memoryos_core::OptimizedFaqMatcher>>,
 }
 
 /// FAQ 候选响应
@@ -175,6 +176,12 @@ async fn promote_to_faq(
                         record: None,
                     }),
                 );
+            }
+
+            // Sync FAQ Bloom filter so new FAQ is immediately matchable
+            {
+                let mut matcher = state.faq_matcher.write().await;
+                matcher.add_faq(&seg.summary, seg.summary.clone());
             }
 
             let record = PromotionRecord {

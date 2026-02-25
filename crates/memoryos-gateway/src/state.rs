@@ -29,7 +29,7 @@ pub struct AppState {
     pub vector_store: Arc<dyn VectorStorage>,
     pub qdrant_storage: Arc<QdrantStorage>,
     pub redis_storage: Arc<RedisStorage>,
-    pub providers: HashMap<String, Arc<dyn LlmAdapter>>,
+    pub providers: Arc<HashMap<String, Arc<dyn LlmAdapter>>>,
     pub memory_manager: Arc<RwLock<Arc<dyn MemoryManager>>>,
     pub history_storage: Option<Arc<dyn HistoryStorage>>,
     pub worker_monitor: Arc<RwLock<WorkerMonitorSnapshot>>,
@@ -79,7 +79,10 @@ impl AppState {
         // 3. Init Core Logic
         let router_config = RouterConfig {
             enable: config.router.enable,
-            direct_hit_threshold: config.router.hot_threshold + 0.07,
+            direct_hit_threshold: config
+                .router
+                .direct_hit_threshold
+                .unwrap_or(config.router.hot_threshold + 0.07),
             hot_threshold: config.router.hot_threshold,
             max_local_tokens: config.router.max_local_tokens,
             local_backends: config.router.local_backends.clone(),
@@ -244,7 +247,7 @@ impl AppState {
             vector_store: vector_store.clone(),
             qdrant_storage: vector_store,
             redis_storage,
-            providers,
+            providers: Arc::new(providers),
             memory_manager: Arc::new(RwLock::new(memory_manager)),
             history_storage,
             worker_monitor,
