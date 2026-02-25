@@ -35,7 +35,7 @@ async fn main() -> Result<(), AppError> {
         .init();
 
     // 2. Load Config
-    let mut config_manager = ConfigManager::new()?;
+    let config_manager = ConfigManager::new()?;
     let config = config_manager.get();
 
     // Validate configuration
@@ -69,37 +69,13 @@ async fn main() -> Result<(), AppError> {
     }
 
     // 4. Spawn config hot-reload task
-    let config_reload_enabled = std::env::var("MEMORYOS_CONFIG_HOT_RELOAD")
-        .map(|v| {
-            matches!(
-                v.trim().to_ascii_lowercase().as_str(),
-                "1" | "true" | "yes" | "on"
-            )
-        })
-        .unwrap_or(true); // 默认启用
-
-    if config_reload_enabled {
-        // KNOWN LIMITATION: Config hot-reload updates the ConfigManager's ArcSwap,
-        // but AppState holds an Arc<AppConfig> snapshot taken at startup. Changes to
-        // router thresholds, LLM providers, etc. require a restart to take effect.
-        // Hot-reload currently only affects components that re-read from ConfigManager
-        // (none at this time). See docs/CONFIG_HOT_RELOAD_LIMITATION.md for details.
-        tracing::warn!(
-            "Config hot-reload is enabled but has limited effect: AppState uses a startup snapshot. Most config changes require a restart."
-        );
-        tokio::spawn(async move {
-            let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(5));
-            loop {
-                interval.tick().await;
-                match config_manager.reload_if_changed() {
-                    Ok(true) => tracing::info!("Config hot-reloaded successfully"),
-                    Ok(false) => {}
-                    Err(e) => tracing::warn!("Config reload failed: {}", e),
-                }
-            }
-        });
-        tracing::info!("Config hot-reload enabled (check every 5s)");
-    }
+    // Config hot-reload is architecturally limited: AppState holds an Arc<AppConfig>
+    // snapshot taken at startup. The ConfigManager's ArcSwap is not referenced by
+    // any runtime component. Most config changes require a restart.
+    // See docs/CONFIG_HOT_RELOAD_LIMITATION.md for details.
+    tracing::info!(
+        "Config changes require a restart (hot-reload not effective with current architecture)"
+    );
 
     // 5. Setup Router
     let state_arc = Arc::new(state.clone());
@@ -116,6 +92,7 @@ async fn main() -> Result<(), AppError> {
         )),
         vector_store: state.vector_store.clone(),
         tenant_manager: state.tenant_manager.clone(),
+        faq_matcher: state.faq_matcher.clone(),
     };
 
     // Admin 路由（需要认证 + admin 权限）
@@ -249,22 +226,47 @@ async fn main() -> Result<(), AppError> {
         app
     };
 
-    // Add CORS middleware
-    let cors = tower_http::cors::CorsLayer::new()
-        .allow_origin(tower_http::cors::Any)
-        .allow_methods([
+    // Add CORS middleware — use allowed_origins from config; fall back to Any for dev
+    let cors = {
+        let origins = &config.server.allowed_origins;
+        let layer = tower_http::cors::CorsLayer::new().allow_methods([
             axum::http::Method::GET,
             axum::http::Method::POST,
             axum::http::Method::PUT,
             axum::http::Method::DELETE,
             axum::http::Method::OPTIONS,
-        ])
-        .allow_headers(tower_http::cors::Any)
-        .allow_credentials(false);
+        ]);
+        if origins.is_empty() {
+            tracing::warn!(
+                "CORS: allow_origin(Any) — set server.allowed_origins in config for production"
+            );
+            layer
+                .allow_origin(tower_http::cors::Any)
+                .allow_headers(tower_http::cors::Any)
+                .allow_credentials(false)
+        } else {
+            let parsed: Vec<axum::http::HeaderValue> =
+                origins.iter().filter_map(|o| o.parse().ok()).collect();
+            tracing::info!("CORS: {} allowed origins configured", parsed.len());
+            layer
+                .allow_origin(parsed)
+                .allow_headers([
+                    axum::http::header::CONTENT_TYPE,
+                    axum::http::header::AUTHORIZATION,
+                    axum::http::HeaderName::from_static("x-user-id"),
+                    axum::http::HeaderName::from_static("x-tenant-id"),
+                    axum::http::HeaderName::from_static("x-request-id"),
+                ])
+                .allow_credentials(true)
+        }
+    };
 
     let app = app
         .layer(cors)
         .layer(axum::extract::DefaultBodyLimit::max(10 * 1024 * 1024)) // 10MB limit
+        .layer(tower_http::timeout::TimeoutLayer::new(
+            std::time::Duration::from_secs(config.server.timeout_seconds),
+        ))
         .layer(tower_http::request_id::SetRequestIdLayer::x_request_id(
             tower_http::request_id::MakeRequestUuid,
         ))

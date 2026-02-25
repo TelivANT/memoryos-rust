@@ -75,6 +75,9 @@ pub struct ServerConfig {
     pub timeout_seconds: u64,
     #[serde(default = "default_rate_limit")]
     pub rate_limit_per_minute: u32,
+    /// Allowed CORS origins. Empty list means allow any origin (dev only).
+    #[serde(default)]
+    pub allowed_origins: Vec<String>,
 }
 
 fn default_rate_limit() -> u32 {
@@ -137,6 +140,9 @@ pub struct RouterConfig {
     pub enable: bool,
     #[serde(default = "default_hot_threshold")]
     pub hot_threshold: f32,
+    /// FAQ direct hit threshold. Defaults to hot_threshold + 0.07 if not set.
+    #[serde(default)]
+    pub direct_hit_threshold: Option<f32>,
     #[serde(default = "default_max_local_tokens")]
     pub max_local_tokens: usize,
     #[serde(default = "default_sensitive_keywords")]
@@ -150,6 +156,7 @@ impl Default for RouterConfig {
         Self {
             enable: true,
             hot_threshold: 0.85,
+            direct_hit_threshold: None,
             max_local_tokens: 2000,
             sensitive_keywords: vec!["confidential".to_string()],
             local_backends: vec![],
@@ -473,6 +480,7 @@ mod tests {
                 worker_threads: 4,
                 timeout_seconds: 60,
                 rate_limit_per_minute: 100,
+                allowed_origins: vec![],
             },
             llm: LlmConfig {
                 default_provider: "openai".to_string(),

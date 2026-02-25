@@ -938,7 +938,14 @@ impl DefaultMemoryManager {
                     }
                 }
                 let fallback = if conversation.len() > 500 {
-                    format!("{}...", &conversation[..500])
+                    // Safe UTF-8 truncation using char_indices
+                    let truncate_at = conversation
+                        .char_indices()
+                        .take_while(|(i, _)| *i < 500)
+                        .last()
+                        .map(|(i, c)| i + c.len_utf8())
+                        .unwrap_or(conversation.len());
+                    format!("{}...", &conversation[..truncate_at])
                 } else {
                     conversation
                 };
@@ -950,7 +957,13 @@ impl DefaultMemoryManager {
                     e
                 );
                 let fallback = if conversation.len() > 500 {
-                    format!("{}...", &conversation[..500])
+                    let truncate_at = conversation
+                        .char_indices()
+                        .take_while(|(i, _)| *i < 500)
+                        .last()
+                        .map(|(i, c)| i + c.len_utf8())
+                        .unwrap_or(conversation.len());
+                    format!("{}...", &conversation[..truncate_at])
                 } else {
                     conversation
                 };

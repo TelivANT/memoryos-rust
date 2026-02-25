@@ -35,25 +35,36 @@ impl CircuitBreakerState {
 
     /// Check if request should be allowed
     pub async fn should_allow(&self) -> bool {
-        let mut state = self.failures.write().await;
-
-        match state.state {
-            State::Closed => true,
-            State::Open => {
-                // Check if timeout expired (30 seconds)
-                if let Some(last) = state.last_failure {
-                    if last.elapsed() > Duration::from_secs(30) {
-                        state.state = State::HalfOpen;
-                        true
+        // Fast path: read lock for common Closed state
+        {
+            let state = self.failures.read().await;
+            match state.state {
+                State::Closed => return true,
+                State::HalfOpen => return true,
+                State::Open => {
+                    // Check if timeout might have expired — need write lock to transition
+                    if let Some(last) = state.last_failure {
+                        if last.elapsed() <= Duration::from_secs(30) {
+                            return false;
+                        }
                     } else {
-                        false
+                        return true;
                     }
-                } else {
-                    true
                 }
             }
-            State::HalfOpen => true,
         }
+        // Slow path: write lock to transition Open → HalfOpen
+        let mut state = self.failures.write().await;
+        if state.state == State::Open {
+            if let Some(last) = state.last_failure {
+                if last.elapsed() > Duration::from_secs(30) {
+                    state.state = State::HalfOpen;
+                    return true;
+                }
+            }
+        }
+        // Re-check after acquiring write lock (state may have changed)
+        matches!(state.state, State::Closed | State::HalfOpen)
     }
 
     /// Record a successful request

@@ -233,6 +233,41 @@ pub async fn chat_completions(
         });
     }
 
+    // Store user message + assistant reply in memory (async, non-blocking)
+    {
+        let mgr = state.memory_manager.clone();
+        let uid = user_id.to_string();
+        let user_content = last_msg.clone();
+        let assistant_content = response
+            .choices
+            .first()
+            .map(|c| c.message.content.clone())
+            .unwrap_or_default();
+        tokio::spawn(async move {
+            let manager = mgr.read().await;
+            let user_msg = memoryos_core::Message {
+                role: "user".to_string(),
+                content: user_content,
+                timestamp: chrono::Utc::now(),
+                embedding: None,
+            };
+            if let Err(e) = manager.add_message(&uid, user_msg).await {
+                tracing::warn!(error = %e, "Failed to store user message in memory");
+            }
+            if !assistant_content.is_empty() {
+                let assistant_msg = memoryos_core::Message {
+                    role: "assistant".to_string(),
+                    content: assistant_content,
+                    timestamp: chrono::Utc::now(),
+                    embedding: None,
+                };
+                if let Err(e) = manager.add_message(&uid, assistant_msg).await {
+                    tracing::warn!(error = %e, "Failed to store assistant message in memory");
+                }
+            }
+        });
+    }
+
     Ok(Json(response).into_response())
 }
 
@@ -247,6 +282,20 @@ async fn chat_completions_stream(
         .and_then(|h| h.to_str().ok())
         .unwrap_or("default_user")
         .to_string();
+
+    // X-User-ID validation (same as non-streaming)
+    if user_id.len() > 128
+        || (!user_id.is_empty()
+            && user_id != "default_user"
+            && !user_id
+                .chars()
+                .all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.'))
+    {
+        return Err(AppError::BadRequest(
+            "Invalid X-User-ID: must be alphanumeric with hyphens/underscores, max 128 chars"
+                .to_string(),
+        ));
+    }
 
     let last_msg = request
         .messages
@@ -279,10 +328,9 @@ async fn chat_completions_stream(
         msg.content = state.shield.sanitize_pii(&msg.content);
     }
 
-    // Route decision (same logic as non-streaming path)
+    // Route decision: sensitive → local, else → default provider
     let has_sensitive = matches!(compliance, ComplianceResult::RequiresLocal);
     let target_provider = if has_sensitive {
-        // Sensitive content must go to local backend
         state
             .config
             .router
@@ -298,8 +346,55 @@ async fn chat_completions_stream(
         .get_adapter(&target_provider)
         .ok_or_else(|| AppError::Config(format!("Provider '{}' not found", target_provider)))?;
 
-    // Call streaming API
-    let chunks = adapter.chat_stream(request).await?;
+    // Circuit breaker + retry (same as non-streaming path)
+    let retry_config = memoryos_core::retry::RetryConfig {
+        max_retries: 2,
+        initial_backoff_ms: 200,
+        max_backoff_ms: 3000,
+        backoff_multiplier: 2.0,
+    };
+    let breaker = state.circuit_breaker.clone();
+    let adapter_ref = adapter.clone();
+    let request_clone = request.clone();
+
+    let chunks = match crate::middleware::circuit_breaker::with_circuit_breaker(
+        &breaker,
+        memoryos_core::retry::retry_with_backoff(&retry_config, "llm_chat_stream", {
+            let adapter_ref = adapter_ref.clone();
+            let req = request_clone;
+            move || {
+                let a = adapter_ref.clone();
+                let r = req.clone();
+                async move { a.chat_stream(r).await }
+            }
+        }),
+    )
+    .await
+    {
+        Some(result) => result?,
+        None => {
+            return Err(AppError::ServiceUnavailable(
+                "LLM service circuit breaker is open — too many recent failures".to_string(),
+            ));
+        }
+    };
+
+    // EventBus publish (same as non-streaming path)
+    if let Some(ref event_bus) = state.event_bus {
+        let event_id = uuid::Uuid::now_v7().to_string();
+        let payload = serde_json::json!({
+            "user_id": user_id,
+            "query": last_msg,
+            "provider": target_provider,
+            "tier": "stream",
+        });
+        let bus = event_bus.clone();
+        tokio::spawn(async move {
+            if let Err(e) = bus.publish_chat_log(&event_id, payload).await {
+                tracing::warn!(error = %e, "Failed to publish streaming chat event");
+            }
+        });
+    }
 
     // Convert to SSE stream
     let stream = stream::iter(chunks).map(move |chunk| {

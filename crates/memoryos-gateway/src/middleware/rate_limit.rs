@@ -1,6 +1,12 @@
 //! Rate limiting middleware
 
-use axum::{extract::Request, http::StatusCode, middleware::Next, response::Response, Json};
+use axum::{
+    extract::Request,
+    http::StatusCode,
+    middleware::Next,
+    response::{IntoResponse, Response},
+    Json,
+};
 use serde_json::json;
 use std::collections::HashMap;
 use std::net::IpAddr;
@@ -55,10 +61,7 @@ impl RateLimiter {
 /// deployments behind a load balancer, each instance maintains independent
 /// counters. For production multi-instance setups, consider using Redis-based
 /// distributed rate limiting (e.g., redis-cell or a sliding window counter).
-pub async fn rate_limit_middleware(
-    req: Request,
-    next: Next,
-) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
+pub async fn rate_limit_middleware(req: Request, next: Next) -> Result<Response, Response> {
     // Extract IP from request
     let ip = req
         .extensions()
@@ -79,7 +82,7 @@ pub async fn rate_limit_middleware(
     });
 
     if !LIMITER.check(ip).await {
-        return Err((
+        let mut response = (
             StatusCode::TOO_MANY_REQUESTS,
             Json(json!({
                 "error": {
@@ -87,7 +90,17 @@ pub async fn rate_limit_middleware(
                     "message": "Too many requests. Please try again later."
                 }
             })),
-        ));
+        )
+            .into_response();
+        // Standard rate-limit headers so clients can self-throttle
+        let headers = response.headers_mut();
+        headers.insert("Retry-After", "60".parse().unwrap());
+        headers.insert(
+            "X-RateLimit-Limit",
+            LIMITER.max_requests.to_string().parse().unwrap(),
+        );
+        headers.insert("X-RateLimit-Remaining", "0".parse().unwrap());
+        return Err(response);
     }
 
     Ok(next.run(req).await)
