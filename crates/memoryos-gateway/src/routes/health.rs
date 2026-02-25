@@ -9,7 +9,6 @@ use crate::routes::apply_degraded_header;
 use crate::AppState;
 
 /// Legacy health endpoint required by Phase 2 acceptance.
-#[allow(dead_code)]
 pub async fn health() -> (StatusCode, Json<serde_json::Value>) {
     (
         StatusCode::OK,
@@ -20,8 +19,7 @@ pub async fn health() -> (StatusCode, Json<serde_json::Value>) {
     )
 }
 
-/// Liveness probe - returns 200 if process is running
-#[allow(dead_code)]
+/// Liveness probe — returns 200 if process is running (K8s /health/live)
 pub async fn liveness() -> (StatusCode, Json<serde_json::Value>) {
     (
         StatusCode::OK,
@@ -32,8 +30,7 @@ pub async fn liveness() -> (StatusCode, Json<serde_json::Value>) {
     )
 }
 
-/// Readiness probe - returns 200 if service can handle requests
-#[allow(dead_code)]
+/// Readiness probe — returns 200 if service can handle requests (K8s /health/ready)
 pub async fn readiness(State(state): State<AppState>) -> Response {
     let health = state.current_health().await;
     let status = match health.mode.as_str() {

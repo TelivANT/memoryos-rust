@@ -13,7 +13,7 @@ mod routes;
 mod state;
 mod worker_monitor;
 
-use handlers::{chat_completions, health_check};
+use handlers::chat_completions;
 use routes::faq::{create_faq_routes, FaqState};
 use routes::graph::{create_graph_routes, GraphState};
 use routes::memory_manage::{create_memory_manage_routes, MemoryManageState};
@@ -212,7 +212,9 @@ async fn main() -> Result<(), AppError> {
         ));
 
     let app = Router::new()
-        .route("/health", get(health_check))
+        .route("/health", get(routes::health::health))
+        .route("/health/live", get(routes::health::liveness))
+        .route("/health/ready", get(routes::health::readiness))
         .route("/health/status", get(routes::health::status))
         .route("/metrics", get(routes::metrics::metrics_handler))
         .with_state(state)

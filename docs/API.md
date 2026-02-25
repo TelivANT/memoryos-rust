@@ -68,6 +68,44 @@ Authorization: Bearer <your-api-key>
 
 ---
 
+### GET /health/live
+
+Kubernetes Liveness Probe。进程存活即返回 200。
+
+**响应**:
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-02-25T12:00:00Z"
+}
+```
+
+---
+
+### GET /health/ready
+
+Kubernetes Readiness Probe。检查 Redis 和 Qdrant 是否可用。
+
+**响应** (200 OK):
+```json
+{
+  "status": "ready",
+  "timestamp": "2026-02-25T12:00:00Z"
+}
+```
+
+**响应** (503 Service Unavailable):
+```json
+{
+  "status": "not_ready",
+  "timestamp": "2026-02-25T12:00:00Z"
+}
+```
+
+降级模式下响应头包含 `X-MemoryOS-Status: degraded`。
+
+---
+
 ### GET /metrics
 
 Prometheus 格式指标端点。
@@ -985,48 +1023,50 @@ FAQ 分类（离线/Dry-run）。生成分类 prompt 或解析 LLM 分类结果�
 |---|------|------|------|------|
 | 1 | GET | /health | 存活检查 | 否 |
 | 2 | GET | /health/status | 详细健康状态 | 否 |
-| 3 | GET | /metrics | Prometheus 指标 | 否 |
-| 4 | POST | /v1/chat/completions | 聊天补全 (OpenAI 兼容) | 是 |
-| 5 | POST | /v1/memory/add | 添加记忆 | 是 |
-| 6 | POST | /v1/memory/retrieve | 检索记忆上下文 | 是 |
-| 7 | GET | /v1/memory/{id}/history | 记忆版本历史 | 是 |
-| 8 | POST | /v1/graph/extract | 实体提取 | 是 |
-| 9 | POST | /v1/graph/extract/llm-prompt | LLM 提取 prompt | 是 |
-| 10 | POST | /v1/graph/extract/llm-parse | LLM 提取结果解析 | 是 |
-| 11 | POST | /v1/graph/query | 实体查询 | 是 |
-| 12 | POST | /v1/graph/path | 路径查询 | 是 |
-| 13 | GET | /v1/graph/triples | 所有三元组 | 是 |
-| 14 | GET | /v1/graph/stats | 图谱统计 | 是 |
-| 15 | POST | /v1/memory/manage/tags | 添加标签 | 是 |
-| 16 | POST | /v1/memory/manage/search/tags | 按标签搜索 | 是 |
-| 17 | POST | /v1/memory/manage/export | 导出记忆 | 是 |
-| 18 | POST | /v1/memory/manage/import | 导入记忆 | 是 |
-| 19 | POST | /v1/memory/manage/versions | 版本历史 | 是 |
-| 20 | POST | /v1/multimodal/store | 存储多模态消息 | 是 |
-| 21 | POST | /v1/multimodal/search | 文本搜索多模态 | 是 |
-| 22 | POST | /v1/multimodal/search/embedding | 向量搜索多模态 | 是 |
-| 23 | POST | /v1/multimodal/recent | 最近多模态消息 | 是 |
-| 24 | POST | /v1/security/audit/logs | 查询审计日志 | 是 |
-| 25 | GET | /v1/security/audit/stats | 审计统计 | 是 |
-| 26 | POST | /v1/security/gdpr/export | GDPR 数据导出 | 是 |
-| 27 | POST | /v1/security/gdpr/delete | GDPR 数据删除 | 是 |
-| 28 | POST | /v1/security/gdpr/consent | 记录同意 | 是 |
-| 29 | POST | /v1/security/gdpr/consent/check | 检查同意 | 是 |
-| 30 | POST | /v1/wiki/generate | 触发 Wiki 生成 | 是 |
-| 31 | POST | /v1/wiki/parse | 解析代码仓库 | 是 |
-| 32 | GET | /v1/wiki/status | Wiki 任务列表 | 是 |
-| 33 | GET | /v1/wiki/jobs/{job_id} | Wiki 任务详情 | 是 |
-| 34 | GET | /v1/wiki/connectors | 连接器类型列表 | 是 |
-| 35 | POST | /v1/wiki/connectors | 保存连接器配置 | 是 |
-| 36 | GET | /v1/wiki/connectors/saved | 已保存连接器 | 是 |
-| 37 | POST | /v1/wiki/connectors/test | 测试连接 | 是 |
-| 38 | POST | /v1/wiki/connectors/browse | 浏览目录 | 是 |
-| 39 | POST | /v1/wiki/connectors/generate | 连接器 Wiki 生成 | 是 |
-| 40 | POST | /v1/admin/keys | 创建 API Key | Admin |
-| 41 | DELETE | /v1/admin/keys/{key} | 删除 API Key | Admin |
-| 42 | GET | /v1/admin/faq/candidates | FAQ 候选列表 | 是 |
-| 43 | POST | /v1/admin/faq/promote | 提升为 FAQ | 是 |
-| 44 | POST | /v1/admin/faq/classify | FAQ 分类 | 是 |
-| 45 | DELETE | /v1/admin/faq/{id} | 降级 FAQ | 是 |
-| 46 | GET | /v1/admin/faq/history | 提升历史 | 是 |
-| 47 | GET | /v1/admin/faq/stats | FAQ 统计 | 是 |
+| 3 | GET | /health/live | K8s Liveness Probe | 否 |
+| 4 | GET | /health/ready | K8s Readiness Probe | 否 |
+| 5 | GET | /metrics | Prometheus 指标 | 否 |
+| 6 | POST | /v1/chat/completions | 聊天补全 (OpenAI 兼容) | 是 |
+| 7 | POST | /v1/memory/add | 添加记忆 | 是 |
+| 8 | POST | /v1/memory/retrieve | 检索记忆上下文 | 是 |
+| 9 | GET | /v1/memory/{id}/history | 记忆版本历史 | 是 |
+| 10 | POST | /v1/graph/extract | 实体提取 | 是 |
+| 11 | POST | /v1/graph/extract/llm-prompt | LLM 提取 prompt | 是 |
+| 12 | POST | /v1/graph/extract/llm-parse | LLM 提取结果解析 | 是 |
+| 13 | POST | /v1/graph/query | 实体查询 | 是 |
+| 14 | POST | /v1/graph/path | 路径查询 | 是 |
+| 15 | GET | /v1/graph/triples | 所有三元组 | 是 |
+| 16 | GET | /v1/graph/stats | 图谱统计 | 是 |
+| 17 | POST | /v1/memory/manage/tags | 添加标签 | 是 |
+| 18 | POST | /v1/memory/manage/search/tags | 按标签搜索 | 是 |
+| 19 | POST | /v1/memory/manage/export | 导出记忆 | 是 |
+| 20 | POST | /v1/memory/manage/import | 导入记忆 | 是 |
+| 21 | POST | /v1/memory/manage/versions | 版本历史 | 是 |
+| 22 | POST | /v1/multimodal/store | 存储多模态消息 | 是 |
+| 23 | POST | /v1/multimodal/search | 文本搜索多模态 | 是 |
+| 24 | POST | /v1/multimodal/search/embedding | 向量搜索多模态 | 是 |
+| 25 | POST | /v1/multimodal/recent | 最近多模态消息 | 是 |
+| 26 | POST | /v1/security/audit/logs | 查询审计日志 | 是 |
+| 27 | GET | /v1/security/audit/stats | 审计统计 | 是 |
+| 28 | POST | /v1/security/gdpr/export | GDPR 数据导出 | 是 |
+| 29 | POST | /v1/security/gdpr/delete | GDPR 数据删除 | 是 |
+| 30 | POST | /v1/security/gdpr/consent | 记录同意 | 是 |
+| 31 | POST | /v1/security/gdpr/consent/check | 检查同意 | 是 |
+| 32 | POST | /v1/wiki/generate | 触发 Wiki 生成 | 是 |
+| 33 | POST | /v1/wiki/parse | 解析代码仓库 | 是 |
+| 34 | GET | /v1/wiki/status | Wiki 任务列表 | 是 |
+| 35 | GET | /v1/wiki/jobs/{job_id} | Wiki 任务详情 | 是 |
+| 36 | GET | /v1/wiki/connectors | 连接器类型列表 | 是 |
+| 37 | POST | /v1/wiki/connectors | 保存连接器配置 | 是 |
+| 38 | GET | /v1/wiki/connectors/saved | 已保存连接器 | 是 |
+| 39 | POST | /v1/wiki/connectors/test | 测试连接 | 是 |
+| 40 | POST | /v1/wiki/connectors/browse | 浏览目录 | 是 |
+| 41 | POST | /v1/wiki/connectors/generate | 连接器 Wiki 生成 | 是 |
+| 42 | POST | /v1/admin/keys | 创建 API Key | Admin |
+| 43 | DELETE | /v1/admin/keys/{key} | 删除 API Key | Admin |
+| 44 | GET | /v1/admin/faq/candidates | FAQ 候选列表 | 是 |
+| 45 | POST | /v1/admin/faq/promote | 提升为 FAQ | 是 |
+| 46 | POST | /v1/admin/faq/classify | FAQ 分类 | 是 |
+| 47 | DELETE | /v1/admin/faq/{id} | 降级 FAQ | 是 |
+| 48 | GET | /v1/admin/faq/history | 提升历史 | 是 |
+| 49 | GET | /v1/admin/faq/stats | FAQ 统计 | 是 |

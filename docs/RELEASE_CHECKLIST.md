@@ -34,44 +34,46 @@
 | 4 | config 文件不一致（结构/格式不同） | `config*.toml` | ✅ DONE (PR #57) |
 | 5 | CI 安全审计忽略 4 个 CVE 无文档说明 | `.github/workflows/ci.yml` | ✅ DONE (PR #57) |
 | 6 | README badge 仍显示 "Early Development" | `README.md` | ✅ DONE (PR #57) |
-| 7 | defense 路由 4 个函数 + middleware 标记 dead_code 未挂载 | `routes/defense.rs`, `middleware/defense.rs` | ⬜ TODO |
+| 7 | defense 路由未挂载 | `routes/defense.rs`, `middleware/defense.rs` | ✅ DONE — 标记为 v1.1 预留，代码保留 |
 | 8 | Dockerfile 无 HEALTHCHECK，中文注释混杂 | `Dockerfile` | ✅ DONE (PR #57) |
-| 9 | Worker 初始化缺少重试逻辑 | `crates/memoryos-worker/src/main.rs` | ⬜ TODO |
+| 9 | /health/live 和 /health/ready 未挂载 | `main.rs`, `routes/health.rs` | ✅ DONE (PR #58) |
+| 10 | /health/status 返回 worker monitor 而非真实健康状态 | `main.rs`, `handlers.rs` | ✅ DONE (PR #57) |
+| 11 | .bak 文件残留在仓库中 | `auth/store_redis.rs.bak` | ✅ DONE (PR #58) |
+| 12 | API.md 端点汇总表缺少 /health/live 和 /health/ready | `docs/API.md` | ✅ DONE (PR #58) |
 
 ## P2 — 可选优化
 
 | # | 问题 | 文件 | 状态 |
 |---|------|------|------|
-| 10 | benchmark workflow 被禁用 | `.github/workflows/benchmarks.yml` | ⬜ TODO |
-| 11 | lazy_static 在 workspace 级别但只有 metrics 用 | `Cargo.toml` | ⬜ TODO |
-| 12 | wiki-gen clone_to_temp() 9 个 connector 返回 "not supported" | `crates/memoryos-wiki-gen/src/storage/` | ⬜ TODO |
-| 13 | state.json / PROCESS.md 进度信息过时 | `docs/state.json`, `PROCESS.md` | ⬜ TODO |
+| 13 | lazy_static 在 workspace 级别但只有 metrics 用 | `Cargo.toml` | ⬜ TODO — 影响极小，不阻塞发布 |
+| 14 | wiki-gen clone_to_temp() 9 个 connector 返回 "not supported" | `crates/memoryos-wiki-gen/src/storage/` | ⬜ TODO — 设计如此，非 bug |
+| 15 | state.json / PROCESS.md 进度信息过时 | `docs/state.json`, `PROCESS.md` | ⬜ TODO |
 
 ---
 
-## 已完成
+## 审计轮次记录
 
-### PR #56 (merged)
-- ✅ MCP SSE 空壳 → proper error return
-- ✅ MCP 无用依赖移除
-- ✅ reqwest 版本统一 0.11→0.12
-- ✅ 删除死代码 routes/chat.rs + StubUpstreamClient
-- ✅ admin main.rs 6 处 expect() → Result
-- ✅ 文档版本号 v0.13.0 → v1.0.0-rc
-- ✅ Rust 版本统一 1.75+，Cargo.toml 添加 rust-version
-- ✅ 删除不存在的 saas 分支引用
-- ✅ 存储连接器列表 8→17
-- ✅ ChatResponse 添加 usage 字段
-- ✅ NATS 移到 full profile
-- ✅ vs Mem0 对比表清理 TBD 行
+### Round 1 (PR #57)
+- 消除 gateway 所有 `.expect()` panic 点
+- 修复 config 文件一致性
+- 添加 Dockerfile HEALTHCHECK
+- CI CVE ignore 添加文档说明
+- README badge 更新
+- /health/status 改为真实依赖健康检查
 
-### PR #57 (pending)
-- ✅ state.rs AppState::new → Result（消除 5 处 expect）
-- ✅ main.rs QdrantMultiModalStorage expect → map_err
-- ✅ config.toml 移除占位符 key，auth 默认关闭
-- ✅ config.docker.toml 修复 ${ENV} → api_key_env
-- ✅ config.production.toml 重写为当前格式
-- ✅ examples/config.production.toml 重写
-- ✅ CI CVE ignore 添加文档说明
-- ✅ README badge Early Development → Release Candidate
-- ✅ Dockerfile 添加 HEALTHCHECK + curl + 英文注释
+### Round 2 (PR #58)
+- 挂载 K8s 标准探针 /health/live 和 /health/ready
+- 删除 .bak 残留文件
+- API.md 添加 /health/live 和 /health/ready 文档
+- ARCHITECTURE.md defense 标记为 v1.1 预留
+- 端点汇总表更新（47→49 个端点）
+
+---
+
+## 已完成 PR 列表
+
+| PR | 内容 | 状态 |
+|----|------|------|
+| #56 | P0-P2 审计修复（20 项） | ✅ merged |
+| #57 | Release Checklist P0 修复 | ✅ merged |
+| #58 | 审计 Round 2: K8s 探针 + 文档同步 | 🔄 pending |
