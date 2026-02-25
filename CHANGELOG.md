@@ -26,20 +26,35 @@ MCP Server operational. 303 unit tests passing. Zero production panics.
 - **Rate limiting middleware** wired into gateway HTTP pipeline
 - **Dockerfile.gateway** and **Dockerfile.worker** for proper container deployment
 - **config.docker.toml** for Docker Compose with correct service URLs
+- **K8s health probes**: `/health/live` (liveness) and `/health/ready` (readiness) endpoints (PR #58)
+- **Release Checklist**: `docs/RELEASE_CHECKLIST.md` for tracking audit progress (PR #57)
 
 ### Fixed
 - Replaced all production `unwrap()` with `expect()` or graceful error handling across 4 crates (PR #43)
+- Eliminated 6 `.expect()` panic points in gateway `state.rs` and `main.rs` — all return `Result` (PR #57)
+- `/health/status` now returns real Redis/Qdrant dependency health instead of worker monitor info (PR #57)
 - Docker Compose now uses `depends_on: condition: service_healthy` for reliable startup ordering
 - Gateway dead code (`RateLimiter`) now wired into middleware stack
 - Version numbers aligned across VERSION, Cargo.toml, and documentation
+- RBAC and Tenant persistence migrated from SQLx to JSON file-based (removed sqlx dependency) (PR #55)
+- Removed 20 audit issues: dead code, unused deps, doc version mismatches, etc. (PR #56)
+- Removed `.bak` file residue from repository (PR #58)
 
 ### Changed
 - `docker-compose.yml`: monitoring services (Prometheus/Grafana) moved to `monitoring` profile
 - `docker-compose.yml`: worker moved to `full` profile (optional)
-- `config.toml`: removed hardcoded example API keys, added generation instructions
+- `config.toml`: removed hardcoded example API keys, auth defaults to disabled
+- `config.docker.toml`: fixed `${ENV}` syntax to `api_key_env` pattern
+- `config.production.toml`: rewritten to match current config schema
+- `Dockerfile`: added HEALTHCHECK + curl + English comments (PR #57)
+- CI: documented all 5 ignored CVEs with justification (PR #57)
+- README badge: "Early Development" → "Release Candidate" (PR #57)
+- API.md: endpoint table updated to 49 endpoints (PR #58)
+- ARCHITECTURE.md: defense system marked as reserved for v1.1 (PR #58)
 
 ### Security
 - Removed hardcoded API keys from config.toml (was `memoryos-secret-key-12345`)
+- Config files default to `auth.enabled = false` with prominent startup warning
 
 ### Migration from 0.x
 1. **Config**: Run `cargo run --bin memoryos-gateway` — startup validation will report any missing/invalid config fields

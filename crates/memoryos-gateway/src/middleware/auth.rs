@@ -30,7 +30,6 @@ pub(crate) fn constant_time_contains(haystack: &[String], needle: &str) -> bool 
     found
 }
 
-#[allow(dead_code)]
 pub async fn admin_only(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,
