@@ -216,9 +216,13 @@ enabled = false
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
 | `RUST_LOG` | 日志级别 | `info` |
+| `MEMORYOS_CONFIG` | 配置文件路径 | `config.toml` |
 | `MEMORYOS_ASYNC_MEMORY_PIPELINE` | 启用异步记忆管道 | `false` |
 | `MEMORYOS_CONFIG_HOT_RELOAD` | 配置热重载 | `true` |
 | `MEMORYOS_CONNECTOR_SECRET` | 连接器加密密钥 | 内置默认值 |
+| `MEMORYOS_WORKER_STREAM` | Worker Redis Stream 名称 | `chat_log` |
+| `MEMORYOS_WORKER_GROUP` | Worker 消费者组名称 | `memory_workers` |
+| `MEMORYOS_WORKER_CONSUMER` | Worker 消费者 ID（每个实例唯一） | 自动生成 |
 
 ### 配置热重载
 
