@@ -50,6 +50,11 @@ impl RateLimiter {
 }
 
 /// Rate limit middleware (configurable via config.toml)
+///
+/// NOTE: This rate limiter is process-local (in-memory). In multi-instance
+/// deployments behind a load balancer, each instance maintains independent
+/// counters. For production multi-instance setups, consider using Redis-based
+/// distributed rate limiting (e.g., redis-cell or a sliding window counter).
 pub async fn rate_limit_middleware(
     req: Request,
     next: Next,

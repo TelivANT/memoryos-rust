@@ -1,5 +1,7 @@
 # MemoryOS-Rust
 
+> ⚠️ قد تكون هذه الترجمة متأخرة عن [النسخة الإنجليزية](README.md). في حالة الشك، يرجى الرجوع إلى النسخة الإنجليزية.
+
 نظام إدارة ذاكرة عالي الأداء لوكلاء الذكاء الاصطناعي - تطبيق Rust
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)

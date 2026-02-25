@@ -336,6 +336,7 @@ impl DefaultMemoryManager {
     /// Generate embedding using OpenAI API (implementation)
     async fn generate_embedding_impl(&self, text: &str) -> Result<Vec<f32>, AppError> {
         if self.embedding_api_key.is_empty() {
+            warn!("Embedding API key is empty — using hash-based fallback. Similarity search will NOT produce meaningful results. Configure [embedding] in config.toml.");
             return Ok(generate_simple_embedding(text));
         }
 
@@ -359,14 +360,14 @@ impl DefaultMemoryManager {
         {
             Ok(r) => r,
             Err(err) => {
-                warn!("Embeddings API request failed, using fallback: {}", err);
+                warn!("Embeddings API request failed, using hash-based fallback (similarity search degraded): {}", err);
                 return Ok(generate_simple_embedding(text));
             }
         };
 
         if response.status() != StatusCode::OK {
             warn!(
-                "Embeddings API returned status {}, using fallback",
+                "Embeddings API returned status {}, using hash-based fallback (similarity search degraded)",
                 response.status()
             );
             return Ok(generate_simple_embedding(text));
@@ -376,7 +377,7 @@ impl DefaultMemoryManager {
             Ok(v) => v,
             Err(err) => {
                 warn!(
-                    "Failed to parse embeddings response, using fallback: {}",
+                    "Failed to parse embeddings response, using hash-based fallback (similarity search degraded): {}",
                     err
                 );
                 return Ok(generate_simple_embedding(text));
@@ -391,7 +392,7 @@ impl DefaultMemoryManager {
             .collect::<Vec<f32>>();
 
         if embedding.is_empty() {
-            warn!("Embeddings API returned empty vector, using fallback");
+            warn!("Embeddings API returned empty vector, using hash-based fallback (similarity search degraded)");
             return Ok(generate_simple_embedding(text));
         }
 
@@ -416,7 +417,10 @@ impl DefaultMemoryManager {
             let embedding = self
                 .generate_embedding(&summary)
                 .await
-                .unwrap_or_else(|_| vec![0.0; 1536]);
+                .unwrap_or_else(|e| {
+                    warn!("Embedding generation failed during consolidation, using hash-based fallback: {}", e);
+                    generate_simple_embedding(&summary)
+                });
             let segment = MidTermSegment {
                 id: uuid::Uuid::now_v7(),
                 user_id: user_id.to_string(),

@@ -13,7 +13,7 @@ pub struct OllamaAdapter {
 impl OllamaAdapter {
     pub fn new(base_url: String) -> Self {
         Self {
-            client: Client::new(),
+            client: super::build_llm_http_client(),
             base_url,
         }
     }

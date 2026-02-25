@@ -11,6 +11,10 @@ use prometheus::{
 
 lazy_static! {
     // ── HTTP metrics ──────────────────────────────────────────────
+    // NOTE: These .expect() calls are intentional. Prometheus metric registration
+    // only fails on duplicate metric names (a programming bug). Using lazy_static
+    // ensures each metric is registered exactly once. A panic here indicates a
+    // metric name collision that must be fixed in code.
     pub static ref HTTP_REQUESTS_TOTAL: CounterVec = register_counter_vec!(
         "memoryos_http_requests_total",
         "Total HTTP requests",
