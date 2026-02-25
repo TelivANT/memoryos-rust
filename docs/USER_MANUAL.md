@@ -1,6 +1,6 @@
 # MemoryOS-Rust 用户手册
 
-**版本**: v0.13.0
+**版本**: v1.0.0-rc
 **仓库**: [TelivANT/memoryos-rust](https://github.com/TelivANT/memoryos-rust)
 
 ---
@@ -353,18 +353,27 @@ Wiki 生成管线包含 7 个阶段：
 
 ## 存储连接器
 
-Wiki 生成支持 8 种代码仓库连接方式：
+Wiki 生成支持 17 种代码仓库连接方式：
 
 | 类型 | 说明 |
 |------|------|
 | **local** | 本地文件系统 |
 | **git** | Git 仓库（支持 token 认证） |
 | **s3** | Amazon S3 |
+| **gcs** | Google Cloud Storage |
+| **azure_blob** | Azure Blob Storage |
 | **oss** | 阿里云 OSS |
 | **cos** | 腾讯云 COS |
 | **obs** | 华为云 OBS |
 | **webdav** | WebDAV 服务器 |
 | **sftp** | SFTP 服务器 |
+| **smb** | SMB/CIFS 网络共享 |
+| **nfs** | NFS 网络文件系统 |
+| **onedrive** | Microsoft OneDrive |
+| **google_drive** | Google Drive |
+| **dropbox** | Dropbox |
+| **baidu_pan** | 百度网盘 |
+| **aliyun_drive** | 阿里云盘 |
 
 ### 使用流程
 

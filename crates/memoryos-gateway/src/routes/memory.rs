@@ -137,6 +137,7 @@ mod tests {
                     },
                     finish_reason: "stop".to_string(),
                 }],
+                usage: None,
             })
         }
 

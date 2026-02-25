@@ -63,6 +63,7 @@ pub async fn chat_completions(
                 },
                 finish_reason: "stop".to_string(),
             }],
+            usage: None,
         }));
     }
 
@@ -121,6 +122,7 @@ pub async fn chat_completions(
                 },
                 finish_reason: "stop".to_string(),
             }],
+            usage: None,
         }));
     }
 
