@@ -3,10 +3,10 @@
 | Metric | Value |
 | :--- | :--- |
 | **Version** | v1.0.0-rc |
-| **Build Status** | Passing |
+| **Build Status** | Passing (zero warnings) |
 | **Overall Completion** | ~99% (core + 1.0 tasks complete) |
 | **Documentation** | Aligned with code |
-| **Security Audit** | Passed (v0.12.6 - constant-time auth, nested route auth, CORS) |
+| **Security Audit** | v1.0.0-rc — 13/15 fixed (87%), 0 P0/P1 remaining |
 
 ## Component Health
 

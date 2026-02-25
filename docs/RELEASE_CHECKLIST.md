@@ -86,11 +86,10 @@
 
 ---
 
-## 剩余 #[allow(dead_code)] 清单 (5 处，均合理)
+## 剩余 #[allow(dead_code)] 清单 (4 处，均合理)
 
 | 文件 | 原因 |
 |------|------|
-| middleware/defense.rs (1 处) | 中间件需要 ConnectInfo<SocketAddr>，暂不挂载为全局层 |
 | state.rs: current_worker_monitor (1 处) | 异步管道监控，按需启用 |
 | adapters/memory/nats.rs (1 处) | NATS client 字段需保持连接 |
 | adapters/memory/pinecone.rs (1 处) | PineconeFetchedVector 反序列化用 |
