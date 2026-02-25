@@ -36,9 +36,15 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user (DevOps red line: never run as root in containers)
+RUN groupadd -r memoryos && useradd -r -g memoryos -d /app -s /sbin/nologin memoryos
+
 WORKDIR /app
 
 COPY --from=builder /build/target/release/memoryos-gateway /app/
+RUN chown -R memoryos:memoryos /app
+
+USER memoryos
 
 EXPOSE 8080
 

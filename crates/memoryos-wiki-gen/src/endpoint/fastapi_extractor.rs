@@ -86,8 +86,12 @@ impl FastApiExtractor {
     }
 
     fn find_next_function(&self, lines: &[&str], start: usize) -> Option<String> {
-        for i in (start + 1)..lines.len().min(start + 5) {
-            let trimmed = lines[i].trim();
+        for line in lines
+            .iter()
+            .take(lines.len().min(start + 5))
+            .skip(start + 1)
+        {
+            let trimmed = line.trim();
             if trimmed.starts_with("def ") || trimmed.starts_with("async def ") {
                 let name_part = trimmed
                     .trim_start_matches("async ")
