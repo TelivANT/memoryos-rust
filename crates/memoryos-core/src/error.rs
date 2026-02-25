@@ -40,6 +40,14 @@ pub enum AppError {
     #[error("External service error: {0}")]
     ExternalService(String),
 
+    /// Service temporarily unavailable
+    #[error("Service unavailable: {0}")]
+    ServiceUnavailable(String),
+
+    /// Request timeout
+    #[error("Request timeout: {0}")]
+    Timeout(String),
+
     /// Internal logic errors
     #[error("Internal error: {0}")]
     Internal(String),
@@ -56,6 +64,8 @@ impl AppError {
             Self::NotFound(_) => 404,
             Self::RateLimited(_) => 429,
             Self::ExternalService(_) => 503,
+            Self::ServiceUnavailable(_) => 503,
+            Self::Timeout(_) => 504,
             Self::Internal(_) => 500,
         }
     }
@@ -70,6 +80,8 @@ impl AppError {
             Self::NotFound(_) => "not_found",
             Self::RateLimited(_) => "rate_limited",
             Self::ExternalService(_) => "service_unavailable",
+            Self::ServiceUnavailable(_) => "service_unavailable",
+            Self::Timeout(_) => "timeout",
             Self::Internal(_) => "internal_error",
         }
     }
