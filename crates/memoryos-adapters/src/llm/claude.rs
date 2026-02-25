@@ -132,6 +132,7 @@ impl LlmAdapter for ClaudeAdapter {
                     .stop_reason
                     .unwrap_or_else(|| "stop".to_string()),
             }],
+            usage: None,
         })
     }
 

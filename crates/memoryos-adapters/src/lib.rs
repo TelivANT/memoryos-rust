@@ -7,7 +7,7 @@ pub mod wiki;
 
 use async_trait::async_trait;
 use memoryos_core::{AppError, DependencyState, HealthMode, HealthStatus};
-use memoryos_ports::{HealthProbe, NormalizedRequest, NormalizedResponse, UpstreamClient};
+use memoryos_ports::HealthProbe;
 
 pub use eventbus::RedisStreamEventBus;
 pub use history::QdrantHistoryStorage;
@@ -20,42 +20,6 @@ pub use memory::{
     QdrantStorage, RedisStorage,
 };
 pub use wiki::OpenDALAdapter;
-
-#[derive(Debug, Default)]
-pub struct StubUpstreamClient;
-
-#[async_trait]
-impl UpstreamClient for StubUpstreamClient {
-    async fn send_request(
-        &self,
-        request: NormalizedRequest,
-    ) -> Result<NormalizedResponse, AppError> {
-        let body = serde_json::json!({
-            "id": format!("chatcmpl-{}", request.request_id),
-            "object": "chat.completion",
-            "model": request.model,
-            "choices": [{
-                "index": 0,
-                "message": {"role": "assistant", "content": "stub response"},
-                "finish_reason": "stop"
-            }]
-        });
-
-        Ok(NormalizedResponse {
-            status_code: 200,
-            body,
-            adapter_warnings: Vec::new(),
-        })
-    }
-
-    async fn stream_response(
-        &self,
-        request: NormalizedRequest,
-    ) -> Result<Vec<NormalizedResponse>, AppError> {
-        let one = self.send_request(request).await?;
-        Ok(vec![one])
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct StaticHealthProbe {

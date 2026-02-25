@@ -23,7 +23,6 @@ pub struct AppState {
     pub shield: Arc<SecurityShield>,
     #[allow(dead_code)]
     pub context_injector: Arc<dyn ContextInjector>,
-    #[allow(dead_code)]
     pub vector_store: Arc<dyn VectorStorage>,
     pub qdrant_storage: Arc<QdrantStorage>,
     pub redis_storage: Arc<RedisStorage>,
@@ -151,9 +150,9 @@ impl AppState {
             .join(".memoryos");
         let _ = std::fs::create_dir_all(&data_dir);
 
-        let rbac_manager = match RbacManager::new(data_dir.join("rbac.db")).await {
+        let rbac_manager = match RbacManager::new(data_dir.join("rbac_users.json")).await {
             Ok(mgr) => {
-                tracing::info!("RBAC manager initialized (SQLite)");
+                tracing::info!("RBAC manager initialized");
                 Some(mgr)
             }
             Err(e) => {
@@ -161,9 +160,9 @@ impl AppState {
                 None
             }
         };
-        let tenant_manager = match TenantManager::new(data_dir.join("tenants.db")).await {
+        let tenant_manager = match TenantManager::new(data_dir.join("tenants.json")).await {
             Ok(mgr) => {
-                tracing::info!("Tenant manager initialized (SQLite)");
+                tracing::info!("Tenant manager initialized");
                 Some(mgr)
             }
             Err(e) => {
@@ -245,14 +244,10 @@ impl AppState {
 
 #[derive(Clone)]
 pub struct HealthStatus {
-    #[allow(dead_code)]
     pub redis: bool,
-    #[allow(dead_code)]
     pub qdrant: bool,
     pub degraded: bool,
     pub mode: String,
-    #[allow(dead_code)]
     pub upstream: bool,
-    #[allow(dead_code)]
     pub auth_cache: bool,
 }

@@ -1,6 +1,6 @@
 # 部署文档
 
-**版本**: v0.13.0
+**版本**: v1.0.0-rc
 **仓库**: [TelivANT/memoryos-rust](https://github.com/TelivANT/memoryos-rust)
 
 ---
@@ -30,8 +30,6 @@
 | 内存 | 2 GB |
 | 磁盘 | 1 GB |
 | Rust | 1.75+ stable |
-| Docker | 20.10+ |
-| Docker Compose | 2.0+ |
 
 ### 推荐配置（生产）
 

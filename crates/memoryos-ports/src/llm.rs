@@ -36,6 +36,16 @@ pub struct ChatResponse {
     pub object: String,
     pub model: String,
     pub choices: Vec<ChatChoice>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub usage: Option<ChatUsage>,
+}
+
+/// Token usage statistics
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatUsage {
+    pub prompt_tokens: u32,
+    pub completion_tokens: u32,
+    pub total_tokens: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

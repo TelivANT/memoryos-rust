@@ -65,11 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             service.waiting().await?;
         }
         TransportMode::Sse => {
-            tracing::info!("SSE transport on {}", cli.sse_addr);
-            // SSE transport requires additional setup - placeholder for now
-            // In production, use rmcp::transport::sse_server::SseServer
-            eprintln!("SSE transport not yet implemented. Use --transport stdio for now.");
-            std::process::exit(1);
+            return Err("SSE transport is not yet implemented. Use --transport stdio.".into());
         }
     }
 

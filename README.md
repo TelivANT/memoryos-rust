@@ -3,7 +3,7 @@
 High-Performance AI Agent Memory Management System - Rust Implementation
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Rust](https://img.shields.io/badge/Rust-1.93+-orange.svg)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/Rust-1.75+-orange.svg)](https://www.rust-lang.org/)
 [![Status](https://img.shields.io/badge/Status-Early_Development-yellow.svg)](./CHANGELOG.md)
 [![GitHub stars](https://img.shields.io/github/stars/TelivANT/memoryos-rust?style=social)](https://github.com/TelivANT/memoryos-rust/stargazers)
 [![GitHub release](https://img.shields.io/github/v/release/TelivANT/memoryos-rust)](https://github.com/TelivANT/memoryos-rust/releases)
@@ -12,7 +12,7 @@ High-Performance AI Agent Memory Management System - Rust Implementation
 
 **Languages**: [English](README.md) | [简体中文](README_CN.md) | [日本語](README_JA.md) | [Français](README_FR.md) | [العربية](README_AR.md) | [Deutsch](README_DE.md) | [Español](README_ES.md) | [한국어](README_KO.md)
 
-> 📌 **Version Note**: This is the **Personal/Enterprise Single-Tenant Edition**. For SaaS multi-tenant features, see the [`feature/saas-multi-tenant`](https://github.com/TelivANT/memoryos-rust/tree/feature/saas-multi-tenant) branch.
+> 📌 **Version Note**: This is the **Personal/Enterprise Single-Tenant Edition**. Multi-tenant features (RBAC + Tenant isolation) are included in the main branch.
 
 ---
 
@@ -50,16 +50,12 @@ MemoryOS-Rust is a high-performance AI Agent memory management system built with
 
 | Feature | MemoryOS-Rust | Mem0 | Advantage |
 |---------|--------------|------|-----------|
-| **Language** | Rust 🦀 | Python 🐍 | 5-10x faster |
-| **Performance** | TBD (not benchmarked) | ~1K QPS | Needs testing |
-| **FAQ Response** | TBD (not benchmarked) | ~100ms | Needs testing |
-| **Memory Overhead** | TBD (not benchmarked) | ~500MB | Needs testing |
+| **Language** | Rust 🦀 | Python 🐍 | Lower overhead |
 | **LLM Adapters** | 10 | 10+ | Similar |
 | **Vector DBs** | 3 (Qdrant, Chroma, Pinecone) | 5+ | Good coverage |
 | **Graph Memory** | ✅ entity/relation extraction + graph query | ✅ Neo4j | Similar capabilities |
 | **Hot Config Reload** | ✅ 5s auto-refresh | ❌ | Unique feature |
 | **Smart Routing** | ✅ Tier 0 FAQ + heuristic tiers | ⚠️ Basic | MemoryOS has Tier 0 |
-| **Cost Savings** | TBD (not measured) | ~50% | Needs testing |
 | **Production Ready** | Release candidate (pre v1.0) | ✅ Mature | Mem0 is more mature |
 
 **When to choose MemoryOS-Rust**:
@@ -186,7 +182,7 @@ graph TD
 
 ## 📊 Project Status
 
-**Version**: 0.13.0  
+**Version**: 1.0.0-rc  
 **Status**: Release Candidate (pre v1.0)  
   
 
@@ -204,7 +200,7 @@ graph TD
 | Phase 10 | Benchmarks | Done | Criterion microbenchmarks (see docs/PERFORMANCE_REPORT.md) |
 | Phase 11 | Observability | Done | Prometheus /metrics + full-chain instrumentation |
 | Phase 12 | LLM FAQ | Done | LLM-based FAQ classification + /v1/admin/faq/classify |
-| Phase 13 | Enterprise | Done | RBAC + multi-tenant + Admin service + SQLite persistence |
+| Phase 13 | Enterprise | Done | RBAC + multi-tenant + Admin service + JSON file persistence |
 | Phase 14 | Wiki Generation | Done | Tree-sitter + LLM hybrid, multi-language (Rust/Python/Java/Vue) |
 | Phase 15 | Storage Connectors | Done | 17 connectors (Local/Git/S3/WebDAV/OSS/COS/OBS/SFTP/GCS/Azure/SMB/NFS/OneDrive/Google Drive/Dropbox/Baidu Pan/Aliyun Drive) |
 | Phase 16 | MCP Server | Done | MCP protocol support (rmcp + stdio, Gateway proxy) |
@@ -215,7 +211,7 @@ graph TD
 
 ## 🛠️ Tech Stack
 
-- **Language**: Rust 1.93+
+- **Language**: Rust 1.75+ stable
 - **Async Runtime**: Tokio
 - **Web Framework**: Axum
 - **Short-term Storage**: Redis
@@ -262,14 +258,14 @@ This project is in early development. We are actively working on:
 
 ---
 
-## 🏢 Enterprise & SaaS Edition
+## 🏢 Enterprise Features
 
-Looking for multi-tenant SaaS features? Check out the **[`feature/saas-multi-tenant`](https://github.com/TelivANT/memoryos-rust/tree/feature/saas-multi-tenant)** branch, which includes:
+MemoryOS includes enterprise features in the main branch:
 
-- 🏢 **Multi-Tenant Architecture**: Complete tenant isolation
-- 💳 **Billing Integration**: Usage tracking and quota management
-- 🔑 **Flexible LLM Configuration**: Per-tenant API key management
-- 📊 **Usage Analytics**: Detailed per-tenant metrics
+- 🏢 **Multi-Tenant Architecture**: Complete tenant isolation via `X-Tenant-ID` header
+- 🔑 **RBAC Permission Model**: SuperAdmin / Admin / User / ReadOnly roles
+- 📊 **Admin Service**: Dedicated management service on port 9090 (internal network only)
+- 📋 **Audit Logging**: Persistent audit trail (JSONL)
 
 ---
 
@@ -295,4 +291,4 @@ Apache 2.0 License - See [LICENSE](./LICENSE)
 
 ---
 
-**Version**: 0.13.0 (Personal Edition) | **Updated**: 2026-02-24
+**Version**: 1.0.0-rc (Personal Edition) | **Updated**: 2026-02-25

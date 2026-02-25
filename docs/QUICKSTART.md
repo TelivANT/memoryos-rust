@@ -2,14 +2,14 @@
 
 5 分钟快速上手 MemoryOS-Rust 单节点本地部署。
 
-**版本**: v0.13.0
+**版本**: v1.0.0-rc
 **仓库**: [TelivANT/memoryos-rust](https://github.com/TelivANT/memoryos-rust)
 
 ---
 
 ## 环境要求
 
-- **Rust**: 1.75+（推荐 stable 最新版）
+- **Rust**: 1.75+ stable（推荐最新 stable）
 - **Docker**: 20.10+
 - **Docker Compose**: 2.0+
 - **LLM API Key**: OpenAI / Deepseek / Ollama 等任意一个

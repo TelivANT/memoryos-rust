@@ -27,7 +27,7 @@ pub struct AdminState {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(
             std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()),
@@ -58,25 +58,27 @@ async fn main() {
         tracing::warn!("==================================================");
     }
 
+    let rbac_manager = RbacManager::new(&rbac_path)
+        .await
+        .map_err(|e| format!("Failed to init RBAC manager: {}", e))?;
+    let tenant_manager = TenantManager::new(&tenant_path)
+        .await
+        .map_err(|e| format!("Failed to init Tenant manager: {}", e))?;
+
     let state = AdminState {
-        rbac_manager: RbacManager::new(&rbac_path)
-            .await
-            .expect("Failed to init RBAC manager"),
-        tenant_manager: TenantManager::new(&tenant_path)
-            .await
-            .expect("Failed to init Tenant manager"),
+        rbac_manager,
+        tenant_manager,
         audit_logger,
         admin_token: admin_token.clone(),
     };
 
     let allowed_origins = std::env::var("ADMIN_CORS_ORIGINS").unwrap_or_default();
     let cors = if allowed_origins.is_empty() {
+        let origin = "http://localhost:3000"
+            .parse()
+            .map_err(|_| "Failed to parse default CORS origin")?;
         CorsLayer::new()
-            .allow_origin(tower_http::cors::AllowOrigin::exact(
-                "http://localhost:3000"
-                    .parse()
-                    .expect("Failed to parse default CORS origin"),
-            ))
+            .allow_origin(tower_http::cors::AllowOrigin::exact(origin))
             .allow_methods(Any)
             .allow_headers(Any)
     } else {
@@ -147,16 +149,18 @@ async fn main() {
     let port = std::env::var("ADMIN_PORT").unwrap_or_else(|_| "9090".to_string());
     let addr: std::net::SocketAddr = format!("{}:{}", host, port)
         .parse()
-        .expect("Invalid admin host/port");
+        .map_err(|_| format!("Invalid admin host/port: {}:{}", host, port))?;
 
     tracing::info!("MemoryOS Admin Service listening on {}", addr);
     tracing::info!("This service should be deployed on internal network / VPN only");
 
     let listener = tokio::net::TcpListener::bind(addr)
         .await
-        .expect("Failed to bind admin port");
+        .map_err(|e| format!("Failed to bind admin port {}: {}", addr, e))?;
 
     axum::serve(listener, app)
         .await
-        .expect("Admin server error");
+        .map_err(|e| format!("Admin server error: {}", e))?;
+
+    Ok(())
 }

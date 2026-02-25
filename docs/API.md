@@ -1,6 +1,6 @@
 # API 文档
 
-**版本**: v0.13.0
+**版本**: v1.0.0-rc
 **仓库**: [TelivANT/memoryos-rust](https://github.com/TelivANT/memoryos-rust)
 **基础 URL**: `http://localhost:8080`
 

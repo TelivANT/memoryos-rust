@@ -242,7 +242,7 @@ graph TB
 | LLM | 10 Providers: OpenAI, Claude, Gemini, Ollama, Deepseek, OpenRouter, Azure, Cohere, Groq, Mistral |
 | 安全 | IP Defense + API Key Auth + Content Shield + AES-256-GCM |
 | Wiki 生成 | Tree-sitter + LLM 混合 |
-| 存储连接器 | S3, OSS, COS, OBS, WebDAV, SFTP, Git, Local |
+| 存储连接器 | Local, Git, S3, OSS, COS, OBS, WebDAV, SFTP, GCS, Azure Blob, SMB, NFS, OneDrive, Google Drive, Dropbox, Baidu Pan, Aliyun Drive (17 种) |
 
 ## 特性开关 (Feature Flags)
 

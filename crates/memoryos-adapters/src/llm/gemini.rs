@@ -144,6 +144,7 @@ impl LlmAdapter for GeminiAdapter {
                     .and_then(|c| c.finish_reason.clone())
                     .unwrap_or_else(|| "stop".to_string()),
             }],
+            usage: None,
         })
     }
 

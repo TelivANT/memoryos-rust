@@ -11,7 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 # MCP SDK
-rmcp = { version = "0.3", features = ["server", "transport-io", "transport-sse-server"] }
+rmcp = { version = "0.3", features = ["server", "transport-io"] }
 
 # Workspace deps
 tokio.workspace = true
@@ -25,8 +25,3 @@ reqwest.workspace = true
 
 # CLI
 clap = { version = "4", features = ["derive", "env"] }
-
-# Internal crates
-memoryos-core = { path = "../memoryos-core" }
-memoryos-ports = { path = "../memoryos-ports" }
-memoryos-adapters = { path = "../memoryos-adapters" }
