@@ -138,6 +138,42 @@
 
 ---
 
+## 11 角色深度审查 (Round 8 — PR #100)
+
+架构师 / 安全工程师 / 测试工程师 / DBA / Rust 后端 / Vue 前端 / 产品经理 / DevOps/SRE / 算法工程师 / 技术文档工程师 / Code Reviewer，对全部 9 crate、167 文件、~32K 行的全面扫描。
+
+### P0 — 安全漏洞（已修复）
+
+| # | 问题 | 角色 | 状态 |
+|---|------|------|------|
+| 1 | LocalConnector 路径遍历 — `list_files`/`read_file` 无 canonicalize 检查 | 安全+架构 | ✅ DONE — canonicalize + starts_with(root) 校验 |
+| 2 | FAQ/Defense admin 路由缺少 admin_only 中间件 | 安全+Code Reviewer | ✅ DONE — faq_routes/defense_routes 添加 admin_only layer |
+| 3 | RBAC 中间件 rbac_manager=None 时 admin 路由直接放行 | 安全+后端 | ✅ DONE — None 时检查 admin_keys |
+| 4 | admin_only 中间件 auth.enabled=false 时直接放行 | 安全+DevOps | ✅ DONE — admin 路由始终要求 admin key |
+
+### P1 — 工程质量（已修复）
+
+| # | 问题 | 角色 | 状态 |
+|---|------|------|------|
+| 5 | Connector 加密密钥硬编码无警告 | 安全+DevOps | ✅ DONE — 未设置 MEMORYOS_CONNECTOR_SECRET 时 warn |
+| 6 | RBAC/Tenant persist 竞态 — write lock 释放后才 persist | DBA+后端 | ✅ DONE — 统一 drop(write_guard) 后立即 persist |
+| 7 | MCP GatewayClient 无 HTTP 超时 | 网络+SRE | ✅ DONE — 添加 120s timeout + 10s connect_timeout |
+| 8 | browse_directory 无路径遍历检查 | 安全+Code Reviewer | ✅ DONE — 拒绝包含 `..` 的路径 |
+| 9 | 无效 Tenant ID 静默忽略 | 安全+后端 | ✅ DONE — 添加 warn 日志 + 空字符串检查 |
+| 10 | create_tenant 无 ID 格式验证 | DBA+后端 | ✅ DONE — 添加长度+字符格式校验 |
+
+### 已知限制 / 长期优化（已记录）
+
+| # | 问题 | 角色 | 状态 |
+|---|------|------|------|
+| 11 | Embedding cache 无 TTL | 算法 | ⚠️ v1.1 — LRU 淘汰足够 |
+| 12 | GDPR deletion 非原子操作 | DBA | ⚠️ v1.1 — 单进程场景可接受 |
+| 13 | Audit log buffer 满时静默丢弃 | SRE | ⚠️ v1.1 — 已有 file backend 持久化 |
+| 14 | Rate limiter 进程级别非分布式 | DevOps | ⚠️ 已文档化 — 建议 Redis 方案 |
+| 15 | Circuit breaker 全局单例 | 架构 | ⚠️ 已文档化 — 建议 v1.1 per-provider |
+
+---
+
 ## 历史审计轮次
 
 ### Round 1-4 (PR #57-#61)
@@ -186,3 +222,5 @@
 | #96 | 三次深度审查修复 (28 项) | ✅ merged |
 | #97 | 六条准则审查 Round 6 | ✅ merged |
 | #98 | 多视角深度审查修复 (23 项, 14 实际修复) | ✅ merged |
+| #99 | 六条准则审查 Round 7 | ✅ merged |
+| #100 | 11 角色深度审查修复 (10 项实际修复) | 🔄 pending |

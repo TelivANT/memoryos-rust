@@ -31,11 +31,15 @@ fn extract_tenant_id(headers: &HeaderMap) -> Option<String> {
 
     // Basic validation: tenant_id must be alphanumeric + hyphens/underscores, max 128 chars
     if let Some(ref id) = tenant_id {
+        if id.is_empty() {
+            return None; // Empty header treated as absent
+        }
         if id.len() > 128
             || !id
                 .chars()
                 .all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.')
         {
+            tracing::warn!(tenant_id = %id, "Invalid X-Tenant-ID rejected");
             return None; // Invalid tenant ID is treated as absent
         }
     }
@@ -58,7 +62,25 @@ pub async fn rbac_middleware(
 
     let rbac = match &state.rbac_manager {
         Some(rbac) => rbac,
-        None => return Ok(next.run(request).await),
+        None => {
+            // Without RBAC manager, admin routes must still be blocked
+            if is_admin_route {
+                let token = extract_token(&headers);
+                if token.is_empty() || !state.config.auth.admin_keys.contains(&token.to_string()) {
+                    return Err((
+                        StatusCode::FORBIDDEN,
+                        axum::Json(json!({
+                            "error": {
+                                "code": "forbidden",
+                                "message": "Admin access required"
+                            }
+                        })),
+                    )
+                        .into_response());
+                }
+            }
+            return Ok(next.run(request).await);
+        }
     };
 
     let token = extract_token(&headers);

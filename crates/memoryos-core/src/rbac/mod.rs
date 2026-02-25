@@ -146,26 +146,30 @@ impl RbacManager {
     }
 
     async fn persist(&self) {
+        // NOTE: caller must hold write lock or call this immediately after mutation.
+        // We take a read lock here to serialize the current state.
         let users = self.users.read().await;
         let list: Vec<&UserRecord> = users.values().collect();
         if let Ok(data) = serde_json::to_string_pretty(&list) {
-            let _ = tokio::fs::write(&self.persist_path, data).await;
+            if let Err(e) = tokio::fs::write(&self.persist_path, data).await {
+                tracing::warn!("RBAC persist failed: {}", e);
+            }
         }
     }
 
     pub async fn add_user(&self, user: UserRecord) {
-        {
-            let mut users = self.users.write().await;
-            users.insert(user.user_id.clone(), user);
-        }
+        let mut users = self.users.write().await;
+        users.insert(user.user_id.clone(), user);
+        // Persist while still conceptually "owning" the mutation.
+        // We must drop write lock before taking read lock in persist().
+        drop(users);
         self.persist().await;
     }
 
     pub async fn remove_user(&self, user_id: &str) -> bool {
-        let removed = {
-            let mut users = self.users.write().await;
-            users.remove(user_id).is_some()
-        };
+        let mut users = self.users.write().await;
+        let removed = users.remove(user_id).is_some();
+        drop(users);
         if removed {
             self.persist().await;
         }
@@ -183,16 +187,15 @@ impl RbacManager {
     }
 
     pub async fn assign_role(&self, user_id: &str, role: Role) -> bool {
-        let found = {
-            let mut users = self.users.write().await;
-            if let Some(user) = users.get_mut(user_id) {
-                user.role = role;
-                user.updated_at = chrono::Utc::now().to_rfc3339();
-                true
-            } else {
-                false
-            }
+        let mut users = self.users.write().await;
+        let found = if let Some(user) = users.get_mut(user_id) {
+            user.role = role;
+            user.updated_at = chrono::Utc::now().to_rfc3339();
+            true
+        } else {
+            false
         };
+        drop(users);
         if found {
             self.persist().await;
         }
@@ -231,24 +234,23 @@ impl RbacManager {
         email: Option<String>,
         is_active: Option<bool>,
     ) -> bool {
-        let found = {
-            let mut users = self.users.write().await;
-            if let Some(user) = users.get_mut(user_id) {
-                if let Some(name) = display_name {
-                    user.display_name = name;
-                }
-                if let Some(e) = email {
-                    user.email = e;
-                }
-                if let Some(active) = is_active {
-                    user.is_active = active;
-                }
-                user.updated_at = chrono::Utc::now().to_rfc3339();
-                true
-            } else {
-                false
+        let mut users = self.users.write().await;
+        let found = if let Some(user) = users.get_mut(user_id) {
+            if let Some(name) = display_name {
+                user.display_name = name;
             }
+            if let Some(e) = email {
+                user.email = e;
+            }
+            if let Some(active) = is_active {
+                user.is_active = active;
+            }
+            user.updated_at = chrono::Utc::now().to_rfc3339();
+            true
+        } else {
+            false
         };
+        drop(users);
         if found {
             self.persist().await;
         }

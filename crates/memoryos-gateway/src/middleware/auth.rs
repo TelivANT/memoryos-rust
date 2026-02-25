@@ -36,13 +36,33 @@ pub async fn admin_only(
     request: Request,
     next: Next,
 ) -> Result<Response, Response> {
-    if !state.config.auth.enabled {
-        return Ok(next.run(request).await);
-    }
-
+    // Admin routes ALWAYS require authentication, even when auth.enabled = false
     let token = extract_bearer_token(&headers);
 
-    if constant_time_contains(&state.config.auth.admin_keys, token) {
+    // If auth is enabled, check admin keys
+    // If auth is disabled, still require admin key for admin routes
+    if state.config.auth.admin_keys.is_empty() && state.config.auth.admin_key.is_none() {
+        // No admin keys configured at all — block admin access
+        if !state.config.auth.enabled {
+            return Err((
+                StatusCode::FORBIDDEN,
+                axum::Json(json!({
+                    "error": {
+                        "code": "forbidden",
+                        "message": "Admin routes require admin_keys to be configured"
+                    }
+                })),
+            )
+                .into_response());
+        }
+    }
+
+    let mut all_admin_keys = state.config.auth.admin_keys.clone();
+    if let Some(ref key) = state.config.auth.admin_key {
+        all_admin_keys.push(key.clone());
+    }
+
+    if constant_time_contains(&all_admin_keys, token) {
         Ok(next.run(request).await)
     } else {
         Err((
