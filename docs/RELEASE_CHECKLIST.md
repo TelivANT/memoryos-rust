@@ -19,6 +19,37 @@
 
 ---
 
+## 三次审查报告修复 (Round 6)
+
+### P1 修复
+
+| # | 问题 | 状态 |
+|---|------|------|
+| P1-1 | Defense 模块未挂载 | ✅ DONE — IpDefenseSystem 加入 AppState，defense routes 挂载到 /v1/admin/defense，移除 4 处 #[allow(dead_code)] |
+| P1-2 | ChatRequest/ChatMessage 重复 3 处 | ✅ DONE — 删除 core/llm/context.rs 死代码（ContextInjector 无外部消费者）。wiki-gen 版保留（独立 crate，不依赖 ports）。ports 版为权威定义 |
+| P1-3 | 9 处 #[allow(dead_code)] | ✅ 降至 5 处 — defense routes 4 处已消除，剩余 5 处均有合理原因（ConnectInfo 限制、NATS 连接保持、反序列化、内部字段、公共 API 预留） |
+| P1-4 | v0.13.0 残留 | ✅ 确认 — WORK_LOG L4 已是 v1.0.0-rc，其余均为版本历史表 |
+| P1-5 | wiki-gen 零内联测试 | 📋 不在本轮范围 — 非阻塞项 |
+
+### P2 修复
+
+| # | 问题 | 状态 |
+|---|------|------|
+| P2-1 | MCP SSE 选项 | ✅ DONE — transport 和 sse_addr 参数加 hide = true，CLI help 不再显示 |
+| P2-2 | metrics expect | 📋 保留 — lazy_static 注册实际不会失败，低优先级 |
+
+### 变更文件清单
+
+- `crates/memoryos-gateway/src/state.rs` — 新增 IpDefenseSystem 初始化 + defense 字段
+- `crates/memoryos-gateway/src/main.rs` — 挂载 /v1/admin/defense 路由
+- `crates/memoryos-gateway/src/routes/defense.rs` — 移除 4 处 #[allow(dead_code)]
+- `crates/memoryos-gateway/src/middleware/defense.rs` — 添加详细注释说明 ConnectInfo 限制
+- `crates/memoryos-core/src/llm/context.rs` — 已删除（死代码）
+- `crates/memoryos-core/src/llm/mod.rs` — 移除 context 模块导出
+- `crates/memoryos-mcp/src/main.rs` — SSE 参数 hide = true
+
+---
+
 ## 二次审查报告修复 (Round 5)
 
 ### P0 — 残留代码 / 孤儿文件
@@ -55,15 +86,14 @@
 
 ---
 
-## 剩余 #[allow(dead_code)] 清单 (9 处，均合理)
+## 剩余 #[allow(dead_code)] 清单 (5 处，均合理)
 
 | 文件 | 原因 |
 |------|------|
-| routes/defense.rs (4 处) | v1.1 预留，IP 防御路由 |
-| middleware/defense.rs (1 处) | v1.1 预留，IP 防御中间件 |
+| middleware/defense.rs (1 处) | 中间件需要 ConnectInfo<SocketAddr>，暂不挂载为全局层 |
 | state.rs: current_worker_monitor (1 处) | 异步管道监控，按需启用 |
-| adapters/memory/nats.rs (1 处) | NATS 在 `full` feature profile 下 |
-| adapters/memory/pinecone.rs (1 处) | Pinecone 可选向量存储 |
+| adapters/memory/nats.rs (1 处) | NATS client 字段需保持连接 |
+| adapters/memory/pinecone.rs (1 处) | PineconeFetchedVector 反序列化用 |
 | parser/vue.rs: SfcSection.tag (1 处) | 内部数据结构，调试用字段 |
 
 ---

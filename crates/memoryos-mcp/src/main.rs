@@ -20,11 +20,11 @@ enum TransportMode {
 #[command(name = "memoryos-mcp", about = "MemoryOS MCP Server")]
 struct Cli {
     /// Transport mode: stdio (recommended) or sse (not yet implemented)
-    #[arg(long, default_value = "stdio")]
+    #[arg(long, default_value = "stdio", hide = true)]
     transport: TransportMode,
 
     /// SSE listen address (only used with --transport sse, not yet implemented)
-    #[arg(long, default_value = "127.0.0.1:3001")]
+    #[arg(long, default_value = "127.0.0.1:3001", hide = true)]
     sse_addr: SocketAddr,
 
     /// MemoryOS Gateway base URL for API calls

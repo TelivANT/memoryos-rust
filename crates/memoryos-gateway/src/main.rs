@@ -14,6 +14,7 @@ mod state;
 mod worker_monitor;
 
 use handlers::chat_completions;
+use routes::defense::create_defense_routes;
 use routes::faq::{create_faq_routes, FaqState};
 use routes::graph::{create_graph_routes, GraphState};
 use routes::memory_manage::{create_memory_manage_routes, MemoryManageState};
@@ -188,6 +189,12 @@ async fn main() -> Result<(), AppError> {
     };
     let wiki_routes = create_wiki_routes(wiki_state);
 
+    // Defense routes (v1.1 — IP ban/whitelist management, admin-only)
+    let defense_routes = state
+        .defense
+        .as_ref()
+        .map(|d| create_defense_routes(d.clone()));
+
     // All routes that require authentication (including nested sub-routes)
     let authed_routes = Router::new()
         .route("/v1/chat/completions", post(chat_completions))
@@ -220,7 +227,16 @@ async fn main() -> Result<(), AppError> {
         .with_state(state)
         .merge(authed_routes)
         .merge(admin_routes)
-        .nest("/v1/admin/faq", faq_routes)
+        .nest("/v1/admin/faq", faq_routes);
+
+    // Mount defense routes if IP defense system is available
+    let app = if let Some(dr) = defense_routes {
+        app.nest("/v1/admin/defense", dr)
+    } else {
+        app
+    };
+
+    let app = app
         .layer(axum::middleware::from_fn_with_state(
             state_arc.clone(),
             middleware::rbac_middleware,
