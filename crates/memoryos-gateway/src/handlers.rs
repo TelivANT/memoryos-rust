@@ -11,7 +11,6 @@ use memoryos_core::{
 };
 use memoryos_ports::llm::ChatChoice;
 use memoryos_ports::{ChatMessage, ChatRequest, ChatResponse};
-use serde_json::json;
 use tracing::{info, warn};
 
 pub async fn chat_completions(
@@ -160,20 +159,4 @@ pub async fn chat_completions(
 
 pub async fn health_check() -> impl IntoResponse {
     (StatusCode::OK, "OK")
-}
-
-pub async fn health_status(State(state): State<AppState>) -> impl IntoResponse {
-    let worker = state.current_worker_monitor().await;
-    (
-        StatusCode::OK,
-        Json(json!({
-            "status": "ok",
-            "async_memory_pipeline": worker.async_memory_enabled,
-            "worker_stream": worker.stream_key,
-            "worker_group": worker.group,
-            "worker_consumers": worker.worker_consumers,
-            "worker_last_check_at": worker.last_check_at,
-            "worker_last_error": worker.last_error,
-        })),
-    )
 }

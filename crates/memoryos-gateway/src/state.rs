@@ -245,6 +245,9 @@ impl AppState {
         health.degraded
     }
 
+    /// Returns the current worker monitor snapshot.
+    /// Used by async memory pipeline monitoring (when enabled).
+    #[allow(dead_code)]
     pub async fn current_worker_monitor(&self) -> WorkerMonitorSnapshot {
         self.worker_monitor.read().await.clone()
     }
