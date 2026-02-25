@@ -138,7 +138,7 @@
 
 ---
 
-## 11 角色深度审查 (Round 8 — PR #100)
+## 11 角色深度审查 (Round 8 — PR #101)
 
 架构师 / 安全工程师 / 测试工程师 / DBA / Rust 后端 / Vue 前端 / 产品经理 / DevOps/SRE / 算法工程师 / 技术文档工程师 / Code Reviewer，对全部 9 crate、167 文件、~32K 行的全面扫描。
 
@@ -171,6 +171,19 @@
 | 13 | Audit log buffer 满时静默丢弃 | SRE | ⚠️ v1.1 — 已有 file backend 持久化 |
 | 14 | Rate limiter 进程级别非分布式 | DevOps | ⚠️ 已文档化 — 建议 Redis 方案 |
 | 15 | Circuit breaker 全局单例 | 架构 | ⚠️ 已文档化 — 建议 v1.1 per-provider |
+
+---
+
+## 六条准则审查 Round 8 (PR #101 后)
+
+| 准则 | 结果 | 修复 |
+|------|------|------|
+| 1. Bug/功能缺陷 | ✅ 通过 — 无新增 panic/unwrap/dead_code | — |
+| 2. 文档同步 | ⚠️ README.md Hot Config Reload 声称 "✅ 5s auto-refresh" 但实际无效 | ✅ 修正为 "⚠️ Limited (restart required)" |
+| 3. 进度追踪 | ⚠️ RELEASE_CHECKLIST PR 号写成 #100，实际是 #101 | ✅ 修正 |
+| 4. 代码-文档偏差 | 同准则2，README 与实际行为不符 | ✅ 已修正 |
+| 5. 技术栈一致性 | ✅ 通过 — 无 sqlx/postgres/mysql 依赖 | — |
+| 6. 基座复用 | ⚠️ local.rs 路径遍历检查 canonicalize 重复 4 次 | ✅ 抽取 validate_path() 辅助方法 |
 
 ---
 
@@ -223,4 +236,5 @@
 | #97 | 六条准则审查 Round 6 | ✅ merged |
 | #98 | 多视角深度审查修复 (23 项, 14 实际修复) | ✅ merged |
 | #99 | 六条准则审查 Round 7 | ✅ merged |
-| #100 | 11 角色深度审查修复 (10 项实际修复) | 🔄 pending |
+| #101 | 11 角色深度审查修复 (10 项实际修复) | ✅ merged |
+| #??? | 六条准则审查 Round 8 | 🔄 pending |
