@@ -257,6 +257,10 @@ async fn main() -> Result<(), AppError> {
     let app = app
         .layer(cors)
         .layer(axum::extract::DefaultBodyLimit::max(10 * 1024 * 1024)) // 10MB limit
+        .layer(tower_http::request_id::SetRequestIdLayer::x_request_id(
+            tower_http::request_id::MakeRequestUuid,
+        ))
+        .layer(tower_http::request_id::PropagateRequestIdLayer::x_request_id())
         .layer(axum::middleware::from_fn_with_state(
             state_arc.clone(),
             middleware::rbac_middleware,
