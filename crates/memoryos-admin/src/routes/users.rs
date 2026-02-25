@@ -43,7 +43,7 @@ pub async fn create_user(
     State(state): State<AdminState>,
     Json(req): Json<CreateUserRequest>,
 ) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
-    let role = Role::from_str(&req.role).ok_or_else(|| {
+    let role = Role::parse_role(&req.role).ok_or_else(|| {
         (
             StatusCode::BAD_REQUEST,
             Json(json!({"error": format!("Invalid role: {}", req.role)})),
@@ -134,7 +134,7 @@ pub async fn assign_role(
     Path(user_id): Path<String>,
     Json(req): Json<AssignRoleRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    let role = Role::from_str(&req.role).ok_or_else(|| {
+    let role = Role::parse_role(&req.role).ok_or_else(|| {
         (
             StatusCode::BAD_REQUEST,
             Json(json!({"error": format!("Invalid role: {}. Valid roles: super_admin, admin, user, read_only", req.role)})),

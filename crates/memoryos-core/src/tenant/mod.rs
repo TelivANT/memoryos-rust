@@ -78,6 +78,7 @@ impl TenantManager {
         tenants.get(tenant_id).cloned()
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn update_tenant(
         &self,
         tenant_id: &str,

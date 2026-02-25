@@ -43,7 +43,7 @@ impl Role {
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse_role(s: &str) -> Option<Self> {
         match s {
             "super_admin" => Some(Role::SuperAdmin),
             "admin" => Some(Role::Admin),
@@ -83,7 +83,7 @@ impl Permission {
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse_permission(s: &str) -> Option<Self> {
         match s {
             "read_memory" => Some(Permission::ReadMemory),
             "write_memory" => Some(Permission::WriteMemory),
@@ -372,11 +372,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_role_from_str() {
-        assert_eq!(Role::from_str("super_admin"), Some(Role::SuperAdmin));
-        assert_eq!(Role::from_str("admin"), Some(Role::Admin));
-        assert_eq!(Role::from_str("user"), Some(Role::User));
-        assert_eq!(Role::from_str("read_only"), Some(Role::ReadOnly));
-        assert_eq!(Role::from_str("invalid"), None);
+        assert_eq!(Role::parse_role("super_admin"), Some(Role::SuperAdmin));
+        assert_eq!(Role::parse_role("admin"), Some(Role::Admin));
+        assert_eq!(Role::parse_role("user"), Some(Role::User));
+        assert_eq!(Role::parse_role("read_only"), Some(Role::ReadOnly));
+        assert_eq!(Role::parse_role("invalid"), None);
     }
 
     #[tokio::test]
