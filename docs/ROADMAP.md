@@ -22,7 +22,7 @@
 #### 核心功能
 - ✅ 3-Tier 记忆架构（STM/MTM/LTM）
 - ✅ 六边形架构
-- ✅ 配置热更新（5 秒自动生效）
+- ⚠️ 配置热更新（受限 — 大部分配置变更需重启，见 docs/CONFIG_HOT_RELOAD_LIMITATION.md）
 - ✅ 实时健康检查（运行时动态探测）
 - ✅ 优雅降级（Full/Degraded/Noop 三层）
 - ✅ FAQ 热度追踪/自动提升已实现
