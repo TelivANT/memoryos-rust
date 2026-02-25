@@ -98,7 +98,8 @@ pub async fn retrieve_context(
     Ok(response)
 }
 
-// TODO: Memory API 测试需要重构以适配新架构
+// NOTE: Memory API tests require full integration environment (Redis + Qdrant).
+// Enable with `memory-route-tests-disabled` feature flag when integration infra is available.
 #[cfg(test)]
 #[cfg(feature = "memory-route-tests-disabled")]
 mod tests {

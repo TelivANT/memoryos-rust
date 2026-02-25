@@ -29,7 +29,7 @@ MemoryOS-Rust is a high-performance AI Agent memory management system built with
 
 ## ✨ Key Features
 
-- 🚀 **High Performance**: Rust + Tokio async runtime, designed for high concurrency (end-to-end QPS/latency TBD; Criterion microbenchmarks available).
+- 🚀 **High Performance**: Rust + Tokio async runtime, designed for high concurrency. Criterion microbenchmarks available; production QPS/latency pending real-world validation.
 - 🧠 **Unified Vector Storage**: All memory tiers (STM/MTM/LTM) use vector databases for persistent storage.
 - 💾 **3 Vector Database Options**: Qdrant (default), Chroma (lightweight), Pinecone (cloud-hosted).
 - ⚡ **FAQ Heat Tracking**: High-frequency Q&A detection with heat score calculation and auto-promotion logic.

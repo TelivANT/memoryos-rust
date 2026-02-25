@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use reqwest::Client;
-use std::path::PathBuf;
 
 use crate::error::{Result, WikiGenError};
 
@@ -155,12 +154,6 @@ impl StorageConnector for DropboxConnector {
             modified: None,
             is_dir: tag == "folder",
         })
-    }
-
-    async fn clone_to_temp(&self) -> Result<PathBuf> {
-        Err(WikiGenError::Storage(
-            "Dropbox does not support clone_to_temp".to_string(),
-        ))
     }
 
     fn name(&self) -> &str {

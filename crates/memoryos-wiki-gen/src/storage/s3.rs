@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use aws_sdk_s3::config::{Credentials, Region};
 use aws_sdk_s3::Client;
-use std::path::PathBuf;
 
 use crate::error::{Result, WikiGenError};
 
@@ -183,12 +182,6 @@ impl StorageConnector for S3Connector {
             }),
             is_dir: false,
         })
-    }
-
-    async fn clone_to_temp(&self) -> Result<PathBuf> {
-        Err(WikiGenError::Storage(
-            "S3 does not support clone_to_temp".to_string(),
-        ))
     }
 
     fn name(&self) -> &str {

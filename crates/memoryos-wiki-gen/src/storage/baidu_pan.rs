@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use reqwest::Client;
-use std::path::PathBuf;
 
 use crate::error::{Result, WikiGenError};
 
@@ -236,12 +235,6 @@ impl StorageConnector for BaiduPanConnector {
             modified: None,
             is_dir: item["isdir"].as_u64().unwrap_or(0) == 1,
         })
-    }
-
-    async fn clone_to_temp(&self) -> Result<PathBuf> {
-        Err(WikiGenError::Storage(
-            "Baidu Pan does not support clone_to_temp".to_string(),
-        ))
     }
 
     fn name(&self) -> &str {

@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use reqwest::Client;
-use std::path::PathBuf;
 
 use crate::error::{Result, WikiGenError};
 
@@ -172,12 +171,6 @@ impl StorageConnector for GoogleDriveConnector {
             modified: None,
             is_dir: mime == "application/vnd.google-apps.folder",
         })
-    }
-
-    async fn clone_to_temp(&self) -> Result<PathBuf> {
-        Err(WikiGenError::Storage(
-            "Google Drive does not support clone_to_temp".to_string(),
-        ))
     }
 
     fn name(&self) -> &str {
