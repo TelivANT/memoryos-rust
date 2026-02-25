@@ -189,6 +189,30 @@
 
 ---
 
+## AGENTS.md 规则审计 (12 角色红线/黄线扫描)
+
+以 AGENTS.md 中 12 个角色的红线/黄线/绿线规则对全部 9 crate 进行扫描。
+
+### 修复项
+
+| # | 违规规则 | 角色 | 文件 | 修复 |
+|---|---------|------|------|------|
+| 1 | 🔴 Rust: 生产代码不用 unwrap | Rust 工程师 | rate_limit.rs | ✅ `.unwrap()` → `HeaderValue::from_static()` |
+| 2 | 🟡 统一日志框架 | Rust+DevOps | metrics/lib.rs | ✅ `eprintln!` → `tracing::error!` |
+| 3 | 🔴 不忽略错误处理 | 后端通用 | admin/main.rs, gateway/main.rs, state.rs, audit.rs, gdpr.rs | ✅ `let _ = create_dir_all` → `if let Err(e)` + warn 日志 |
+
+### 已知限制（不修）
+
+| # | 发现 | 原因 |
+|---|------|------|
+| 1 | metrics lazy_static `.expect()` (20处) | Prometheus 标准模式，仅在 metric 名冲突时 panic（编程错误） |
+| 2 | FileAuditBackend/FileGdprBackend 用 std::fs | trait 方法是 sync 的，不在 async 上下文中 |
+| 3 | RateLimiter 用 tokio::sync::Mutex | 写多读少场景，Mutex 比 RwLock 更合适 |
+| 4 | API key 用 SHA-256 hash（无 salt） | API key 是高熵随机字符串，不同于密码，SHA-256 足够 |
+| 5 | ADMIN_TOKEN 未设置时仍可启动 | 已有 warn 日志，开发环境需要 |
+
+---
+
 ## 六条准则审查 Round 9 (PR #103 后)
 
 | 准则 | 结果 | 修复 |
@@ -270,3 +294,5 @@
 | #103 | 更新 PR 合并记录 | ✅ merged |
 | #104 | 六条准则审查 Round 9 | ✅ merged |
 | #105 | 修复剩余 hot-reload 文档声明 | ✅ merged |
+| #106 | 六条准则审查 Round 10 | ✅ merged |
+| #??? | AGENTS.md 规则审计 — 代码质量修复 | 🔄 pending |

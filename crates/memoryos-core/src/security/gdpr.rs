@@ -25,7 +25,9 @@ impl FileGdprBackend {
     pub fn new(path: &str) -> Self {
         let path = PathBuf::from(path);
         if let Some(parent) = path.parent() {
-            let _ = std::fs::create_dir_all(parent);
+            if let Err(e) = std::fs::create_dir_all(parent) {
+                tracing::warn!("Failed to create GDPR dir {:?}: {}", parent, e);
+            }
         }
         Self { path }
     }

@@ -168,7 +168,9 @@ impl AppState {
             .map(std::path::PathBuf::from)
             .unwrap_or_else(|| std::path::PathBuf::from("."))
             .join(".memoryos");
-        let _ = std::fs::create_dir_all(&data_dir);
+        if let Err(e) = std::fs::create_dir_all(&data_dir) {
+            tracing::warn!("Failed to create data dir {:?}: {}", data_dir, e);
+        }
 
         let rbac_manager = match RbacManager::new(data_dir.join("rbac_users.json")).await {
             Ok(mgr) => {

@@ -156,15 +156,12 @@ pub fn gather_metrics() -> String {
     let mut buffer = Vec::new();
 
     if let Err(e) = encoder.encode(&metric_families, &mut buffer) {
-        eprintln!("[memoryos-metrics] Failed to encode metrics: {}", e);
+        tracing::error!("Failed to encode metrics: {}", e);
         return format!("# ERROR: Failed to encode metrics: {}\n", e);
     }
 
     String::from_utf8(buffer).unwrap_or_else(|e| {
-        eprintln!(
-            "[memoryos-metrics] Failed to convert metrics to UTF-8: {}",
-            e
-        );
+        tracing::error!("Failed to convert metrics to UTF-8: {}", e);
         format!("# ERROR: Failed to convert metrics to UTF-8: {}\n", e)
     })
 }
