@@ -19,6 +19,29 @@
 
 ---
 
+## 六条准则审计 Round 8-16 (2026-02-25)
+
+| Round | 准则 | 发现问题 | PR | 状态 |
+|-------|------|----------|-----|------|
+| 8 | 文档同步 | 9 个文档版本号过时 (0.2.0/0.3.0/0.9.0) | #68 | ✅ MERGED |
+| 9 | Bug/功能缺陷 | Clippy 警告 (from_str, is_multiple_of, too_many_arguments) | #69 | ✅ MERGED |
+| 10 | Bug/功能缺陷 | 未使用的 LanguageParser 导入 | #70 | ✅ MERGED |
+| 11 | 文档同步 | 缺失 4 个环境变量文档 | #71 | ✅ MERGED |
+| 12 | 基座复用 | 重复的 Dockerfile.gateway | #72 | ✅ MERGED |
+| 13 | Bug/功能缺陷 | 错误处理一致性检查 | - | ✅ PASS |
+| 14 | 代码-文档偏差 | API.md 缺少 3 个 Defense API 端点 | #73 | 🔄 PENDING |
+| 15 | Bug/功能缺陷 | 测试覆盖率检查 (303 tests) | - | ✅ PASS |
+| 16 | 进度追踪 | 更新 RELEASE_CHECKLIST 记录所有审计轮次 | #74 | 🔄 PENDING |
+
+**审计统计**:
+- 总轮次: 16
+- 发现问题: 10
+- 已修复: 8
+- 待合并: 2
+- 直接通过: 6
+
+---
+
 ## 六条准则审计 Round 7 (2026-02-25)
 
 ### 发现问题
