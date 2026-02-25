@@ -73,6 +73,12 @@ pub struct ServerConfig {
     pub worker_threads: usize,
     #[serde(default = "default_timeout")]
     pub timeout_seconds: u64,
+    #[serde(default = "default_rate_limit")]
+    pub rate_limit_per_minute: u32,
+}
+
+fn default_rate_limit() -> u32 {
+    100
 }
 
 #[derive(Debug, Clone, Deserialize)]

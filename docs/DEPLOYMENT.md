@@ -223,6 +223,7 @@ enabled = false
 | `MEMORYOS_WORKER_STREAM` | Worker Redis Stream 名称 | `chat_log` |
 | `MEMORYOS_WORKER_GROUP` | Worker 消费者组名称 | `memory_workers` |
 | `MEMORYOS_WORKER_CONSUMER` | Worker 消费者 ID（每个实例唯一） | 自动生成 |
+| `MEMORYOS_RATE_LIMIT` | 每 IP 每分钟请求限制 | `100` |
 
 ### 配置热重载
 
