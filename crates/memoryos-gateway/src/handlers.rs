@@ -2,8 +2,9 @@ use crate::state::AppState;
 use axum::{
     extract::{Json, State},
     http::HeaderMap,
-    response::IntoResponse,
+    response::{IntoResponse, Sse},
 };
+use futures::stream::{self, Stream};
 use memoryos_core::{
     llm::{RouteDecision, RouteTier, RouterContext},
     security::ComplianceResult,
@@ -11,13 +12,122 @@ use memoryos_core::{
 };
 use memoryos_ports::llm::ChatChoice;
 use memoryos_ports::{ChatMessage, ChatRequest, ChatResponse};
+use std::convert::Infallible;
 use tracing::{info, warn};
 
 pub async fn chat_completions(
     State(state): State<AppState>,
     headers: HeaderMap,
     Json(mut request): Json<ChatRequest>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<axum::response::Response, AppError> {
+    if request.stream {
+        return chat_completions_stream(state, headers, request).await;
+    }
+    chat_completions_non_stream(state, headers, request).await
+}
+
+async fn chat_completions_stream(
+    state: AppState,
+    headers: HeaderMap,
+    request: ChatRequest,
+) -> Result<axum::response::Response, AppError> {
+    let user_id = headers
+        .get("X-User-ID")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("default_user")
+        .to_string();
+
+    let last_msg = request
+        .messages
+        .last()
+        .map(|m| m.content.clone())
+        .unwrap_or_default();
+
+    // 1. Security Shield
+    let compliance = state.shield.check_compliance(&last_msg);
+    match &compliance {
+        ComplianceResult::Blocked(reason) => {
+            return Err(AppError::BadRequest(reason.clone()));
+        }
+        ComplianceResult::RequiresLocal => {
+            info!(user_id, "Compliance enforced: Routing to Local LLM");
+        }
+        ComplianceResult::Safe => {}
+    }
+
+    // 2. Route decision
+    let has_sensitive = matches!(compliance, ComplianceResult::RequiresLocal);
+    let router_ctx = RouterContext {
+        query: last_msg.clone(),
+        token_count: last_msg.len() / 4,
+        global_similarity: 0.0,
+        is_faq_match: false,
+        has_sensitive_keywords: has_sensitive,
+        faq_answer: None,
+    };
+
+    let decision = state.router.route(&router_ctx).await?;
+    let target_provider = match decision.tier {
+        RouteTier::Local => state
+            .config
+            .router
+            .local_backends
+            .first()
+            .map(|s| s.as_str())
+            .unwrap_or(&state.config.llm.default_provider),
+        RouteTier::Cloud => &state.config.llm.default_provider,
+        RouteTier::DirectHit => {
+            // For direct hit, return as SSE stream
+            let content = decision.direct_response.unwrap_or_default();
+            let stream = stream::once(async move {
+                Ok::<_, Infallible>(axum::response::sse::Event::default()
+                    .json_data(serde_json::json!({
+                        "id": format!("direct-{}", uuid::Uuid::now_v7()),
+                        "object": "chat.completion.chunk",
+                        "model": "memoryos-direct",
+                        "choices": [{
+                            "index": 0,
+                            "delta": {"content": content},
+                            "finish_reason": "stop"
+                        }]
+                    }))
+                    .unwrap())
+            });
+            return Ok(Sse::new(stream).into_response());
+        }
+    };
+
+    let adapter = state
+        .get_adapter(target_provider)
+        .ok_or_else(|| AppError::Config(format!("Provider '{}' not found", target_provider)))?;
+
+    // Call adapter with streaming
+    let response = adapter.chat(request).await?;
+    
+    // Convert to SSE stream
+    let stream = stream::once(async move {
+        Ok::<_, Infallible>(axum::response::sse::Event::default()
+            .json_data(serde_json::json!({
+                "id": response.id,
+                "object": "chat.completion.chunk",
+                "model": response.model,
+                "choices": response.choices.iter().map(|c| serde_json::json!({
+                    "index": c.index,
+                    "delta": {"content": c.message.content},
+                    "finish_reason": c.finish_reason
+                })).collect::<Vec<_>>()
+            }))
+            .unwrap())
+    });
+
+    Ok(Sse::new(stream).into_response())
+}
+
+async fn chat_completions_non_stream(
+    state: AppState,
+    headers: HeaderMap,
+    mut request: ChatRequest,
+) -> Result<axum::response::Response, AppError> {
     let user_id = headers
         .get("X-User-ID")
         .and_then(|h| h.to_str().ok())
@@ -63,7 +173,7 @@ pub async fn chat_completions(
                 finish_reason: "stop".to_string(),
             }],
             usage: None,
-        }));
+        }).into_response());
     }
 
     let memory_mgr = state.memory_manager.read().await.clone();
@@ -122,7 +232,7 @@ pub async fn chat_completions(
                 finish_reason: "stop".to_string(),
             }],
             usage: None,
-        }));
+        }).into_response());
     }
 
     // 4. Upstream Call
@@ -160,5 +270,5 @@ pub async fn chat_completions(
         });
     }
 
-    Ok(Json(response))
+    Ok(Json(response).into_response())
 }
