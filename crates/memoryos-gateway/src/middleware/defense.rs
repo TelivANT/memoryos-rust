@@ -2,8 +2,7 @@
 //!
 //! Global rate-limiting middleware using IpDefenseSystem.
 //! Requires `ConnectInfo<SocketAddr>` which needs `into_make_service_with_connect_info()`.
-//! Currently not mounted as a global layer; defense management is exposed via /v1/admin/defense routes.
-//! To enable global IP rate-limiting, mount this middleware and switch to `into_make_service_with_connect_info`.
+//! Automatically enabled when IpDefenseSystem is configured in AppState.
 
 use axum::{
     extract::{ConnectInfo, Request, State},
@@ -16,9 +15,8 @@ use serde_json::json;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-/// IP defense middleware — not yet wired as a global layer (requires ConnectInfo).
+/// IP defense middleware — wired when IpDefenseSystem is enabled.
 /// Defense management API is available at /v1/admin/defense/*.
-#[allow(dead_code)]
 pub async fn ip_defense_middleware(
     State(defense): State<Arc<IpDefenseSystem>>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,

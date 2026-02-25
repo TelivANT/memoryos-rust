@@ -18,10 +18,12 @@ chrono.workspace = true
 memoryos-core = { path = "../memoryos-core" }
 memoryos-ports = { path = "../memoryos-ports" }
 # Unified Storage Layer
-opendal = { version = "0.45", features = ["services-s3", "services-fs"] }
+opendal = { version = "0.45", features = ["services-fs"], optional = true }
+opendal-s3 = { package = "opendal", version = "0.45", features = ["services-s3"], optional = true }
 # NATS as Redis alternative
 async-nats = { version = "0.37", optional = true }
 
 [features]
-default = []
+default = ["opendal"]
+s3 = ["opendal-s3"]
 nats = ["async-nats"]

@@ -71,11 +71,15 @@ mod smb;
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "s3")]
 pub use cos::CosConnector;
 pub use git::GitConnector;
 pub use local::LocalConnector;
+#[cfg(feature = "s3")]
 pub use obs::ObsConnector;
+#[cfg(feature = "s3")]
 pub use oss::OssConnector;
+#[cfg(feature = "s3")]
 pub use s3::S3Connector;
 pub use sftp::SftpConnector;
 pub use webdav::WebDavConnector;
@@ -84,6 +88,7 @@ pub use aliyun_drive::AliyunDriveConnector;
 pub use azure_blob::AzureBlobConnector;
 pub use baidu_pan::BaiduPanConnector;
 pub use dropbox::DropboxConnector;
+#[cfg(feature = "s3")]
 pub use gcs::GcsConnector;
 pub use google_drive::GoogleDriveConnector;
 pub use nfs::NfsConnector;

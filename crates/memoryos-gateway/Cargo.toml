@@ -34,6 +34,8 @@ aes-gcm = "0.10"
 rand = "0.8"
 
 [features]
+default = ["s3"]
+s3 = ["memoryos-wiki-gen/s3"]
 integration-tests = []
 
 [dev-dependencies]
