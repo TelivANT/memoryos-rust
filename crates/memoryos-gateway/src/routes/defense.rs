@@ -11,7 +11,6 @@ use memoryos_core::security::defense::IpDefenseSystem;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct DefenseStats {
     pub total_bans: usize,
@@ -19,13 +18,11 @@ pub struct DefenseStats {
     pub permanent_bans: usize,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct WhitelistRequest {
     pub ip: String,
 }
 
-#[allow(dead_code)]
 pub fn create_defense_routes(defense: Arc<IpDefenseSystem>) -> Router {
     Router::new()
         .route("/stats", get(get_stats))
@@ -43,7 +40,6 @@ async fn get_stats(State(defense): State<Arc<IpDefenseSystem>>) -> impl IntoResp
     })
 }
 
-#[allow(dead_code)]
 async fn add_whitelist(
     State(defense): State<Arc<IpDefenseSystem>>,
     Json(req): Json<WhitelistRequest>,

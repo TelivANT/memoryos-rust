@@ -6,7 +6,7 @@ use memoryos_core::{
     config::AppConfig,
     llm::{ModelRouter, RouterConfig, TieredRouter},
     rbac::RbacManager,
-    security::{SecurityConfig, SecurityShield},
+    security::{defense::IpDefenseSystem, SecurityConfig, SecurityShield},
     tenant::TenantManager,
     AppError,
 };
@@ -35,6 +35,7 @@ pub struct AppState {
     pub faq_matcher: Arc<tokio::sync::RwLock<memoryos_core::OptimizedFaqMatcher>>,
     pub rbac_manager: Option<RbacManager>,
     pub tenant_manager: Option<TenantManager>,
+    pub defense: Option<Arc<IpDefenseSystem>>,
 }
 
 impl AppState {
@@ -192,6 +193,18 @@ impl AppState {
 
         let faq_matcher = Arc::new(RwLock::new(memoryos_core::OptimizedFaqMatcher::new(10_000)));
 
+        let defense =
+            match IpDefenseSystem::new(&config.storage.redis.url, vector_store.client().clone()) {
+                Ok(d) => {
+                    tracing::info!("IP defense system initialized");
+                    Some(Arc::new(d))
+                }
+                Err(e) => {
+                    tracing::warn!("IP defense system init failed, feature disabled: {}", e);
+                    None
+                }
+            };
+
         Ok(Self {
             config: Arc::new(config),
             router,
@@ -209,6 +222,7 @@ impl AppState {
             faq_matcher,
             rbac_manager,
             tenant_manager,
+            defense,
         })
     }
 
