@@ -126,7 +126,7 @@ async fn main() -> Result<(), AppError> {
     // FAQ 管理路由（独立 state，嵌套到 admin 路径下）
     let faq_routes = create_faq_routes(faq_state);
 
-    // Graph 路由 (v0.4.0)
+    // Graph 路由 
     let graph_state = GraphState {
         graph_manager: std::sync::Arc::new(tokio::sync::RwLock::new(
             memoryos_core::GraphManager::new(),
@@ -134,14 +134,14 @@ async fn main() -> Result<(), AppError> {
     };
     let graph_routes = create_graph_routes(graph_state);
 
-    // Memory management 路由 (v0.6.0)
+    // Memory management 路由 
     let memory_manage_state = MemoryManageState {
         vector_store: state.vector_store.clone(),
         tenant_manager: state.tenant_manager.clone(),
     };
     let memory_manage_routes = create_memory_manage_routes(memory_manage_state);
 
-    // Multimodal 路由 (v0.5.0)
+    // Multimodal 路由 
     let multimodal_storage = std::sync::Arc::new(
         memoryos_adapters::multimodal::QdrantMultiModalStorage::new(&config.storage.vector.url)
             .await
@@ -154,7 +154,7 @@ async fn main() -> Result<(), AppError> {
     };
     let multimodal_routes = create_multimodal_routes(multimodal_state);
 
-    // Security 路由 (v0.8.0)
+    // Security 路由 
     let data_dir = std::env::var_os("HOME")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("."))
@@ -183,7 +183,7 @@ async fn main() -> Result<(), AppError> {
     };
     let security_routes = create_security_routes(security_state);
 
-    // Wiki generation routes (v0.12.6)
+    // Wiki generation routes 
     let default_llm_adapter = state.providers.get(&config.llm.default_provider).cloned();
     let wiki_state = WikiState {
         llm_adapter: default_llm_adapter,
