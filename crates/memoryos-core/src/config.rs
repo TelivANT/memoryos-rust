@@ -472,6 +472,7 @@ mod tests {
                 port: 8080,
                 worker_threads: 4,
                 timeout_seconds: 60,
+                rate_limit_per_minute: 100,
             },
             llm: LlmConfig {
                 default_provider: "openai".to_string(),
