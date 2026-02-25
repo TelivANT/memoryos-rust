@@ -35,7 +35,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # NATS (message queue)
+  # NATS (message queue, optional - needed for async memory pipeline)
   nats:
     image: nats:latest
     container_name: memoryos-nats
@@ -50,6 +50,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    profiles:
+      - full
 
   # MemoryOS Gateway
   gateway:
@@ -68,8 +70,6 @@ services:
       qdrant:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      nats:
         condition: service_healthy
     networks:
       - memoryos-frontend

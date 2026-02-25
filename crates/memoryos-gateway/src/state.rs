@@ -151,9 +151,9 @@ impl AppState {
             .join(".memoryos");
         let _ = std::fs::create_dir_all(&data_dir);
 
-        let rbac_manager = match RbacManager::new(data_dir.join("rbac.db")).await {
+        let rbac_manager = match RbacManager::new(data_dir.join("rbac_users.json")).await {
             Ok(mgr) => {
-                tracing::info!("RBAC manager initialized (SQLite)");
+                tracing::info!("RBAC manager initialized");
                 Some(mgr)
             }
             Err(e) => {
@@ -161,9 +161,9 @@ impl AppState {
                 None
             }
         };
-        let tenant_manager = match TenantManager::new(data_dir.join("tenants.db")).await {
+        let tenant_manager = match TenantManager::new(data_dir.join("tenants.json")).await {
             Ok(mgr) => {
-                tracing::info!("Tenant manager initialized (SQLite)");
+                tracing::info!("Tenant manager initialized");
                 Some(mgr)
             }
             Err(e) => {

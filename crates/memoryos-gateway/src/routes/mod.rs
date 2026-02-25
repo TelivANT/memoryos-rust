@@ -1,5 +1,4 @@
 pub mod admin;
-pub mod chat;
 pub mod defense;
 pub mod faq;
 pub mod graph;
@@ -13,9 +12,7 @@ pub mod security;
 pub mod wiki;
 pub mod wiki_connector;
 
-use axum::{
-    http::HeaderMap, http::HeaderValue, response::Response, routing::get, routing::post, Router,
-};
+use axum::{http::HeaderMap, http::HeaderValue, response::Response};
 use memoryos_core::{tenant::TenantManager, AppError};
 use tracing::warn;
 
@@ -52,26 +49,4 @@ pub fn apply_degraded_header(response: &mut Response, degraded_mode: bool) {
             .headers_mut()
             .insert(DEGRADED_HEADER, HeaderValue::from_static(DEGRADED_VALUE));
     }
-}
-
-#[allow(dead_code)]
-pub fn health_routes() -> Router<crate::AppState> {
-    Router::new()
-        .route("/health", get(health::health))
-        .route("/health/live", get(health::liveness))
-        .route("/health/ready", get(health::readiness))
-        .route("/health/status", get(health::status))
-        .route("/metrics", get(metrics::metrics_handler))
-}
-
-#[allow(dead_code)]
-pub fn chat_routes() -> Router<crate::AppState> {
-    Router::new().route("/chat/completions", post(chat::chat_completions))
-}
-
-#[allow(dead_code)]
-pub fn memory_routes() -> Router<crate::AppState> {
-    Router::new()
-        .route("/memory/add", post(memory::add_message))
-        .route("/memory/retrieve", post(memory::retrieve_context))
 }
