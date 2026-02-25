@@ -884,6 +884,60 @@ Wiki 生成支持多种远程代码仓库连接方式。端点挂载在 `/v1/wik
 
 ---
 
+## IP Defense 管理 API
+
+挂载在 `/v1/admin/defense` 下。需要 Admin 权限。
+
+### GET /v1/admin/defense/stats
+
+获取 IP 防御系统统计信息。
+
+**响应**:
+```json
+{
+  "total_requests": 12345,
+  "blocked_requests": 89,
+  "total_bans": 15,
+  "temp_bans": 12,
+  "permanent_bans": 3,
+  "whitelist_size": 5
+}
+```
+
+---
+
+### POST /v1/admin/defense/whitelist
+
+将 IP 添加到白名单。
+
+**请求体**:
+```json
+{
+  "ip": "192.168.1.100",
+  "reason": "Trusted internal server"
+}
+```
+
+**响应**:
+```json
+{"message": "IP 192.168.1.100 added to whitelist"}
+```
+
+---
+
+### DELETE /v1/admin/defense/unban/{ip}
+
+解除 IP 封禁。
+
+**路径参数**: `ip` — 要解封的 IP 地址
+
+**响应**:
+```json
+{"message": "IP 10.0.0.1 unbanned"}
+```
+
+---
+
 ## FAQ 管理 API
 
 挂载在 `/v1/admin/faq` 下。支持 `X-Tenant-ID` 请求头。
