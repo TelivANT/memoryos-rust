@@ -176,7 +176,7 @@ impl StorageConnector for GitConnector {
     async fn clone_to_temp(&self) -> Result<PathBuf> {
         self.repo_path
             .clone()
-            .ok_or_else(|| WikiGenError::Storage("Not connected".to_string()).into())
+            .ok_or_else(|| WikiGenError::Storage("Not connected".to_string()))
     }
 
     fn name(&self) -> &str {
