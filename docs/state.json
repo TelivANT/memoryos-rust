@@ -2,369 +2,37 @@
   "project_name": "MemoryOS-Rust",
   "version": "1.0.0-rc",
   "edition": "Personal/Enterprise Single-Tenant Edition",
-  "last_updated": "2026-02-24",
+  "last_updated": "2026-02-25",
   "status": {
-        "phase": "1.0 Release - All Tasks Complete",
-        "progress_percentage": 99,
-        "current_task": "All 6 must-complete tasks done. PRs #42-#48 merged. Ready for v1.0.0 release.",
+    "phase": "1.0 Release - Final Audit",
+    "progress_percentage": 99,
+    "current_task": "Iterative audit loop (六条准则). PRs #42-#58 merged. Final polish before v1.0.0.",
     "is_blocked": false
   },
-  "branches": {
-    "main": {
-      "description": "Personal/Enterprise Single-Tenant Edition",
-      "current_version": "v1.0.0-rc",
-      "target_users": "Individual developers, single enterprise deployments"
-    },
-    "feature/saas-multi-tenant": {
-      "description": "SaaS Multi-Tenant Edition",
-      "additional_features": ["SaaS Billing Integration", "Multi-Tenant Architecture"],
-      "target_users": "SaaS platforms, multi-tenant scenarios"
-    }
-  },
   "context": {
-    "description": "Rust implementation of MemoryOS with 3-tier memory (STM/MTM/LTM), hexagonal architecture, 10 LLM adapters, 3 vector databases (Qdrant/Chroma/Pinecone), knowledge graph (entity/relation extraction), multimodal storage, memory versioning, AES-256-GCM encryption, persistent audit logging, GDPR compliance, and comprehensive security shield.",
-    "target_platform": "Local Deployable (Linux/macOS/Windows) + K3s Cluster",
+    "description": "Rust implementation of MemoryOS with 3-tier memory (STM/MTM/LTM), hexagonal architecture, 10 LLM adapters, 3 vector databases (Qdrant/Chroma/Pinecone), knowledge graph (entity/relation extraction), multimodal storage, memory versioning, AES-256-GCM encryption, persistent audit logging, GDPR compliance, RBAC, multi-tenant, and comprehensive security shield.",
+    "target_platform": "Local Deployable (Linux/macOS/Windows) + K8s Cluster",
     "primary_language": "Rust (Edition 2021)",
     "storage_options": {
-      "memory_storage": {
-        "short_term": "Qdrant/Chroma/Pinecone (unified vector storage)",
-        "mid_term": "Qdrant/Chroma/Pinecone (unified vector storage)",
-        "long_term": "Qdrant/Chroma/Pinecone (unified vector storage)"
-      },
-      "coordination": {
-        "redis": "Session, Lock, Cache, IP Defense",
-        "nats": "Message Queue, Pub/Sub, Service Discovery"
-      },
-            "wiki": ["S3", "Confluence", "Local FS"],
-            "wiki_gen": "memoryos-wiki-gen (Tree-sitter + LLM hybrid, CLI + API dual-path)",
-            "mcp": "memoryos-mcp (implemented: rmcp v0.3, stdio transport, 7 tools, Gateway proxy pattern)"
+      "memory_storage": "Qdrant/Chroma/Pinecone (unified vector storage for STM/MTM/LTM)",
+      "coordination": "Redis (session/lock/cache/defense) or NATS (message queue/pub-sub)",
+      "persistence": "JSON file-based (RBAC users, tenants, audit logs, GDPR records)",
+      "wiki_gen": "memoryos-wiki-gen (Tree-sitter + LLM hybrid, CLI + API dual-path)",
+      "mcp": "memoryos-mcp (rmcp v0.3, stdio transport, 7 tools, Gateway proxy)"
     },
     "format_constraints": {
-      "file_naming": "snake_case (strictly functional naming)",
-      "code_style": "rustfmt (standard)",
-      "architecture": "Hexagonal Architecture (Core -> Ports -> Adapters). Monolithic Binary with Feature Flags."
+      "file_naming": "snake_case",
+      "code_style": "rustfmt",
+      "architecture": "Hexagonal Architecture (Core -> Ports -> Adapters)"
     }
   },
-  "versions_completed": {
-    "v0.2.0-alpha": {
-      "date": "2026-02-18",
-      "features": ["3-Tier Memory", "10 LLM Adapters", "Security Shield (17 injection patterns, PII)", "6 Optimization Modules", "Graceful Degradation"]
-    },
-    "v0.3.0": {
-      "date": "2026-02-20",
-      "features": ["Router Tier 0 FAQ Direct Hit", "Wiki S3 Export (OpenDAL)", "Wiki Confluence Export", "FAQ Management API", "Wiki Exporter Dedup"]
-    },
-    "v0.4.0": {
-      "date": "2026-02-20",
-      "features": ["Knowledge Graph: Entity Extraction", "Relationship Extraction (10 patterns)", "Graph Query API (/v1/graph)", "DFS Path Query"]
-    },
-    "v0.5.0": {
-      "date": "2026-02-20",
-      "features": ["QdrantMultiModalStorage", "Multimodal HTTP Endpoints (/v1/multimodal)", "Python SDK Async Support (async_client.py)"]
-    },
-    "v0.6.0": {
-      "date": "2026-02-20",
-      "features": ["Memory Version Control", "Memory Tags & Categorization", "Search by Tags", "Export/Import (JSON + Markdown)"]
-    },
-    "v0.7.0": {
-      "date": "2026-02-20",
-      "features": ["Optimization Benchmarks (BloomFilter, EmbeddingCache, SimilarityFilter)", "Graph Benchmarks", "Security Benchmarks"]
-    },
-    "v0.8.0": {
-      "date": "2026-02-20",
-      "features": ["DataEncryptor (XOR MVP)", "AuditLogger", "GdprManager (consent + export + deletion)", "Security API (/v1/security)"]
-    },
-    "v0.9.0": {
-      "date": "2026-02-20",
-      "features": [
-        "Encryption upgraded: XOR -> AES-256-GCM",
-        "Audit log persistence: JSONL file-based",
-        "GDPR record persistence: JSON file-based",
-        "Multimodal routes wired into main.rs",
-        "Vector storage benchmark graceful skip",
-        "ROADMAP comparison table updated",
-        "Performance benchmark report (docs/PERFORMANCE_REPORT.md)",
-        "Security audit report updated",
-        "Unused import cleanup",
-        "CI fix: benchmark workflow scoped to Criterion targets",
-        "CI fix: added pull-requests write permission",
-        "Gateway: integration-tests feature declared in Cargo.toml",
-        "Qdrant benchmark: port fixed to 6334 gRPC"
-      ],
-      "pr": "#7 (merged)",
-      "ci_status": "4/4 passed (Test, Security Audit, Docker Build, Performance Benchmarks)"
-    }
-  },
-  "task_queue": {
-    "done": [
-      "v0.2.0-alpha: MVP (3-Tier Memory, 10 LLM Adapters, Security Shield)",
-      "v0.3.0: FAQ Router Tier 0, Wiki S3/Confluence Export, FAQ Management API",
-      "v0.4.0: Knowledge Graph Upgrade (entity/relation extraction, graph query)",
-      "v0.5.0: Multimodal Storage + Python SDK Async",
-      "v0.6.0: Memory Enhancement (versioning, tags, export/import)",
-      "v0.7.0: Performance Benchmarks (3 Criterion suites)",
-      "v0.8.0: Security Enhancements (encryption, audit, GDPR)",
-      "v0.9.0: Technical Debt (AES-256-GCM, persistence, benchmark fixes, docs)",
-      "v0.10.0: Prometheus Observability + LLM FAQ Classification",
-      "v0.11.0: All Remaining Issues Fixed (tag search, history, redis, graph LLM, auth, audit/GDPR)",
-      "v0.12.0: Enterprise Features (RBAC, multi-tenant, admin service, service separation)",
-      "v0.12.1: Enterprise Hardening (persistence, admin auth, fail-closed RBAC, docs alignment)",
-      "v0.12.2: Enterprise Deep Hardening (async I/O, race condition fix, constant-time auth, tenant isolation, tests)",
-      "v0.12.3: PR #16 Review Gap Fixes (Qdrant tenant search filter, serial persist queue, build_mid_term_segment helper)",
-      "v0.12.4: PR #17 Review Follow-up (dedup search methods, atomic persist, gateway tenant wiring, concurrent persist test)",
-      "v0.12.5: PR #18 Review Security Hardening (tenant ID validation, FAQ tenant wiring, multi_thread tests, add+delete edge test)",
-      "v0.12.6: Comprehensive Audit Fixes (constant-time auth, nested route auth, CORS restriction, rate limiter leak fix, dedup tenant util, user ID from header, cache eviction)",
-      "v0.13.0: MCP Server Implementation (memoryos-mcp crate, rmcp v0.3, 7 tools, Gateway proxy, stdio transport) - PR #48",
-      "v0.13.0: Storage Connectors 17/17 (GCS, Azure Blob, SMB, NFS, OneDrive, Google Drive, Dropbox, Baidu Pan, Aliyun Drive) - PR #51",
-      "v1.0.0-rc Task #6: Config Validation (AppConfig::validate(), 24 unit tests) - PR #42",
-      "v1.0.0-rc Task #5: Production Error Handling (all unwrap() replaced) - PR #43",
-      "v1.0.0-rc Task #4: LLM Summary Pipeline (real summarize_messages_internal) - PR #45",
-      "v1.0.0-rc Task #3: Real Embedding Integration (with_embedding_config) - PR #46",
-      "v1.0.0-rc Task #2: End-to-End Test Coverage (69 new tests, 303 total) - PR #47",
-      "v1.0.0-rc Task #1: MCP Server Implementation (memoryos-mcp, 7 tools) - PR #48"
-    ],
-                "in_progress": [],
-                "todo": [
-                  "v0.14.0: Wiki preview system (built-in HTTP browser + Mermaid rendering)",
-                  "v1.0.0: Production release (user cases, production validation)",
-          "CLIP/Whisper integration for multimodal (P2 backlog)",
-          "OpenTelemetry distributed tracing (P2 backlog)",
-          "Cross-modal retrieval (P2 backlog)",
-          "Multi-language FAQ translation (P2 backlog)",
-          "FAQ A/B testing (P2 backlog)"
-        ],
-    "saas_branch_only": [
-      "SaaS Billing Integration (feature/saas-multi-tenant branch)",
-      "Multi-Tenant Architecture (feature/saas-multi-tenant branch)"
-    ]
-  },
-  "recent_changes": [
-    {
-      "date": "2026-02-24",
-      "author": "Kiro AI",
-      "description": "v1.0.0-rc: All 6 Must-Complete Tasks Done (PRs #42-#48)",
-      "changes": [
-        "PR #42: Config validation - AppConfig::validate() with comprehensive checks for all config sections, 24 unit tests",
-        "PR #43: Production error handling - replaced all unwrap() with expect() or graceful error handling across 4 crates",
-        "PR #45: LLM summary pipeline - consolidate_memory() now calls summarize_messages_internal() instead of text concatenation",
-        "PR #46: Real embedding integration - with_embedding_config() method, wired into gateway and worker initialization",
-        "PR #47: End-to-end test coverage - 69 new unit tests across 7 modules (234→303 total)",
-        "PR #48: MCP Server implementation - memoryos-mcp crate, rmcp v0.3, 7 tools, Gateway proxy pattern, stdio transport",
-        "Documentation: Updated ARCHITECTURE.md, DESIGN.md, README.md, STATUS.md, ROADMAP.md, state.json, PROCESS.md"
-      ]
-    },
-    {
-      "date": "2026-02-24",
-      "author": "Devin",
-      "description": "MCP Server Design + Documentation Integration",
-      "changes": [
-        "ARCHITECTURE.md: Added MCP Server section (system positioning, pipeline, 10 tools, 6 resources, tech stack, transport, client config)",
-        "DESIGN.md: Added MCP Server design (rationale, tool implementation pattern, tool-API mapping, transport details, error handling, deployment scenarios)",
-        "ROADMAP.md: Added v0.13.0 MCP Server + v0.14.0 Wiki Preview milestones",
-        "README.md: Version updated 0.9.0/0.10.0 -> 0.13.0, added Phase 13-16 to status table",
-        "PROCESS.md: Created project progress tracking document (all PRs, current work, pending tasks)",
-        "state.json: Added MCP to storage_options, updated task_queue and recent_changes",
-        "WORK_LOG.md: Added MCP design completion entry",
-        "Tech stack: rmcp v0.16+ (official Rust MCP SDK), schemars (JSON Schema), stdio + SSE transport",
-        "Architecture: Independent crate memoryos-mcp as new driving adapter in hexagonal architecture"
-      ]
-    },
-    {
-      "date": "2026-02-20",
-      "author": "Devin",
-      "description": "Wiki Generation System: Design Phase Complete",
-      "changes": [
-        "Created comprehensive design spec: docs/specs/wiki_gen_spec.md (19 sections, Mermaid diagrams)",
-        "Architecture: Tree-sitter + LLM hybrid pipeline (Phase 0-6)",
-        "IR design: Symbol-centric with stable SymbolId (file_path + span + kind)",
-        "3-layer Code Graph: FileGraph / SymbolGraph / RuntimeGraph (petgraph)",
-        "API Endpoint extraction: OpenAPI/Proto priority > code route > LLM inference",
-        "Auth signal extraction: 80% rule (output signals, not conclusions)",
-        "Evidence-backed LLM generation: EvidencePack + wiki_index.json traceability",
-        "V1 languages: Rust + Python + Java + Vue (TS + HTML)",
-        "Dual-path access: CLI (clap) + Gateway API (/v1/wiki/*)",
-        "Incremental cache: SHA256 content/prompt hashing",
-        "Old Wiki System A marked for deletion (WikiAdapter trait + old S3)",
-        "Updated ARCHITECTURE.md, STATUS.md, roadmap, state.json"
-      ]
-    },
-    {
-      "date": "2026-02-20",
-      "author": "Devin",
-      "description": "v0.12.6: Comprehensive Audit Fixes",
-      "changes": [
-        "Security: auth.rs constant-time token comparison via subtle::ConstantTimeEq (prevents timing attacks)",
-        "Security: nested routes (graph/multimodal/memory_manage/security) moved under auth middleware",
-        "Security: Admin CORS restricted from Any to localhost:3000 default + ADMIN_CORS_ORIGINS env var",
-        "Security: RateLimiter memory leak fix (evicts stale IPs when >1000 entries)",
-        "Architecture: extract_validated_tenant_id deduplicated to routes/mod.rs shared module",
-        "Logic: handlers.rs reads X-User-ID header instead of hardcoded default_user",
-        "Logic: handlers.rs eliminates double compliance check (caches first result)",
-        "Design: removed duplicate AppError::TooManyRequests variant (unified to RateLimited)",
-        "Design: removed emoji from log messages (production-clean logs)",
-        "Design: EmbeddingCache evicts half entries instead of clearing all"
-      ]
-    },
-    {
-      "date": "2026-02-20",
-      "author": "Devin",
-      "description": "v0.12.5: PR #18 Review Security Hardening",
-      "changes": [
-        "Tenant ID validation: extract_validated_tenant_id() checks tenant exists and is enabled via TenantManager before allowing scoped search",
-        "FAQ tenant wiring: get_candidates, promote_to_faq, delete_faq now use validated tenant-scoped search",
-        "Multi-thread tests: concurrent persist tests use tokio multi_thread flavor with 4 worker threads",
-        "Add+delete edge test: concurrent add+delete operations verified for consistency and persistence integrity"
-      ]
-    },
-    {
-      "date": "2026-02-20",
-      "author": "Devin",
-      "description": "v0.12.4: PR #17 Review Follow-up",
-      "changes": [
-        "Dedup: search_segments() and search_segments_by_tags() now use build_mid_term_segment() helper (~150 lines removed)",
-        "Atomic persist: persist_snapshot() reads latest state under lock before writing, prevents stale snapshot overwrite",
-        "Gateway tenant wiring: 5 route handlers read X-Tenant-ID header and call tenant-scoped search when present",
-        "Concurrent persist test: 20 parallel add_user calls verified to persist all records to file"
-      ]
-    },
-    {
-      "date": "2026-02-20",
-      "author": "Devin",
-      "description": "v0.12.3: PR #16 Review Gap Fixes",
-      "changes": [
-        "Qdrant search-time tenant filtering: search_segments_for_tenant / search_segments_by_tags_for_tenant with tenant_id must filter",
-        "Serial persist queue: persist_lock (tokio::sync::Mutex) in RbacManager and TenantManager eliminates concurrent write race",
-        "build_mid_term_segment helper: extracted from duplicated code in Qdrant search methods",
-        "Redis with_tenant() scaffolding ready for when defense routes are enabled"
-      ]
-    },
-    {
-      "date": "2026-02-20",
-      "author": "Devin",
-      "description": "v0.12.2: Enterprise Deep Hardening",
-      "changes": [
-        "Async I/O: std::fs -> tokio::fs in RBAC and Tenant persist methods",
-        "Race condition fix: snapshot-under-lock pattern prevents concurrent mutation data loss",
-        "Constant-time token comparison: subtle::ConstantTimeEq for admin Bearer token auth",
-        "Enterprise tests: RBAC persistence round-trip, concurrent mutation survival, tenant persistence",
-        "Data-layer tenant isolation: MidTermSegment.tenant_id field, Qdrant payload store/extract, Redis key_prefix"
-      ]
-    },
-    {
-      "date": "2026-02-20",
-      "author": "Devin",
-      "description": "v0.12.1: Enterprise Hardening",
-      "changes": [
-        "RBAC persistence: RbacManager.with_persistence() - JSON file storage, load on startup, auto-save on mutation",
-        "Tenant persistence: TenantManager.with_persistence() - JSON file storage, load on startup, auto-save on mutation",
-        "Admin service auth: ADMIN_TOKEN env var guard, Bearer token validation, /health unauthenticated",
-        "RBAC middleware fail-closed: unknown users get 403 Forbidden instead of pass-through",
-        "Gateway shared persistence: reads ~/.memoryos/rbac_users.json + tenants.json",
-        "Docs: data-layer tenant isolation (Qdrant tenant_id filter, Redis key prefix) flagged as planned",
-        "Clippy fix: metrics.rs if_same_then_else merged"
-      ]
-    },
-    {
-      "date": "2026-02-20",
-      "author": "Devin",
-      "description": "v0.12.0: Enterprise Features",
-      "changes": [
-        "RBAC: Role (SuperAdmin/Admin/User/ReadOnly) + Permission (ReadMemory/WriteMemory/ManageUsers/ManageTenants/ViewAudit/ManageConfig)",
-        "Multi-tenant: Tenant/TenantContext/TenantManager with enable/disable/quota management",
-        "memoryos-admin: independent admin service (port 9090, internal/VPN deployment)",
-        "Admin APIs: user CRUD, tenant CRUD, RBAC assignment, audit log query, system stats",
-        "Gateway RBAC middleware: path+method permission check, 403 on denied",
-        "Gateway tenant context: X-Tenant-ID header extraction, disabled tenant rejection",
-        "Service separation: gateway (8080, business) + admin (9090, management)"
-      ]
-    },
-    {
-      "date": "2026-02-20",
-      "author": "Devin",
-      "description": "v0.11.0: All Remaining Issues Fixed",
-      "changes": [
-        "Tag search: Qdrant native payload filter via search_segments_by_tags (replaces zero-vector + in-memory filter)",
-        "Memory history: QdrantHistoryStorage wired into gateway AppState initialization",
-        "Redis upgrade: 0.24 -> 0.32 (defense.rs query_async API migration, workspace-unified)",
-        "Graph extraction: LLM-based entity/relation extraction (build_llm_extraction_prompt + parse_llm_extraction_response)",
-        "Graph API: /v1/graph/extract/llm-prompt and /v1/graph/extract/llm-parse endpoints",
-        "Auth warning: prominent multi-line warning when auth.enabled = false",
-        "Audit storage: AuditStorageBackend trait + FileAuditBackend + AuditLogger.with_backend()",
-        "GDPR storage: GdprStorageBackend trait + FileGdprBackend + GdprManager.with_backend()"
-      ]
-    },
-    {
-      "date": "2026-02-20",
-      "author": "Devin",
-      "description": "v0.10.0: Prometheus Observability + LLM FAQ Classification",
-      "changes": [
-        "Prometheus metrics: HTTP_REQUESTS_TOTAL, HTTP_REQUEST_DURATION, ROUTER_DECISIONS, FAQ_DIRECT_HITS, FAQ_PROMOTIONS, FAQ_CLASSIFICATIONS, LLM_REQUESTS, LLM_REQUEST_DURATION, LLM_TOKENS",
-        "Metrics middleware: instruments all HTTP requests with path normalization",
-        "/metrics endpoint: Prometheus text exposition format",
-        "LLM FAQ classifier: FaqClassification struct, LlmClassifierConfig, build_classification_prompt, parse_classification_response",
-        "/v1/admin/faq/classify API endpoint (dry-run prompt builder + response parser)",
-        "8 unit tests for LLM classifier, 4 unit tests for metrics",
-        "Docs: backlog items added (CLIP/Whisper, cross-modal, video, multi-lang FAQ, A/B testing)"
-      ]
-    },
-    {
-      "date": "2026-02-20",
-      "author": "Devin",
-      "description": "Docs sync: align documentation with v0.9.0 code",
-      "changes": [
-        "README: update key features and project status to v0.9.0",
-        "DESIGN: FAQ section reflects Tier 0 + S3/Confluence exports (implemented)",
-        "ARCHITECTURE: update '待完善' to reflect v0.9.0 capabilities",
-        "COMPARISON: update knowledge graph/versioning/tags and remaining gaps",
-        "MULTIMODAL: update guide to reflect implemented storage + HTTP API"
-      ]
-    },
-    {
-      "date": "2026-02-20",
-      "author": "Devin",
-      "description": "v0.9.0 Technical Debt & v1.0 Preparation",
-      "changes": [
-        "Encryption: XOR -> AES-256-GCM (aes-gcm crate, random nonces, AEAD)",
-        "Audit log: JSONL file persistence, load on startup, 10000 event buffer",
-        "GDPR: JSON file persistence, auto-save on consent/deletion",
-        "Multimodal routes: wired into main.rs (/v1/multimodal)",
-        "Vector benchmark: graceful skip when Qdrant unavailable",
-        "ROADMAP comparison table: updated to v0.9.0 feature parity",
-        "Performance report: docs/PERFORMANCE_REPORT.md (Criterion data)",
-        "Security audit: SECURITY_AUDIT.md updated to v0.9.0",
-        "Gateway: audit/GDPR persistence at ~/.memoryos/",
-        "Cleanup: unused imports, dead_code warnings"
-      ]
-    },
-    {
-      "date": "2026-02-20",
-      "author": "Devin",
-      "description": "v0.4.0-v0.8.0 P0+P1 Full Implementation",
-      "changes": [
-        "v0.4.0: Knowledge graph (entity/relation extraction, graph query API)",
-        "v0.5.0: Multimodal (QdrantMultiModalStorage, HTTP endpoints, async SDK)",
-        "v0.6.0: Memory (version control, tags, search, export/import)",
-        "v0.7.0: Benchmarks (optimization, graph, security)",
-        "v0.8.0: Security (encryption, audit, GDPR, security API)"
-      ]
-    },
-    {
-      "date": "2026-02-20",
-      "author": "Devin",
-      "description": "v0.3.0 Feature Implementation",
-      "changes": [
-        "Router Tier 0: FAQ direct hit bypasses LLM",
-        "Wiki S3 export via OpenDAL S3ExportBackend",
-        "Wiki Confluence export via REST API",
-        "FAQ management API (5 endpoints)",
-        "Wiki exporter dedup"
-      ]
-    }
-  ],
   "api_endpoints": {
     "public": [
       "GET /health",
-      "GET /health/status"
+      "GET /health/live",
+      "GET /health/ready",
+      "GET /health/status",
+      "GET /metrics"
     ],
     "protected": [
       "POST /v1/chat/completions",
@@ -372,19 +40,6 @@
       "POST /v1/memory/retrieve",
       "GET /v1/memory/:memory_id/history"
     ],
-    "admin": [
-      "POST /v1/admin/keys",
-      "DELETE /v1/admin/keys/:key",
-      "GET /v1/admin/faq/candidates",
-      "POST /v1/admin/faq/promote",
-      "DELETE /v1/admin/faq/:id",
-      "GET /v1/admin/faq/history",
-          "GET /v1/admin/faq/stats",
-          "POST /v1/admin/faq/classify"
-        ],
-        "metrics": [
-          "GET /metrics"
-        ],
     "graph": [
       "POST /v1/graph/extract",
       "POST /v1/graph/extract/llm-prompt",
@@ -394,12 +49,6 @@
       "GET /v1/graph/triples",
       "GET /v1/graph/stats"
     ],
-    "multimodal": [
-      "POST /v1/multimodal/store",
-      "POST /v1/multimodal/search",
-      "POST /v1/multimodal/search/embedding",
-      "POST /v1/multimodal/recent"
-    ],
     "memory_manage": [
       "POST /v1/memory/manage/tags",
       "POST /v1/memory/manage/search/tags",
@@ -407,30 +56,66 @@
       "POST /v1/memory/manage/import",
       "POST /v1/memory/manage/versions"
     ],
-    "security": [
-      "POST /v1/security/audit/query",
-      "GET /v1/security/audit/recent",
-      "POST /v1/security/gdpr/consent",
-      "GET /v1/security/gdpr/consent/:user_id",
-      "POST /v1/security/gdpr/delete",
-      "GET /v1/security/gdpr/delete/:user_id",
-      "POST /v1/security/gdpr/export"
+    "multimodal": [
+      "POST /v1/multimodal/store",
+      "POST /v1/multimodal/search",
+      "POST /v1/multimodal/search/embedding",
+      "POST /v1/multimodal/recent"
     ],
-    "admin_service": [
-      "GET /admin/health",
-      "GET /admin/system/stats",
-      "GET /admin/users",
-      "POST /admin/users",
-      "GET /admin/users/:user_id",
-      "PUT /admin/users/:user_id",
-      "DELETE /admin/users/:user_id",
-      "POST /admin/users/:user_id/role",
-      "GET /admin/tenants",
-      "POST /admin/tenants",
-      "GET /admin/tenants/:tenant_id",
-      "PUT /admin/tenants/:tenant_id",
-      "DELETE /admin/tenants/:tenant_id",
-      "GET /admin/audit"
+    "security": [
+      "POST /v1/security/audit/logs",
+      "GET /v1/security/audit/stats",
+      "POST /v1/security/gdpr/export",
+      "POST /v1/security/gdpr/delete",
+      "POST /v1/security/gdpr/consent",
+      "POST /v1/security/gdpr/consent/check"
+    ],
+    "wiki": [
+      "POST /v1/wiki/generate",
+      "POST /v1/wiki/parse",
+      "GET /v1/wiki/status",
+      "GET /v1/wiki/jobs/:job_id",
+      "GET /v1/wiki/connectors",
+      "POST /v1/wiki/connectors",
+      "GET /v1/wiki/connectors/saved",
+      "POST /v1/wiki/connectors/test",
+      "POST /v1/wiki/connectors/browse",
+      "POST /v1/wiki/connectors/generate"
+    ],
+    "admin": [
+      "POST /v1/admin/keys",
+      "DELETE /v1/admin/keys/:key",
+      "GET /v1/admin/faq/candidates",
+      "POST /v1/admin/faq/promote",
+      "POST /v1/admin/faq/classify",
+      "DELETE /v1/admin/faq/:id",
+      "GET /v1/admin/faq/history",
+      "GET /v1/admin/faq/stats"
+    ],
+    "total_count": 49
+  },
+  "task_queue": {
+    "done": [
+      "v0.2.0-alpha: MVP (3-Tier Memory, 10 LLM Adapters, Security Shield)",
+      "v0.3.0-v0.6.0: FAQ/Wiki/Graph/Multimodal/Memory Enhancement",
+      "v0.7.0-v0.10.0: Benchmarks/Security/Prometheus/LLM FAQ",
+      "v0.11.0-v0.12.6: Enterprise (RBAC/Multi-tenant/Admin/Security Hardening)",
+      "v0.13.0: Wiki-gen + Storage Connectors 17/17 + MCP Server",
+      "v1.0.0-rc: 6 Must-Complete Tasks (PRs #42-#48)",
+      "PR #51-#52: Storage Connectors completion",
+      "PR #53: Documentation sync",
+      "PR #54: Global audit fixes (Dockerfiles, versions, rate limiter, etc.)",
+      "PR #55: RBAC/Tenant JSON file persistence (removed SQLx)",
+      "PR #56: P0-P2 audit fixes (20 items)",
+      "PR #57: Release Checklist P0 (eliminate panics, fix configs, healthcheck)",
+      "PR #58: K8s health probes + dead code cleanup + doc sync"
+    ],
+    "in_progress": [],
+    "todo": [
+      "v1.0.0: Final audit loop completion + release tag",
+      "v1.1.0: Defense system route mounting + Wiki preview",
+      "CLIP/Whisper multimodal integration (P2 backlog)",
+      "OpenTelemetry distributed tracing (P2 backlog)"
     ]
   }
 }

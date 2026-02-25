@@ -47,7 +47,7 @@
 |---|------|------|------|
 | 13 | lazy_static 在 workspace 级别但只有 metrics 用 | `Cargo.toml` | ⬜ TODO — 影响极小，不阻塞发布 |
 | 14 | wiki-gen clone_to_temp() 9 个 connector 返回 "not supported" | `crates/memoryos-wiki-gen/src/storage/` | ⬜ TODO — 设计如此，非 bug |
-| 15 | state.json / PROCESS.md 进度信息过时 | `docs/state.json`, `PROCESS.md` | ⬜ TODO |
+| 15 | state.json / PROCESS.md 进度信息过时 | `docs/state.json`, `PROCESS.md` | ✅ DONE (PR #59) |
 
 ---
 
@@ -68,6 +68,13 @@
 - ARCHITECTURE.md defense 标记为 v1.1 预留
 - 端点汇总表更新（47→49 个端点）
 
+### Round 3 (PR #59)
+- state.json 全面重写：修复端点列表、移除过时分支引用、精简结构
+- PROCESS.md 修复 "SQLite" 错误引用为 "JSON 文件持久化"
+- PROCESS.md 添加 PR #55-#58 记录
+- 技术栈一致性检查通过：无 SQLx/PostgreSQL/MySQL/SQLite 残留
+- 无 panic!/todo!/unimplemented!/unsafe 在生产代码中
+
 ---
 
 ## 已完成 PR 列表
@@ -76,4 +83,5 @@
 |----|------|------|
 | #56 | P0-P2 审计修复（20 项） | ✅ merged |
 | #57 | Release Checklist P0 修复 | ✅ merged |
-| #58 | 审计 Round 2: K8s 探针 + 文档同步 | 🔄 pending |
+| #58 | 审计 Round 2: K8s 探针 + 文档同步 | ✅ merged |
+| #59 | 审计 Round 3: state.json/PROCESS.md 文档同步 | 🔄 pending |
