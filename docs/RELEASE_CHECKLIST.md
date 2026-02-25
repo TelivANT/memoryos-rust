@@ -237,4 +237,5 @@
 | #98 | 多视角深度审查修复 (23 项, 14 实际修复) | ✅ merged |
 | #99 | 六条准则审查 Round 7 | ✅ merged |
 | #101 | 11 角色深度审查修复 (10 项实际修复) | ✅ merged |
-| #??? | 六条准则审查 Round 8 | 🔄 pending |
+| #100 | AGENTS.md 文档 (Devin) | ✅ merged |
+| #102 | 六条准则审查 Round 8 | ✅ merged |
