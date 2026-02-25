@@ -37,6 +37,11 @@ async fn main() -> Result<(), AppError> {
     // 2. Load Config
     let mut config_manager = ConfigManager::new()?;
     let config = config_manager.get();
+
+    // Validate configuration
+    config.validate()?;
+    tracing::info!("Configuration validated successfully");
+
     let async_memory_enabled = std::env::var("MEMORYOS_ASYNC_MEMORY_PIPELINE")
         .map(|v| {
             matches!(
@@ -244,6 +249,17 @@ async fn main() -> Result<(), AppError> {
         .layer(axum::middleware::from_fn(middleware::metrics_middleware))
         .layer(axum::middleware::from_fn(middleware::rate_limit_middleware));
 
+    // Add IP defense middleware if enabled
+    let app = if state_arc.defense.is_some() {
+        tracing::info!("IP defense middleware enabled");
+        app.layer(axum::middleware::from_fn_with_state(
+            state_arc.defense.clone().unwrap(),
+            middleware::ip_defense_middleware,
+        ))
+    } else {
+        app
+    };
+
     if config.auth.enabled {
         tracing::info!("API Key authentication enabled");
     } else {
@@ -265,9 +281,20 @@ async fn main() -> Result<(), AppError> {
         .await
         .map_err(|e| AppError::Internal(format!("Failed to bind port: {}", e)))?;
 
-    axum::serve(listener, app)
+    // Enable IP defense if available
+    if state_arc.defense.is_some() {
+        tracing::info!("IP defense system enabled with ConnectInfo");
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+        )
         .await
         .map_err(|e| AppError::Internal(format!("Server error: {}", e)))?;
+    } else {
+        axum::serve(listener, app)
+            .await
+            .map_err(|e| AppError::Internal(format!("Server error: {}", e)))?;
+    }
 
     Ok(())
 }

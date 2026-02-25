@@ -10,10 +10,13 @@ use axum::{
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use memoryos_wiki_gen::storage::{
-    AliyunDriveConnector, AzureBlobConnector, BaiduPanConnector, CosConnector, DropboxConnector,
-    GcsConnector, GitConnector, GoogleDriveConnector, LocalConnector, NfsConnector, ObsConnector,
-    OneDriveConnector, OssConnector, S3Connector, SftpConnector, SmbConnector, StorageConnector,
-    WebDavConnector,
+    AliyunDriveConnector, AzureBlobConnector, BaiduPanConnector, DropboxConnector, GitConnector,
+    GoogleDriveConnector, LocalConnector, NfsConnector, OneDriveConnector, SftpConnector,
+    SmbConnector, StorageConnector, WebDavConnector,
+};
+#[cfg(feature = "s3")]
+use memoryos_wiki_gen::storage::{
+    CosConnector, GcsConnector, ObsConnector, OssConnector, S3Connector,
 };
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
@@ -356,6 +359,7 @@ fn build_connector(
             }
             Ok(Box::new(conn))
         }
+        #[cfg(feature = "s3")]
         "s3" => {
             let bucket = get_str(config, "bucket");
             let region = get_str(config, "region");
@@ -413,6 +417,7 @@ fn build_connector(
             }
             Ok(Box::new(conn))
         }
+        #[cfg(feature = "s3")]
         "oss" => {
             let endpoint = get_str(config, "endpoint");
             let bucket = get_str(config, "bucket");
@@ -434,6 +439,7 @@ fn build_connector(
             }
             Ok(Box::new(conn))
         }
+        #[cfg(feature = "s3")]
         "cos" => {
             let region = get_str(config, "region");
             let bucket = get_str(config, "bucket");
@@ -453,6 +459,7 @@ fn build_connector(
             }
             Ok(Box::new(conn))
         }
+        #[cfg(feature = "s3")]
         "obs" => {
             let endpoint = get_str(config, "endpoint");
             let bucket = get_str(config, "bucket");
@@ -474,6 +481,7 @@ fn build_connector(
             }
             Ok(Box::new(conn))
         }
+        #[cfg(feature = "s3")]
         "gcs" => {
             let bucket = get_str(config, "bucket");
             let access_key = get_str(config, "access_key");
