@@ -211,6 +211,13 @@
 | 4 | API key 用 SHA-256 hash（无 salt） | API key 是高熵随机字符串，不同于密码，SHA-256 足够 |
 | 5 | ADMIN_TOKEN 未设置时仍可启动 | 已有 warn 日志，开发环境需要 |
 
+### AGENTS.md 审计 Round 2
+
+| # | 违规规则 | 角色 | 文件 | 修复 |
+|---|---------|------|------|------|
+| 1 | 🔴 DevOps: 容器不以 root 运行 | DevOps/SRE | Dockerfile, Dockerfile.worker | ✅ 添加 memoryos 非 root 用户 |
+| 2 | 🟡 Rust: cargo clippy 干净 | Rust 工程师 | error.rs, local.rs, tools.rs, fastapi_extractor.rs | ✅ 修复 4 个 Clippy 警告 |
+
 ---
 
 ## 六条准则审查 Round 9 (PR #103 后)

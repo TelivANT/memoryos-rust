@@ -18,11 +18,11 @@ impl LocalConnector {
         let full_path = self.root.join(path);
         let canonical = full_path
             .canonicalize()
-            .map_err(|e| crate::error::WikiGenError::Io(e))?;
+            .map_err(crate::error::WikiGenError::Io)?;
         let root_canonical = self
             .root
             .canonicalize()
-            .map_err(|e| crate::error::WikiGenError::Io(e))?;
+            .map_err(crate::error::WikiGenError::Io)?;
         if !canonical.starts_with(&root_canonical) {
             return Err(crate::error::WikiGenError::Storage(
                 "Path traversal denied: path escapes root directory".to_string(),

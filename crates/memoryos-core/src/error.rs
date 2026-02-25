@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn all_variants_have_unique_error_codes() {
-        let variants = vec![
+        let variants = [
             AppError::Config("".into()),
             AppError::BadRequest("".into()),
             AppError::Unauthorized("".into()),

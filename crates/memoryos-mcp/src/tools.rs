@@ -266,7 +266,6 @@ impl ServerHandler for MemoryOsServer {
                 name: "memoryos-mcp".to_string(),
                 version: env!("CARGO_PKG_VERSION").to_string(),
             },
-            ..Default::default()
         }
     }
 }
