@@ -18,6 +18,7 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 
 use crate::auth::ApiKeyStore;
+use crate::middleware::CircuitBreakerState;
 use crate::worker_monitor::WorkerMonitorSnapshot;
 
 #[derive(Clone)]
@@ -39,6 +40,7 @@ pub struct AppState {
     pub rbac_manager: Option<RbacManager>,
     pub tenant_manager: Option<TenantManager>,
     pub defense: Option<Arc<IpDefenseSystem>>,
+    pub circuit_breaker: Arc<CircuitBreakerState>,
 }
 
 impl AppState {
@@ -233,6 +235,7 @@ impl AppState {
             rbac_manager,
             tenant_manager,
             defense,
+            circuit_breaker: Arc::new(CircuitBreakerState::new()),
         })
     }
 
