@@ -1,7 +1,7 @@
 # MemoryOS-Rust vs Mem0 功能对比
 
-**日期**: 2026-02-20  
-**版本**: MemoryOS-Rust 0.9.0 vs Mem0 latest
+**日期**: 2026-02-25  
+**版本**: MemoryOS-Rust v1.0.0-rc vs Mem0 latest
 
 ---
 
