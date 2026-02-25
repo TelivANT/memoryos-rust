@@ -19,7 +19,7 @@
 
 ---
 
-## 三次审查报告修复 (Round 6 — PR #63)
+## 三次审查报告修复 (Round 6 — PR #96)
 
 ### P0 — 功能阻塞 / 安全危险
 
@@ -96,7 +96,7 @@
 - local provider 从硬编码改为读 config
 - TODO 注释清理、README TBD 修复、MCP SSE 标注
 
-### Round 6 (PR #63) — 三次深度审查报告 (28 项)
+### Round 6 (PR #96) — 三次深度审查报告 (28 项)
 - 消除 `unsafe { std::mem::zeroed() }` UB — 重写为 Option 返回
 - Streaming handler 加入 PII 脱敏 + compliance 路由
 - FAQ router 移除 placeholder，无答案时不返回 DirectHit
@@ -127,4 +127,4 @@
 | #60 | CHANGELOG + dead_code 清理 | ✅ merged |
 | #61 | 最终 checklist 状态更新 | ✅ merged |
 | #62 | 二次审查报告修复 (12 项) | ✅ merged |
-| #63 | 三次深度审查修复 (28 项) | 🔄 pending |
+| #96 | 三次深度审查修复 (28 项) | ✅ merged |
