@@ -19,7 +19,7 @@
 ### 1. 配置管理
 - ✅ TOML 配置文件支持
 - ✅ 环境变量覆盖
-- ✅ 配置热更新 (5秒自动生效)
+- ⚠️ 配置热更新 (受限 — 需重启，见 docs/CONFIG_HOT_RELOAD_LIMITATION.md)
 - ✅ K8s ConfigMap 支持
 
 ### 2. 错误处理
