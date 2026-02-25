@@ -17,7 +17,7 @@
 | P0-3 | defense.clone().unwrap() 生产代码 | ✅ FIXED | #77 |
 | P0-4 | 无 streaming 支持 | ⏳ DEFERRED | 复杂功能，需单独实现 |
 
-### ✅ P1 工程质量 (8/12 已修复)
+### ✅ P1 工程质量 (9/12 已修复)
 
 | # | 问题 | 状态 | PR |
 |---|------|------|-----|
@@ -25,7 +25,7 @@
 | P1-6 | Gateway 无 CORS 配置 | ✅ FIXED | #78 |
 | P1-7 | 无请求体大小限制 | ✅ FIXED | #78 |
 | P1-8 | 无 Request-ID | ✅ FIXED | #83 |
-| P1-9 | 无 Circuit Breaker | ⏳ TODO | - |
+| P1-9 | 无 Circuit Breaker | ✅ FIXED | #88 |
 | P1-10 | Rate Limiter 硬编码 | ✅ FIXED | #86 |
 | P1-11 | 无 Graceful Shutdown | ✅ FIXED | #78 |
 | P1-12 | Config Hot-Reload 无效 | ⏳ DEFERRED | 需重构 AppState |
@@ -56,6 +56,8 @@
 - **PR #84**: 审计进度更新
 - **PR #85**: 最终审计报告更新
 - **PR #86**: P1-10 - Rate Limiter 可配置化
+- **PR #87**: 审计报告更新 (P1-10)
+- **PR #88**: P1-9 - Circuit Breaker 熔断器
 
 ---
 
@@ -66,30 +68,26 @@
 1. **P0-4: Streaming 支持**
    - 影响: OpenAI 兼容性核心功能缺失
    - 工作量: 大 (需实现 SSE、流式响应)
-
-2. **P1-8: Request-ID**
-   - 影响: 生产环境排障困难
-   - 工作量: 小 (添加中间件)
-
-3. **P1-9: Circuit Breaker**
-   - 影响: 外部依赖故障会拖垮服务
-   - 工作量: 中 (集成 tower/tokio-retry)
+   - 状态: ⏳ TODO
 
 ### 中优先级 (建议 v1.1.0)
 
-4. **P1-12: Config Hot-Reload 修复**
+2. **P1-12: Config Hot-Reload 修复**
    - 影响: 热加载功能实际无效
    - 工作量: 大 (需重构 AppState 架构)
+   - 状态: ⏳ DEFERRED
 
-5. **P2-19: OpenAPI 规范**
+3. **P2-19: OpenAPI 规范**
    - 影响: 企业集成体验
    - 工作量: 中 (集成 utoipa)
+   - 状态: ⏳ TODO
 
 ### 低优先级 (可选)
 
-6. **P1-5: max_retries 实现**
-7. **P1-10: Rate Limiter 可配置化**
-8. **P1-14: metrics expect() 改为 unwrap_or**
+4. **P1-5: max_retries 实现**
+   - 影响: LLM 调用失败重试
+   - 工作量: 大 (需重构所有 LLM 适配器)
+   - 状态: ⏳ DEFERRED
 
 ---
 
@@ -99,7 +97,7 @@
 - **安全审计**: 87% 完成 (0 P0/P1 遗留) ✅
 - **文档覆盖率**: 100% ✅
 - **P0 修复率**: 75% (3/4)
-- **P1 修复率**: 67% (8/12)
+- **P1 修复率**: 75% (9/12)
 - **P2 修复率**: 15% (3/20)
 - **总体修复率**: 59% (13/22)
 
