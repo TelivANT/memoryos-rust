@@ -250,10 +250,10 @@ async fn main() -> Result<(), AppError> {
         .layer(axum::middleware::from_fn(middleware::rate_limit_middleware));
 
     // Add IP defense middleware if enabled
-    let app = if state_arc.defense.is_some() {
+    let app = if let Some(defense) = &state_arc.defense {
         tracing::info!("IP defense middleware enabled");
         app.layer(axum::middleware::from_fn_with_state(
-            state_arc.defense.clone().unwrap(),
+            defense.clone(),
             middleware::ip_defense_middleware,
         ))
     } else {
