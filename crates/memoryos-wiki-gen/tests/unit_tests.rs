@@ -9,7 +9,7 @@ use memoryos_wiki_gen::evidence::{
 use memoryos_wiki_gen::graph::CodeGraph;
 use memoryos_wiki_gen::ir::*;
 use memoryos_wiki_gen::page_builder::PageBuilder;
-use memoryos_wiki_gen::parser::{create_parser, LanguageParser};
+use memoryos_wiki_gen::parser::create_parser;
 
 fn make_symbol(name: &str, kind: SymbolKind, vis: Visibility, file: &str) -> Symbol {
     let file_path = PathBuf::from(file);
