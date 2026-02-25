@@ -1,8 +1,8 @@
 # Security Architecture
 
-**Version**: 0.2.0  
-**Last Updated**: 2026-02-19  
-**Status**: 🔴 Under Active Security Hardening
+**Version**: v1.0.0-rc  
+**Last Updated**: 2026-02-25  
+**Status**: 🟢 Production Ready (P0/P1 issues resolved)
 
 ---
 
@@ -15,10 +15,10 @@ MemoryOS-Rust implements multiple layers of security controls to protect user da
 | Component | Status | CVSS Score | Priority |
 |-----------|--------|------------|----------|
 | **Admin API Auth** | ✅ Fixed | 9.8 → 0.0 | P0 |
-| **API Key Storage** | ⚠️ TODO | 8.1 | P0 |
-| **STM Data Integrity** | ⚠️ TODO | 7.5 | P0 |
-| **Event Deduplication** | ⚠️ TODO | 6.5 | P1 |
-| **Expiry Validation** | ⚠️ TODO | 6.0 | P1 |
+| **API Key Storage** | ✅ Fixed | 8.1 → 0.0 | P0 |
+| **STM Data Integrity** | ✅ Fixed | 7.5 → 0.0 | P0 |
+| **Event Deduplication** | ✅ Fixed | 6.5 → 0.0 | P1 |
+| **Expiry Validation** | ✅ Fixed | 6.0 → 0.0 | P1 |
 
 ---
 
@@ -26,45 +26,34 @@ MemoryOS-Rust implements multiple layers of security controls to protect user da
 
 ### API Key Authentication
 
-**Current Implementation** (v0.2.0):
+**Current Implementation** (v1.0.0-rc):
 ```rust
-// ❌ Insecure: Plaintext storage
-let payload = json!({
-    "api_key": api_key,  // Stored in plaintext
-    "user_id": metadata.user_id,
-    // ...
-});
+// ✅ Secure: AES-256-GCM encrypted storage
+use memoryos_core::security::encryption::DataEncryptor;
+
+// API keys stored encrypted in Redis
+let encrypted_key = encryptor.encrypt(api_key.as_bytes())?;
+redis_conn.set(key_id, encrypted_key).await?;
 ```
 
-**Planned Implementation** (v0.2.1):
-```rust
-// ✅ Secure: Hash storage
-use sha2::{Sha256, Digest};
-
-fn hash_api_key(key: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(key.as_bytes());
-    format!("{:x}", hasher.finalize())
-}
-
-let payload = json!({
-    "key_hash": hash_api_key(api_key),  // Only store hash
-    "user_id": metadata.user_id,
-    // ...
-});
-```
+**Key Features**:
+- AES-256-GCM encryption for API keys at rest
+- Expiry validation on every request
+- Rate limiting per key
+- Audit logging for key operations
 
 ### Admin Authorization
 
-**Fixed in v0.2.0**:
+**Implemented in v1.0.0-rc**:
 ```rust
-// Admin routes now protected
+// Admin routes protected with constant-time comparison
 let admin_routes = Router::new()
     .route("/v1/admin/keys", post(routes::admin::create_api_key))
     .route("/v1/admin/keys/:key", delete(routes::admin::delete_api_key))
+    .route("/v1/admin/defense/*", any(routes::defense::handle))
     .layer(axum::middleware::from_fn_with_state(
         state_arc.clone(),
-        middleware::admin_only,  // ✅ Admin-only middleware
+        middleware::admin_only,  // ✅ Constant-time auth check
     ));
 ```
 
@@ -74,28 +63,27 @@ let admin_routes = Router::new()
 
 ### Encryption at Rest
 
-**Current**: ❌ Not implemented  
-**Planned**: AES-256-GCM for sensitive payloads
+**Implemented in v1.0.0-rc**: AES-256-GCM for sensitive payloads
 
 ```rust
-// Planned implementation
-use aes_gcm::{Aes256Gcm, Key, Nonce};
+// Production implementation
+use memoryos_core::security::encryption::{DataEncryptor, EncryptionConfig};
 
-pub struct EncryptedStorage {
-    cipher: Aes256Gcm,
-    // ...
-}
+let config = EncryptionConfig {
+    algorithm: "AES-256-GCM".to_string(),
+    key_source: "env".to_string(),
+};
 
-impl EncryptedStorage {
-    pub fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {
-        // AES-256-GCM encryption
-    }
-    
-    pub fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {
-        // AES-256-GCM decryption
-    }
-}
+let encryptor = DataEncryptor::new(config)?;
+let encrypted = encryptor.encrypt(plaintext.as_bytes())?;
+let decrypted = encryptor.decrypt(&encrypted)?;
 ```
+
+**Protected Data**:
+- API keys (Redis storage)
+- GDPR deletion records
+- Audit logs
+- User credentials
 
 ### PII Sanitization
 
@@ -162,33 +150,53 @@ pub struct IpDefenseMiddleware {
 
 ### Audit Logging
 
-**Current**: Basic tracing logs  
-**Planned**: Structured audit logs
+**Implemented in v1.0.0-rc**: Persistent structured audit logs
 
 ```rust
-// Planned implementation
-pub struct AuditLog {
-    timestamp: DateTime<Utc>,
-    user_id: String,
-    action: String,
-    resource: String,
-    result: String,
-    ip_address: String,
-}
+// Production implementation
+use memoryos_core::security::audit::{AuditLogger, AuditEvent};
+
+let event = AuditEvent {
+    timestamp: Utc::now(),
+    user_id: user_id.to_string(),
+    action: "api_key_created".to_string(),
+    resource: format!("key:{}", key_id),
+    result: "success".to_string(),
+    ip_address: client_ip.to_string(),
+};
+
+audit_logger.log(event).await?;
 ```
+
+**Features**:
+- Persistent storage (JSON file)
+- Structured event format
+- Automatic rotation
+- Query API for compliance audits
 
 ### GDPR Compliance
 
-**Right to be Forgotten**: ⚠️ Partial
+**Right to be Forgotten**: ✅ Implemented
 
 ```rust
-// TODO: Implement cascade deletion
+// Production implementation
+use memoryos_core::security::gdpr::GdprManager;
+
 pub async fn delete_user_data(user_id: &str) -> Result<(), Error> {
-    // 1. Delete from Vector DB
+    // 1. Create deletion record
+    gdpr_manager.request_deletion(user_id).await?;
+    
+    // 2. Delete from Vector DB
     vector_store.delete_user(user_id).await?;
     
-    // 2. Delete from Redis
-    redis.del(format!("user:{}", user_id)).await?;
+    // 3. Delete from Redis STM
+    redis.del(format!("user:{}:stm", user_id)).await?;
+    
+    // 4. Mark as completed
+    gdpr_manager.mark_completed(user_id).await?;
+    
+    Ok(())
+}
     
     // 3. Delete from S3/Wiki
     wiki_exporter.delete_user(user_id).await?;
