@@ -2,8 +2,12 @@ use crate::state::AppState;
 use axum::{
     extract::{Json, State},
     http::HeaderMap,
-    response::IntoResponse,
+    response::{
+        sse::{Event, KeepAlive, Sse},
+        IntoResponse, Response,
+    },
 };
+use futures::stream::{self, Stream, StreamExt};
 use memoryos_core::{
     llm::{RouteDecision, RouteTier, RouterContext},
     security::ComplianceResult,
@@ -11,13 +15,21 @@ use memoryos_core::{
 };
 use memoryos_ports::llm::ChatChoice;
 use memoryos_ports::{ChatMessage, ChatRequest, ChatResponse};
+use std::convert::Infallible;
 use tracing::{info, warn};
 
 pub async fn chat_completions(
     State(state): State<AppState>,
     headers: HeaderMap,
     Json(mut request): Json<ChatRequest>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Response, AppError> {
+    // Check if streaming is requested
+    if request.stream {
+        return Ok(chat_completions_stream(state, headers, request)
+            .await?
+            .into_response());
+    }
+
     let user_id = headers
         .get("X-User-ID")
         .and_then(|h| h.to_str().ok())
@@ -63,7 +75,8 @@ pub async fn chat_completions(
                 finish_reason: "stop".to_string(),
             }],
             usage: None,
-        }));
+        })
+        .into_response());
     }
 
     let memory_mgr = state.memory_manager.read().await.clone();
@@ -122,7 +135,8 @@ pub async fn chat_completions(
                 finish_reason: "stop".to_string(),
             }],
             usage: None,
-        }));
+        })
+        .into_response());
     }
 
     // 4. Upstream Call
@@ -160,5 +174,47 @@ pub async fn chat_completions(
         });
     }
 
-    Ok(Json(response))
+    Ok(Json(response).into_response())
+}
+
+/// Streaming chat completions handler
+async fn chat_completions_stream(
+    state: AppState,
+    headers: HeaderMap,
+    request: ChatRequest,
+) -> Result<impl IntoResponse, AppError> {
+    let user_id = headers
+        .get("X-User-ID")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("default_user")
+        .to_string();
+
+    let last_msg = request
+        .messages
+        .last()
+        .map(|m| m.content.clone())
+        .unwrap_or_default();
+
+    // Basic compliance check (same as non-streaming)
+    let compliance = state.shield.check_compliance(&last_msg);
+    if let ComplianceResult::Blocked(reason) = compliance {
+        return Err(AppError::BadRequest(reason));
+    }
+
+    // Get target provider (simplified routing for streaming)
+    let target_provider = &state.config.llm.default_provider;
+    let adapter = state
+        .get_adapter(target_provider)
+        .ok_or_else(|| AppError::Config(format!("Provider '{}' not found", target_provider)))?;
+
+    // Call streaming API
+    let chunks = adapter.chat_stream(request).await?;
+
+    // Convert to SSE stream
+    let stream = stream::iter(chunks).map(move |chunk| {
+        let data = serde_json::to_string(&chunk).unwrap_or_default();
+        Ok::<_, Infallible>(Event::default().data(data))
+    });
+
+    Ok(Sse::new(stream).keep_alive(KeepAlive::default()))
 }
