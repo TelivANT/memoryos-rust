@@ -52,9 +52,15 @@ data: [DONE]
 
 ### 限制
 
-1. **简化路由**: Streaming 模式下使用简化的路由逻辑（直接使用 default_provider）
+1. **收集式 streaming**: 当前 `chat_stream()` 先收集全部 chunks 再通过 SSE 发送，非逐字实时流
 2. **FAQ 缓存**: Streaming 模式下不检查 FAQ 缓存
 3. **事件总线**: Streaming 模式下不发布 chat 事件
+
+### 安全保障
+
+- ✅ PII 脱敏: Streaming 路径与非 streaming 路径一致
+- ✅ Compliance 检查: 敏感内容强制路由到 Local LLM
+- ✅ 请求拦截: 违规内容直接返回 BadRequest
 
 ## 未来改进
 

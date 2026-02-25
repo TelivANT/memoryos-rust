@@ -20,19 +20,28 @@ Circuit Breaker（熔断器）用于防止外部服务故障拖垮整个系统�
 
 ## 使用方式
 
-### 在 AppState 中使用
+### 在 handlers.rs 中的实际用法
 
 ```rust
-use crate::middleware::CircuitBreakerState;
+use crate::middleware::circuit_breaker::{with_circuit_breaker, CircuitBreakerState};
 
-// AppState 已包含 circuit_breaker
-let state = AppState::new(config).await?;
+// Circuit breaker 已集成到 LLM 调用路径
+let result = with_circuit_breaker(
+    &state.circuit_breaker,
+    retry_with_backoff(&retry_config, "llm_chat", || async {
+        adapter.chat(request.clone()).await
+    }),
+)
+.await;
 
-// 在外部服务调用中使用
-let result = state.circuit_breaker.with_circuit_breaker(|| async {
-    // 调用外部服务
-    external_service.call().await
-}).await;
+match result {
+    Some(Ok(response)) => { /* 正常响应 */ }
+    Some(Err(e)) => { /* LLM 调用失败（已重试） */ }
+    None => {
+        // 熔断器打开，快速失败
+        return Err(AppError::ServiceUnavailable("Circuit breaker open".into()));
+    }
+}
 ```
 
 ### 手动控制
