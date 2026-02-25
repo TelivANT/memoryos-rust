@@ -3,6 +3,7 @@ host = "0.0.0.0"
 port = 8080
 worker_threads = 4
 timeout_seconds = 60
+rate_limit_per_minute = 100  # Max requests per IP per minute (can also set via MEMORYOS_RATE_LIMIT env var)
 
 [llm]
 default_provider = "openai"

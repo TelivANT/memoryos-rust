@@ -73,6 +73,12 @@ pub struct ServerConfig {
     pub worker_threads: usize,
     #[serde(default = "default_timeout")]
     pub timeout_seconds: u64,
+    #[serde(default = "default_rate_limit")]
+    pub rate_limit_per_minute: u32,
+}
+
+fn default_rate_limit() -> u32 {
+    100
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -466,6 +472,7 @@ mod tests {
                 port: 8080,
                 worker_threads: 4,
                 timeout_seconds: 60,
+                rate_limit_per_minute: 100,
             },
             llm: LlmConfig {
                 default_provider: "openai".to_string(),
