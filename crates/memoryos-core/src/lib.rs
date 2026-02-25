@@ -8,6 +8,7 @@ pub mod llm;
 pub mod memory;
 pub mod optimization;
 pub mod rbac;
+pub mod retry;
 pub mod security;
 pub mod tenant;
 pub mod wiki;
