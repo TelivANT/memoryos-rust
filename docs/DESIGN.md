@@ -212,21 +212,22 @@ match (redis_available, qdrant_available) {
 
 ### 1. 配置热更新
 
-#### 实现原理
+> ⚠️ **限制**: 当前实现中，AppState 持有启动时的配置快照。大部分配置变更需要重启服务。
+> 详见 [CONFIG_HOT_RELOAD_LIMITATION.md](CONFIG_HOT_RELOAD_LIMITATION.md)
+
+#### 设计意图（未完全实现）
 
 ```rust
-// 1. 后台任务
+// 设计目标：后台任务定期检查配置变更
+// 当前状态：后台轮询任务已移除，配置在启动时加载一次
+// 原因：AppState 持有 Arc<Config> 快照，运行时替换需要重构状态管理
 tokio::spawn(async move {
     let mut interval = tokio::time::interval(Duration::from_secs(5));
     loop {
         interval.tick().await;
-        
-        // 2. 检查文件修改时间
         if config_manager.file_changed() {
-            // 3. 重新加载配置
             match config_manager.reload() {
                 Ok(new_config) => {
-                    // 4. 原子更新（ArcSwap）
                     config.store(Arc::new(new_config));
                     info!("✅ Config hot-reloaded");
                 }
@@ -242,7 +243,7 @@ tokio::spawn(async move {
 - `tokio::spawn`: 后台异步任务
 - `SystemTime`: 文件修改时间检测
 
-**优势**:
+**当前状态**:
 - ⚠️ 受限 — AppState 持有启动时快照，大部分配置变更需重启
 - ⚠️ 详见 docs/CONFIG_HOT_RELOAD_LIMITATION.md
 - ✅ 无锁读取（高性能）

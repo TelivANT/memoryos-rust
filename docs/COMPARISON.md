@@ -22,7 +22,7 @@
 | **流式响应** | ✅ SSE | ✅ SSE | 相同 |
 | **并发控制** | ✅ Fencing Lock | ✅ 分布式锁 | 相同 |
 | **事件去重** | ✅ Dedup Set | ✅ 去重 | 相同 |
-| **配置热更新** | ✅ 5 秒 | ❌ 需重启 | **MemoryOS 优势** |
+| **配置热更新** | ⚠️ 受限（需重启） | ❌ 需重启 | 均需重启 |
 | **实时健康检查** | ✅ 动态探测 | ❌ 静态 | **MemoryOS 优势** |
 | **优雅降级** | ✅ 三层 | ⚠️ 部分 | **MemoryOS 优势** |
 | **多租户** | ✅ user_id | ✅ user_id | 相同 |
@@ -56,7 +56,7 @@
     ├── HTTP Server (Axum)
     ├── Routes (健康检查, 聊天, 记忆)
     ├── 3-Tier Router (智能路由)
-    └── State Management (配置热更新, 实时健康检查)
+    └── State Management (状态管理, 实时健康检查)
 ```
 
 **特点**:
@@ -368,7 +368,7 @@ GET  /v1/users/{user_id}/memories/
 
 ### 优势
 
-1. **配置热更新** - MemoryOS-Rust 有，Mem0 无
+1. **配置热更新** - 均需重启，MemoryOS-Rust 已文档化限制
 2. **实时健康检查** - MemoryOS-Rust 有，Mem0 无
 3. **优雅降级** - MemoryOS-Rust 更完善
 4. **性能** - MemoryOS-Rust 预期更高
@@ -432,7 +432,7 @@ v1.0.0 (2026-07-01) - 正式发布 + 生产验证 → 100%
 
 ### 主要优势
 
-- 配置热更新
+- 配置管理（受限热更新，见 CONFIG_HOT_RELOAD_LIMITATION.md）
 - 实时健康检查
 - 优雅降级
 - 性能（预期，Rust vs Python）
