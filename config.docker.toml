@@ -10,12 +10,12 @@ timeout_seconds = 60
 
 [llm]
 default_provider = "openai"
-default_model = "gpt-4"
+default_model = "qwen2.5:latest"
 
 [llm.providers.openai]
 type = "openai"
 api_key_env = "OPENAI_API_KEY"
-base_url = "https://api.openai.com/v1"
+base_url = "http://host.docker.internal:11434/v1"
 
 [storage.redis]
 url = "redis://redis:6379"
@@ -38,3 +38,6 @@ model = "text-embedding-3-small"
 [auth]
 enabled = false
 api_keys = []
+
+[ip_defense]
+enabled = false
